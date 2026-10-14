@@ -52,4 +52,3 @@ func (h *Handler) HealthCheck(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, resp)
 }
-

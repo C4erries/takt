@@ -76,4 +76,3 @@ func TestHealthCheck_DBDisconnected(t *testing.T) {
 		t.Errorf("expected db status disconnected, got %s", resp.Database.Status)
 	}
 }
-

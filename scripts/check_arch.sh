@@ -15,7 +15,7 @@ echo -e "${BLUE}=== [ARCH LINTER] Starting Architecture Integrity Check ===${NC}
 # -----------------------------------------------------------------------------
 # Check 1: File Line Limit (< 400 lines)
 # -----------------------------------------------------------------------------
-echo -e "\n${BLUE}--> [Check 1/4] Checking file line limit (< 400 lines)...${NC}"
+echo -e "\n${BLUE}--> [Check 1/5] Checking file line limit (< 400 lines)...${NC}"
 MAX_LINES=400
 
 # Scan all relevant code files excluding generated files, vendor, node_modules, lockfiles
@@ -41,7 +41,7 @@ done < <(find backend frontend api scripts tests -type f \( -name "*.go" -o -nam
 # -----------------------------------------------------------------------------
 # Check 2: Package File Count Limit (<= 7 files per package)
 # -----------------------------------------------------------------------------
-echo -e "\n${BLUE}--> [Check 2/4] Checking package file count limit (<= 7 working files)...${NC}"
+echo -e "\n${BLUE}--> [Check 2/5] Checking package file count limit (<= 7 working files)...${NC}"
 MAX_FILES=7
 
 check_dir_file_count() {
@@ -85,7 +85,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 3: Clean Domain Layer (no external framework/SQL/HTTP imports)
 # -----------------------------------------------------------------------------
-echo -e "\n${BLUE}--> [Check 3/4] Checking Domain layer purity (internal/domain)...${NC}"
+echo -e "\n${BLUE}--> [Check 3/5] Checking Domain layer purity (internal/domain)...${NC}"
 if [ -d "backend/internal/domain" ]; then
     FORBIDDEN_IMPORTS_PATTERN="github.com/labstack/echo|net/http|github.com/jackc/pgx|database/sql|takt/internal/application|takt/internal/infrastructure|takt/internal/delivery"
     
@@ -103,7 +103,7 @@ fi
 # -----------------------------------------------------------------------------
 # Check 4: No Raw Tailwind Colors in features and widgets
 # -----------------------------------------------------------------------------
-echo -e "\n${BLUE}--> [Check 4/4] Checking for raw Tailwind colors in features/ and widgets/...${NC}"
+echo -e "\n${BLUE}--> [Check 4/5] Checking for raw Tailwind colors in features/ and widgets/...${NC}"
 RAW_COLOR_PATTERN="(bg|text|border|fill|stroke)-(red|blue|green|yellow|purple|pink|indigo|emerald|teal|cyan|sky|violet|fuchsia|rose|amber|lime|orange|zinc|slate|neutral|stone|gray)-[0-9]+"
 
 for dir in "frontend/src/features" "frontend/src/widgets"; do

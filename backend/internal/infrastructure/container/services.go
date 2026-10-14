@@ -1,4 +1,4 @@
-package app
+package container
 
 // Services container holding all domain and application use cases.
 type Services struct {
@@ -9,4 +9,3 @@ type Services struct {
 func initServices(repos *Repositories) *Services {
 	return &Services{}
 }
-

@@ -47,11 +47,16 @@
 ### Шаг 3. Архитектура, Стек и Специфичные конвенции (CTO View)
 Предложи оптимальный технический стек под задачу (используя наш эталонный стек по умолчанию) и уточни личные предпочтения разработчика:
 1. **Подтверждение стека (Золотой стандарт по умолчанию)**:
-   * **Backend**: Go 1.23+ с Clean Architecture / DDD, роутер Echo v4 (или Chi), база PostgreSQL 16 + драйвер `pgx/v5` + `sqlc` (чистый SQL с кодогенерацией без тяжелых ORM), Unit of Work / транзакции через `context.Context`, интерфейсы строго в `ports.go` на стороне потребителя. Инструменты (`golang-migrate`, `mockery v2/v3`) устанавливаются через `go install`.
-   * **Frontend**: React 18/19 + TypeScript + Vite + Tailwind CSS (семантические токены), стейт-менеджмент: `TanStack Query` (серверный кэш) + `Zustand` (клиентский UI), контурные иконки `lucide-react`.
+   * **Backend**: Go 1.23+ с Clean Architecture / DDD (строго 3 подпакета: `domain/`, `application/`, `infrastructure/`), роутер Echo v4 (или Chi), база PostgreSQL 16 + драйвер `pgx/v5` + `sqlc` (чистый SQL с генерацией типов без медленных ORM), Unit of Work / транзакции через `context.Context`, интерфейсы строго в `ports.go` на стороне потребителя, Composition Root в `infrastructure/container/`.
+   * **Go CLI Инструменты (установка строго через `go install`)**:
+     - `mockery v3`: `go install github.com/vektra/mockery/v3@latest`
+     - `golang-migrate`: `go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest`
+     - `oapi-codegen v2`: `go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest`
+     - `sqlc`: `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`
+   * **Frontend**: React 18/19 + TypeScript + Vite + Tailwind CSS (семантические токены), стейт-менеджмент: `TanStack Query` (серверный кэш) + `Zustand` (клиентский UI), контурные иконки `lucide-react`, drag-and-drop `@dnd-kit/core`.
    * **API Контракты**: Модульный мультифайловый OpenAPI 3.0 (`api/openapi/*`), сборка бандла через `@redocly/cli` и генерация роутов через `oapi-codegen`.
    * **Тестирование & QA**: Сквозной E2E контур на Python в `tests/` с использованием ультрабыстрого менеджера **`uv`** (`uv run pytest`) + `httpx`. Быстрые доменные unit-тесты на Go (`make test -race`).
-   * **Инфраструктура**: Docker Compose (Postgres, Backend, Frontend, Nginx reverse proxy), Makefile с автоматическим линтером `make check-arch`.
+   * **Инфраструктура**: Docker Compose (Postgres, Backend, Frontend, Nginx reverse proxy), Makefile со скриптом автоматического контроля `scripts/check_arch.sh` (`make check-arch`).
 2. **Ключевые доменные сущности**: Предложи первичную схему из 2–4 главных таблиц/сущностей БД и список доменных подпакетов (`internal/domain/<pkg>`).
 3. **Дополнительные (кастомные) конвенции проекта**: Спроси пользователя:
    > *"Есть ли у тебя специфичные правила или любимые библиотеки именно для этого проекта, которые нужно жестко закрепить в `CONVENTIONS.md`?"*
@@ -70,7 +75,7 @@
 
 #### Обязательный состав Спринта 0 (Фаза 0):
 В Спринт 0 всегда должны входить:
-* Каркас монорепозитория (`backend/`, `frontend/`, `deploy/`, `tests/`, `scripts/`, `docs/`), пакет DI-сборки `backend/internal/app/` и `docker-compose.yml`.
+* Каркас монорепозитория (`backend/`, `frontend/`, `deploy/`, `tests/`, `scripts/`, `docs/`), пакет DI-сборки `backend/internal/infrastructure/container/` (или `di/`) и `docker-compose.yml`.
 * Настройка **`scripts/check_arch.sh` и команды `make check-arch`** (автоматический линтер длины файлов `< 350–400 строк`, числа файлов в пакете `<= 7`, чистоты импортов DDD и отсутствия сырых цветов Tailwind).
 * Базовый атомарный **UI-Kit в `frontend/src/shared/components/ui/`** (`Button`, `Input`, `Card`, `Modal`, `Badge`, `Skeleton`, `EmptyState`, `ErrorBanner`), настроенный строго по Дизайн-паспорту из Шага 2.
 

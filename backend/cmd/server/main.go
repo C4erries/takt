@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"takt/internal/app"
-	"takt/internal/config"
+	"takt/internal/infrastructure/config"
+	"takt/internal/infrastructure/container"
 )
 
 func main() {
@@ -20,8 +20,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := app.Run(ctx, cfg); err != nil {
+	if err := container.Run(ctx, cfg); err != nil {
 		log.Fatalf("Application error: %v", err)
 	}
 }
-

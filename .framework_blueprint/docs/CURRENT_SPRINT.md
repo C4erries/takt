@@ -27,7 +27,7 @@
 
 ### 3. Архитектура изменений и затрагиваемые подпакеты
 * **Модель данных и миграции**: `[Новые таблицы, изменения колонок, индексы, внешние ключи]`
-* **Подпакеты Backend (`<= 7 файлов в пакете`)**: `[Например: internal/domain/user, internal/application/user, internal/infrastructure/postgres/userrepo, связывание в internal/app/]`
+* **Подпакеты Backend (`<= 7 файлов в пакете`)**: `[Например: internal/domain/user, internal/application/user, internal/infrastructure/postgres/userrepo, связывание в internal/infrastructure/container/]`
 * **Контракты и API**: `[Новые эндпоинты в backend/api/openapi/api.yaml]`
 * **Подпакеты и UI-компоненты Frontend**: `[Например: src/features/profile, переиспользование Button, Input, Card, Skeleton из src/shared/components/ui]`
 
@@ -39,7 +39,7 @@
 |---|--------|--------|-----------|---------------------------|---------------------|
 | 1 | `[Миграция БД и доменный подпакет]` | 🔲 Planned | Критический | `backend_developer` | `[Таблица X, пакет internal/domain/pkg, юнит-тесты]` |
 | 2 | `[OpenAPI контракт и кодогенерация]` | 🔲 Planned | Критический | `backend_developer` | `[Эндпоинты POST/GET /api/v1/..., make oapi]` |
-| 3 | `[Use-cases, порты, адаптеры и сборка в internal/app]` | 🔲 Planned | Высокий | `backend_developer` | `[Пакет internal/application/pkg, ports.go, репо, хендлеры]` |
+| 3 | `[Use-cases, порты, адаптеры и сборка в infrastructure/container]` | 🔲 Planned | Высокий | `backend_developer` | `[Пакет internal/application/pkg, ports.go, репо, хендлеры]` |
 | 4 | `[Клиентский интерфейс фичи на базе UI-Kit]` | 🔲 Planned | Высокий | `frontend_developer` | `[Пакет src/features/pkg, 4 стейта экрана, Дизайн-паспорт]` |
 | 5 | `[Сквозная интеграция, роутинг и обработка ошибок]` | 🔲 Planned | Средний | `frontend_developer` | `[Подключение к типизированному API, мобильная адаптивность]` |
 | 6 | `[E2E автотесты, проверка безопасности и make check-arch]` | 🔲 Planned | Критический | `qa_engineer` / `devops_security_engineer` | `[Сквозной тест в Docker, проверка RBAC/IDOR, 100% PASS]` |
@@ -68,13 +68,13 @@
 
 ---
 
-### Задача 3: `[Серверная реализация Use Cases, Адаптеров и DI в internal/app]`
-* **Пакеты**: `backend/internal/application/<feature>/`, `backend/internal/infrastructure/postgres/<feature>repo/`, `backend/internal/infrastructure/http/<feature>handler/`, `backend/internal/app/`
+### Задача 3: `[Серверная реализация Use Cases, Адаптеров и DI в infrastructure/container]`
+* **Пакеты**: `backend/internal/application/<feature>/`, `backend/internal/infrastructure/postgres/<feature>repo/`, `backend/internal/infrastructure/http/<feature>handler/`, `backend/internal/infrastructure/container/`
 * **Требования**:
   - Если сервису нужны данные из соседнего домена — объявить минимальный интерфейс в `internal/application/<feature>/ports.go` (никаких прямых импортов соседних подпакетов `application/*`).
   - Строгая проверка прав доступа (Tenant Isolation / RBAC) внутри сервисного слоя.
   - Централизованный маппинг доменных ошибок в HTTP-статусы без утечки внутренних SQL/системных ошибок.
-  - Подключение нового сервиса и роута в `internal/app/` (`services.go`, `router.go`).
+  - Подключение нового сервиса и роута в `internal/infrastructure/container/` (`services.go`, `router.go`).
   - Юнит-тесты сервиса с моками и флагом `-race`.
 
 ---

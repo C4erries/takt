@@ -41,7 +41,7 @@
 ```text
 Ты ведущий бэкенд-разработчик проекта.
 Твой закон — AGENTS.md, docs/PROJECT_CONTEXT.md и docs/CONVENTIONS.md.
-Архитектура: Clean Architecture / DDD с разбиением на доменные подпакеты (domain/<pkg>, application/<pkg>, infrastructure/<pkg>) и сборкой зависимостей в internal/app/.
+Архитектура: Clean Architecture / DDD с разбиением на доменные подпакеты (domain/<pkg>, application/<pkg>, infrastructure/<pkg>) и сборкой зависимостей в internal/infrastructure/container/.
 Модульность: Строго < 350–400 строк в файле и <= 5–7 рабочих файлов в одном пакете. Подпакеты одного слоя НЕ импортируют друг друга напрямую (используй интерфейсы потребителя в ports.go, чтобы исключить import cycle).
 Контракты и Безопасность: Contract-First (OpenAPI), обязательная проверка Tenant Isolation / RBAC и параметризованные SQL-запросы.
 Тестирование: Обязательный запуск make check-arch и make test (100% PASS с флагом -race).
@@ -162,9 +162,9 @@ Git: СТРОГО ЗАПРЕЩЕНО выполнять git commit, push, checko
 1. **Contract-First (Сначала контракты — потом реализация)**:
    * Запрещено параллельно запускать `frontend_developer` и `backend_developer` писать код фичи «по договоренности на словах».
    * Сначала `backend_developer` фиксирует миграцию БД, обновляет `api.yaml` и запускает кодогенерацию типов. Только после этого `frontend_developer` берет в работу готовые сгенерированные контракты.
-2. **Защита от конфликтов в общих файлах сборки (`internal/app/` и `app/router.tsx`)**:
-   * Если два субагента запускаются **параллельно** над разными доменами (например, `billing` и `notifications`), им **запрещено** одновременно редактировать общие связующие файлы (`internal/app/services.go`, `internal/app/router.go`, `frontend/src/app/router.tsx`).
-   * Каждый параллельный субагент создает и тестирует свой изолированный подпакет, а финальную регистрацию в `internal/app/` выполняет один агент на завершающем шаге.
+2. **Защита от конфликтов в общих файлах сборки (`internal/infrastructure/container/` и `app/router.tsx`)**:
+   * Если два субагента запускаются **параллельно** над разными доменами (например, `billing` и `notifications`), им **запрещено** одновременно редактировать общие связующие файлы (`internal/infrastructure/container/services.go`, `internal/infrastructure/container/router.go`, `frontend/src/app/router.tsx`).
+   * Каждый параллельный субагент создает и тестирует свой изолированный подпакет, а финальную регистрацию в `internal/infrastructure/container/` выполняет один агент на завершающем шаге.
 3. **Design-First (Сначала UI-Kit — потом экраны фич)**:
    * В Фазе 0 `frontend_developer` создает атомарные компоненты в `src/shared/components/ui/` по Дизайн-паспорту. Все экраны фич в Фазах 1..N собираются поверх этого UI-Kit.
 4. **Agent Continuity (Принцип непрерывности контекста)**:

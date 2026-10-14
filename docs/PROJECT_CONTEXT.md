@@ -254,13 +254,10 @@ takt/
 │
 ├── backend/                           # Go-сервис (Clean Architecture / DDD)
 │   ├── cmd/server/main.go             # Тонкая точка входа (< 50 строк)
-│   ├── internal/
-│   │   ├── app/                       # Composition Root (app.go, repos.go, services.go, router.go)
-│   │   ├── config/
+│   ├── internal/                      # СТРОГО 3 корневых подпакета:
 │   │   ├── domain/                    # workspace, project, task, automation, events
 │   │   ├── application/               # use-cases + ports.go
-│   │   ├── infrastructure/            # db (sqlc, pgxpool), eventbus, repository
-│   │   └── delivery/http/             # Echo хендлеры и middleware
+│   │   └── infrastructure/            # container (DI), config, http, db, eventbus, repository
 │   ├── migrations/                    # SQL-миграции (golang-migrate)
 │   ├── queries/                       # *.sql файлы запросов для sqlc
 │   ├── sqlc.yaml

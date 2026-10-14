@@ -14,7 +14,7 @@
 | ID | Название и ссылка на файл | Дата | Статус | Краткая суть решения (в 1 предложение) |
 |---|---|---|---|---|
 | **ADR-0001** | `[0001-initial-architecture-and-stack.md](0001-initial-architecture-and-stack.md)` | `[ГГГГ-ММ-ДД]` | `Accepted` | `[Выбор базового стека (Go DDD + React/TS + PostgreSQL + Valkey), модульного монолита и Contract-First OpenAPI]` |
-| **ADR-0002** | `[0002-subpackages-and-arch-linter.md](0002-subpackages-and-arch-linter.md)` | `[ГГГГ-ММ-ДД]` | `Accepted` | `[Лимит <= 7 файлов в пакете, < 400 строк в файле, развязка подпакетов через ports.go, DI в internal/app и автопроверка make check-arch]` |
+| **ADR-0002** | `[0002-subpackages-and-arch-linter.md](0002-subpackages-and-arch-linter.md)` | `[ГГГГ-ММ-ДД]` | `Accepted` | `[Лимит <= 7 файлов в пакете, < 400 строк в файле, развязка подпакетов через ports.go, DI в internal/infrastructure/container и автопроверка make check-arch]` |
 
 ---
 

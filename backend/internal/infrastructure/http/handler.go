@@ -22,4 +22,3 @@ func NewHandler(dbChecker DBChecker, version string) *Handler {
 		version:   version,
 	}
 }
-

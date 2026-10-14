@@ -11,7 +11,7 @@
 > **Цель**: Развернуть каркас монорепозитория в Docker Compose, настроить автоматический архитектурный контроль `make check-arch`, мультифайловый OpenAPI и создать атомарный UI-Kit по Дизайн-паспорту японской канцелярии.
 
 - [ ] Инициализация структуры монорепозитория (`backend/`, `frontend/`, `deploy/`, `tests/`, `scripts/`, `docs/`, `api/`).
-- [ ] Базовый Go-сервис на **Echo v4** с точкой сборки зависимостей `backend/internal/app/` (`main.go` < 50 строк).
+- [ ] Базовый Go-сервис на **Echo v4** с точкой сборки зависимостей `backend/internal/infrastructure/container/` (`main.go` < 50 строк).
 - [ ] Настройка пула БД `pgxpool`, транзактора через `context.Context` и конфигурации `sqlc.yaml`.
 - [ ] Настройка скрипта **`scripts/check_arch.sh` и команды `make check-arch`** (лимит строк < 400, лимит файлов в доменном пакете <= 7, запрет сырых цветов Tailwind, чистота слоев DDD).
 - [ ] Мультифайловый OpenAPI манифест (`api/openapi/*`), сборка через `@redocly/cli` и генерация через `oapi-codegen`.

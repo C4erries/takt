@@ -1,10 +1,10 @@
-package app
+package container
 
 import (
 	"context"
 	"log"
 
-	"takt/internal/config"
+	"takt/internal/infrastructure/config"
 	"takt/internal/infrastructure/db"
 )
 
@@ -24,4 +24,3 @@ func initRepositories(ctx context.Context, cfg *config.Config) (*Repositories, e
 		DB: database,
 	}, nil
 }
-

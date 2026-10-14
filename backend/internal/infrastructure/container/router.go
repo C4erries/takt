@@ -1,9 +1,9 @@
-package app
+package container
 
 import (
 	"github.com/labstack/echo/v4"
 
-	httpDelivery "takt/internal/delivery/http"
+	httpDelivery "takt/internal/infrastructure/http"
 )
 
 // setupRouter registers all HTTP routes and groups.
@@ -20,4 +20,3 @@ func setupRouter(e *echo.Echo, h *httpDelivery.Handler) {
 		v1.GET("/health", h.HealthCheck)
 	}
 }
-

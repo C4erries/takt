@@ -29,7 +29,7 @@
 | **Инфраструктура и Контроль** | `[Docker Compose, Nginx, Makefile, make check-arch]` | `[Dev/Prod parity в одну команду и автоматический контроль архитектуры]` |
 | **Контракты API** | `[OpenAPI 3.0 мультифайловый (redocly bundle + oapi-codegen) / gRPC]` | `[Contract-First кодогенерация серверных интерфейсов и клиентских типов]` |
 | **Тестирование & QA** | `[Python + uv (uv run pytest) + httpx, Go unit-тесты (-race)]` | `[Мгновенное развертывание сред через uv, сквозные E2E сценарии через HTTP API]` |
-| **Go Tooling** | `[golang-migrate, mockery v2/v3, oapi-codegen через go install]` | `[Установка CLI-инструментов в $HOME/go/bin]` |
+| **Go Tooling** | `[golang-migrate, mockery v3, oapi-codegen v2, sqlc через go install]` | `[Установка CLI-инструментов в $HOME/go/bin]` |
 
 ---
 
@@ -134,10 +134,9 @@ erDiagram
 ├── backend/                 # Серверная часть (Clean Architecture / DDD с доменными подпакетами)
 │   ├── cmd/                 # Тонкая точка входа (main.go < 50 строк)
 │   ├── internal/
-│   │   ├── app/             # Пакет сборки зависимостей (repos.go, services.go, router.go)
 │   │   ├── domain/          # Изолированные доменные подпакеты (domain/<pkg>)
 │   │   ├── application/     # Изолированные подпакеты сценариев (application/<pkg> + ports.go)
-│   │   └── infrastructure/  # Адаптеры БД и HTTP по подпакетам
+│   │   └── infrastructure/  # Адаптеры БД, HTTP и Composition Root (infrastructure/container/)
 │   ├── api/openapi/         # Спецификация контрактов (api.yaml)
 │   └── migrations/          # SQL миграции базы данных (up/down)
 ├── frontend/                # Клиентская часть (React + TypeScript + Tailwind)

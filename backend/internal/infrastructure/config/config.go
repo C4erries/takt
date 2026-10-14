@@ -44,4 +44,3 @@ func Load() (*Config, error) {
 		DatabaseURL: databaseURL,
 	}, nil
 }
-

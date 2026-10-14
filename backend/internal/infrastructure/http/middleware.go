@@ -48,4 +48,3 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 		"message": message,
 	})
 }
-

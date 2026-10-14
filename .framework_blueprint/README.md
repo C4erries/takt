@@ -19,6 +19,65 @@
 
 ---
 
+## 🛠️ Золотой стандарт технологического стека по умолчанию (Default Golden Stack)
+
+Фреймворк спроектирован вокруг строгого, производительного и проверенного стека, оптимизированного под надежную работу автономных AI-субагентов без «галлюцинаций» и расползания зависимостей:
+
+### 1. Серверная часть (Backend)
+* **Язык и рантайм**: Go 1.23+
+* **Архитектурный стиль**: Clean Architecture / DDD с жестким разделением на доменные подпакеты (`<= 5–7 файлов` в пакете, `< 300–400 строк` в файле).
+* **Структура `backend/internal/` — строго 3 корневых подпакета**:
+  - `domain/` — чистые бизнес-сущности, инварианты, доменные ошибки и события (0 внешних библиотек, никаких импортов SQL/HTTP).
+  - `application/` — сценарии использования (Use Cases) и интерфейсы зависимостей (`ports.go`). Горизонтальные импорты между соседними `application/<pkg>` строго запрещены.
+  - `infrastructure/` — ВСЕ технические адаптеры, включая точку сборки приложения (Composition Root):
+    - `infrastructure/container/` (или `di/`) — инициализация репозиториев, сервисов и роутера (`main.go < 50 строк`).
+    - `infrastructure/http/` — Echo роутер, middleware, обработчики.
+    - `infrastructure/config/` — парсинг и валидация .env.
+    - `infrastructure/db/` — подключение к БД, пул соединений, Context Transactor.
+    - `infrastructure/repository/` — реализации репозиториев.
+* **HTTP-фреймворк**: [Echo v4](https://echo.labstack.com/) (или Chi) — быстрый, легковесный, без лишней магии.
+* **База данных и драйвер**: PostgreSQL 16+ с пулом соединений `pgxpool` (`github.com/jackc/pgx/v5`).
+* **Генерация типов и SQL**: [sqlc](https://sqlc.dev/) — типобезопасный чистый SQL с генерацией Go-структур без медленных ORM.
+* **Транзакции**: Context Transactor (управление транзакциями БД через `context.Context` без просачивания инфраструктурных типов в Use Cases).
+
+### 2. Go CLI-инструменты (Установка строго через `go install`)
+Все инструменты фиксируются с версиями и устанавливаются в `$HOME/go/bin`:
+* **`mockery v3`**: `go install github.com/vektra/mockery/v3@latest` — генерация моков интерфейсов из `ports.go` для изолированного модульного тестирования.
+* **`golang-migrate`**: `go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest` — воспроизводимые версионированные SQL-миграции.
+* **`oapi-codegen v2`**: `go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest` — кодогенерация Go-сервера, типов и валидации по спецификации OpenAPI 3.0.
+* **`sqlc`**: `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` — компилятор SQL в типобезопасный Go-код.
+
+### 3. Клиентская часть (Frontend)
+* **Стек**: React 18/19, TypeScript, Vite.
+* **Стилизация**: Tailwind CSS строго по **Дизайн-паспорту** (семантические токены в `tailwind.config.js`, строгий запрет на сырые цвета вроде `bg-blue-500` в бизнес-компонентах).
+* **Управление состоянием**:
+  - Серверное состояние (кэш, инвалидация, фоновые обновления): **TanStack Query v5** (`@tanstack/react-query`).
+  - Клиентское UI-состояние (модалки, фильтры, локальные туглы): **Zustand**.
+* **UI-компоненты**: Атомарный UI-Kit в `src/shared/components/ui/` (`Button`, `Input`, `Card`, `Modal`, `Badge`, `Skeleton`, `EmptyState`, `ErrorBanner`).
+* **Иконки**: `lucide-react`.
+* **Drag & Drop (при необходимости)**: `@dnd-kit/core` + `@dnd-kit/sortable`.
+
+### 4. Контракты API (Contract-First)
+* **OpenAPI 3.0**: Модульная мультифайловая спецификация в `api/openapi/*`.
+* **Сборка бандла**: `@redocly/cli` (`npx @redocly/cli bundle api/openapi/openapi.yaml -o api/openapi.yaml`).
+* **Двусторонняя генерация**: `oapi-codegen` для бэкенда и `openapi-typescript` для фронтенда.
+
+### 5. Тестирование и Архитектурный контроль (QA & Governance)
+* **E2E & Сквозное черное тестирование**: Python 3.12+ с ультрабыстрым менеджером окружений и рантаймом **`uv`** (`uv run pytest`) + `httpx`.
+* **Unit-тесты Go**: `go test -v -race ./internal/...`.
+* **Архитектурный линтер (`scripts/check_arch.sh` / `make check-arch`)**:
+  1. Лимит размера файлов: `< 350–400 строк`.
+  2. Лимит файлов в доменном подпакете: `<= 5–7 файлов`.
+  3. Чистота слоя `domain`: 0 импортов SQL/HTTP/драйверов.
+  4. Чистота дизайна: 0 сырых цветов Tailwind в `features/` и `widgets/`.
+  5. Чистота `backend/internal/`: строго 3 корневых подпакета (`domain`, `application`, `infrastructure`).
+
+### 6. Инфраструктура и Запуск
+* **Контейнеризация**: Docker Compose (Postgres, Backend, Frontend, Nginx reverse proxy).
+* **Единый фасад команд**: `Makefile` (`make up`, `make down`, `make test`, `make test-e2e`, `make check-arch`, `make migrate-up`, `make sqlc`, `make oapi`).
+
+---
+
 ## 📁 Структура каталога и соответствие файлов в проекте
 
 Для использования в новом проекте скопируйте файлы из этого шаблона в корень вашего репозитория:
@@ -30,7 +89,7 @@
 └── docs/
     ├── PROJECT_CONTEXT.md       # Архитектурный паспорт проекта, стек, сущности и Карта пакетов (Package Map)
     ├── CURRENT_SPRINT.md        # Текущий рабочий спринт (Штаб: микро-решения CEO/CTO + Конвейер: микро-ТЗ и DoD)
-    ├── CONVENTIONS.md           # Инженерные законы: подпакеты, DI в internal/app, Дизайн-паспорт, Безопасность, make check-arch
+    ├── CONVENTIONS.md           # Инженерные законы: подпакеты, DI в infrastructure/container, Дизайн-паспорт, Безопасность
     ├── SUBAGENTS_GUIDE.md       # Регламент оркестрации: 4 архетипа, 5-блочный промпт, Blocker Protocol, формат отчета
     ├── ROADMAP.md               # Дорожная карта всех фаз проекта (начиная с Фазы 0)
     ├── decisions/               # Архитектурные решения (Architecture Decision Records, ADR)
@@ -73,7 +132,7 @@ flowchart TD
     D --> E
     E --> F["3. РЕЖИМ КОНВЕЙЕРА:<br/>Утверждение Микро-ТЗ в CURRENT_SPRINT.md"]
     F --> G["Contract-First: фиксация миграций БД и OpenAPI<br/>+ кодогенерация типов"]
-    G --> H["Запуск субагентов по 5-блочному шаблону<br/>(изолированные подпакеты -> финальное связывание в internal/app)"]
+    G --> H["Запуск субагентов по 5-блочному шаблону<br/>(изолированные подпакеты -> финальное связывание в infrastructure/container)"]
     H --> I["Самопроверка субагента + Сжатый отчет (15–20 строк)"]
     I --> J["Независимая верификация Lead-агентом (Gatekeeper):<br/>make check-arch + make test + lint + make test-e2e + Security Check"]
     FTExec --> J

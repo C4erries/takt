@@ -16,7 +16,7 @@
 * **Бизнес-эффект / Критерий успеха**: Любой субагент может мгновенно разрабатывать изолированные фичи, опираясь на готовые токены, интерфейсы и компоненты, а система собирается и проверяется одной командой `make check-arch && make test`.
 
 ### 2. Принятые микро-решения и технические решения спринта (Micro-Decisions)
-* **Стек Backend**: Go 1.23+, роутер Echo v4. Тонкий `cmd/server/main.go` (< 50 строк), точка сборки зависимостей в `internal/app/app.go`. База данных PostgreSQL 16 с пулом `pgxpool`, транзакции через контекст (`Transactor`), генератор запросов `sqlc` (`sqlc.yaml`).
+* **Стек Backend**: Go 1.23+, роутер Echo v4. Тонкий `cmd/server/main.go` (< 50 строк), точка сборки зависимостей в `internal/infrastructure/container/`. База данных PostgreSQL 16 с пулом `pgxpool`, транзакции через контекст (`Transactor`), генератор запросов `sqlc` (`sqlc.yaml`).
 * **Контракты API**: Мультифайловый OpenAPI 3.0 в `api/openapi/` (разделение на `paths/` и `schemas/`), сборка через `@redocly/cli bundle` и генерация хендлеров через `oapi-codegen`.
 * **Стек Frontend**: React 18/19, TypeScript, Vite, Tailwind CSS. Шрифты Google Fonts (`Newsreader` Serif, `Geist Sans` UI, `JetBrains Mono`). Наложение тактильного SVG-шума бумаги на `--bg-canvas`. Пружинная физика J/K переключения задач (`cubic-bezier(0.22, 1, 0.36, 1)`, 150ms).
 * **UI-Kit**: Атомарные компоненты строго по Дизайн-паспорту в `frontend/src/shared/components/ui/` (`Button`, `Input`, `Checkbox` 18px круглый со стилями Midori, `Card`, `Badge` капсульный, `Modal`, `Skeleton`, `EmptyState`, `ErrorBanner`).
@@ -39,7 +39,7 @@
 | 1 | Каркас монорепозитория, Makefile и Docker Compose с Nginx | ✅ Done | Критический | `devops_engineer` | `docker-compose.yml`, `deploy/nginx/default.conf`, `Makefile` |
 | 2 | Скрипт архитектурного линтера `scripts/check_arch.sh` | ✅ Done | Критический | `lead_architect` | Проверка строк < 400, файлов <= 7, слоев DDD, токенов |
 | 3 | Каркас мультифайлового OpenAPI 3.0 и Redocly бандлер | ✅ Done | Высокий | `backend_developer` | `api/openapi/*`, скрипт бандлинга в Makefile |
-| 4 | Каркас Go-сервиса (Echo v4, config, internal/app, sqlc.yaml) | ✅ Done | Критический | `backend_developer` | Тонкий main.go, DI-сборка, healthcheck эндпоинт |
+| 4 | Каркас Go-сервиса (Echo v4, config, infrastructure/container, sqlc.yaml) | ✅ Done | Критический | `backend_developer` | Тонкий main.go, DI-сборка, healthcheck эндпоинт |
 | 5 | Фронтенд-каркас Vite + React + Tailwind (Editorial токен-паспорт) | ✅ Done | Критический | `frontend_developer` | Палитра Washi/Matcha, шрифты Newsreader/Geist, SVG grain |
 | 6 | Базовый атомарный UI-Kit в `shared/components/ui/` | ✅ Done | Критический | `frontend_developer` | Button, Input, Checkbox (18px круг), Card, Badge, Modal, Skeleton... |
 | 7 | Настройка Pytest E2E тест-контура в `tests/` | ✅ Done | Высокий | `qa_engineer` | `requirements.txt`, `conftest.py`, `test_health.py` |

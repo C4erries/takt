@@ -1,4 +1,4 @@
-package app
+package container
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"takt/internal/config"
-	httpDelivery "takt/internal/delivery/http"
+	"takt/internal/infrastructure/config"
+	httpDelivery "takt/internal/infrastructure/http"
 )
 
 const AppVersion = "0.1.0"
@@ -70,4 +70,3 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("server startup failure: %w", err)
 	}
 }
-

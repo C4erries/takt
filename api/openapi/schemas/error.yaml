@@ -1,0 +1,19 @@
+type: object
+required:
+  - code
+  - message
+properties:
+  code:
+    type: string
+    example: NOT_FOUND
+    description: Unique machine-readable error code
+  message:
+    type: string
+    example: Requested resource was not found
+    description: Human-readable error description
+  details:
+    type: object
+    nullable: true
+    description: Additional structured debug or validation details
+    additionalProperties: true
+

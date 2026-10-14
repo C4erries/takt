@@ -31,37 +31,39 @@
 
 ## 🐹 2. Backend конвенции (Clean Architecture / DDD + Подпакеты без `import cycle`)
 
-### Архитектурные слои и структура подпакетов
+### Архитектурные слои и структура подпакетов (СТРОГО 3 пакета в internal/)
+
+> **Закон архитектуры**: В директории `backend/internal/` разрешены **СТРОГО 3 корневых подпакета**: `domain`, `application`, `infrastructure`.  
+> Создавать другие папки на верхнем уровне `internal/` (например, `delivery/`, `config/`, `app/`, `container/`) **запрещено** и блокируется скриптом `make check-arch`. Вся инфраструктура, внешние адаптеры и точка сборки приложения (`container/` или `di/`) размещаются строго внутри подпакетов `infrastructure/*`.
 
 ```text
 backend/internal/
-├── app/                 # DI и сборка приложения: repos.go, services.go, router.go (cmd/main.go < 50 строк)
-├── domain/
+├── domain/              # Чистый домен (сущности, инварианты, доменные ошибки и события)
 │   ├── shared/          # Базовые примитивы (ID, Pagination, системные доменные ошибки)
 │   ├── workspace/       # entity.go, errors.go, repository.go
 │   ├── project/         # project.go, board.go, column.go, repository.go
 │   ├── task/            # task.go, tag.go, errors.go, repository.go
 │   ├── automation/      # rule.go, evaluator.go, repository.go
 │   └── events/          # task_events.go, eventbus.go
-├── application/
+├── application/         # Сценарии использования (Use Cases) + интерфейсы зависимостей (ports.go)
 │   ├── workspace/       # usecases.go, ports.go
 │   ├── project/         # usecases.go, ports.go
 │   ├── task/            # usecases.go, ports.go
 │   └── automation/      # runner.go, ports.go
-└── infrastructure/
+└── infrastructure/      # ВСЕ внешние адаптеры, драйверы и Composition Root
+    ├── container/       # DI и сборка приложения (repos.go, services.go, router.go, container.go)
+    ├── config/          # Загрузка и валидация .env (config.go)
+    ├── http/            # Echo роутер, middleware, oapi-codegen хендлеры
     ├── db/              # pgxpool, транзактор через Context, sqlc queries
     ├── eventbus/        # In-memory диспетчер событий (задел под Kafka)
-    ├── repository/      # Реализации репозиториев поверх sqlc
-    └── delivery/
-        └── http/        # Echo роутер, middleware, oapi-codegen хендлеры
+    └── repository/      # Реализации репозиториев поверх sqlc
 ```
 
 | Слой | Назначение | Что может импортировать | Чего НЕ должно быть внутри |
 |---|---|---|---|
 | **`domain/<pkg>`** | Чистые бизнес-сущности, Value Objects, доменные ошибки и интерфейсы репозиториев своего домена. | Только стандартную библиотеку и `internal/domain/shared`. | Никаких импортов SQL, HTTP, драйверов и **никаких импортов соседних `domain/<other>`**. |
 | **`application/<pkg>`** | Сценарии использования (Use Cases), оркестрация доменной логики, проверка прав доступа. | Свой `internal/domain/<pkg>` и `internal/domain/shared`. | Никаких прямых SQL-запросов, HTTP-роутеров и **никаких прямых импортов соседних `application/<other>`**. |
-| **`infrastructure/<pkg>`** | Адаптеры внешнего мира (PostgreSQL, sqlc, Echo, EventBus). | `domain/*` + `application/*` + сторонние библиотеки (pgx, echo). | Здесь живут SQL-запросы, маппинг DTO и роутинг. Чистая бизнес-логика здесь запрещена. |
-| **`app/` (DI Wiring)** | Сборка всех репозиториев, сервисов, адаптеров и роутов. | Все слои (`domain`, `application`, `infrastructure`). | Никакой бизнес-логики — только инициализация и инъекция зависимостей. |
+| **`infrastructure/<pkg>`** | Адаптеры внешнего мира (PostgreSQL, sqlc, Echo, EventBus, Config) и сборка (`container/`). | `domain/*` + `application/*` + сторонние библиотеки (pgx, echo). | Здесь живут SQL-запросы, маппинг DTO, роутинг, чтение ENV и DI-сборка (`container/`). Чистая бизнес-логика здесь запрещена. |
 
 ### Защита от циклических зависимостей в Go (`No Import Cycles Rule`) и `ports.go`
 1. **Интерфейсы объявляются на стороне потребителя (`ports.go`)**:
@@ -78,9 +80,9 @@ backend/internal/
        MoveTaskToColumn(ctx context.Context, taskID task.ID, columnID task.ColumnID) error
    }
    ```
-2. **Разделенная сборка в `internal/app/`**:
-   * `cmd/server/main.go` содержит только чтение конфигурации, запуск `app.Run(ctx, cfg)` и Graceful Shutdown (< 50 строк).
-   * Инициализация подключений и репозиториев живет в `internal/app/repos.go`, сервисов — в `internal/app/services.go`, регистрация роутов Echo — в `internal/app/router.go`.
+2. **Разделенная сборка в `internal/infrastructure/container/`**:
+   * `cmd/server/main.go` содержит только чтение конфигурации, запуск `container.Run(ctx, cfg)` и Graceful Shutdown (< 50 строк).
+   * Инициализация подключений и репозиториев живет в `internal/infrastructure/container/repos.go`, сервисов — в `services.go`, регистрация роутов Echo — в `router.go`.
 
 ### Транзакции через `context.Context` (Unit of Work)
 * Управление транзакциями строится через интерфейс `Transactor`:
@@ -217,7 +219,13 @@ frontend/src/
   API спецификация хранится разбитой по файлам в `api/openapi/` (`paths/`, `schemas/`). Сборка выполняется через `@redocly/cli bundle`, генерация Echo-хендлеров — через `oapi-codegen`.
 * **Правило 5 (State Management)**:
   На фронтенде для серверных данных используется **`TanStack Query`** с оптимистичными апдейтами; для клиентского UI — **`Zustand`**. Redux не используется.
-* **Правило 6 (E2E тесты на Pytest)**:
-  Вся E2E-приемка сервиса ведется тест-сьютом на Python (`pytest` + `httpx`) в папке `tests/`.
-* **Правило 7 (Задел для конструктора автоматизаций v2)**:
+* **Правило 6 (E2E тесты на Pytest + uv)**:
+  Вся E2E-приемка сервиса ведется тест-сьютом на Python (`pytest` + `httpx`) в папке `tests/` с использованием менеджера **`uv`** (`uv run pytest` / `uv sync`) для мгновенного развёртывания и изоляции окружения.
+* **Правило 7 (Установка Go CLI инструментов)**:
+  Инструменты кодогенерации и миграций устанавливаются строго через `go install`:
+  - `golang-migrate`: `go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest`
+  - `mockery v3`: `go install github.com/vektra/mockery/v3@latest`
+  - `oapi-codegen`: `go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest`
+  Бинарники размещаются в `$HOME/go/bin`.
+* **Правило 8 (Задел для конструктора автоматизаций v2)**:
   В коде v1 правила автоматизаций хранятся декларативно в таблице `automations` (`trigger_type`, `conditions_json`, `actions_json`). В v2 конструктор автоматизаций может проектироваться как hybrid/low-code/скриптовый, что закладывается в архитектуру движка событий уже сейчас.

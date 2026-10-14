@@ -35,7 +35,8 @@
 | **Drag & Drop & Иконки** | **`@dnd-kit/core`**, **`lucide-react`** (stroke 1.5px) | Доступный легкий DnD для канбан-колонок; строгие контурные иконки без визуального мусора. |
 | **Контракты API** | **OpenAPI 3.0** (мультифайловый: `api/openapi/*`) | Модульная спецификация (paths/schemas), склейка через `@redocly/cli`, генерация серверных роутов через `oapi-codegen`. |
 | **Инфраструктура** | **Docker Compose**, **Nginx** (reverse proxy), **Makefile** | Локальный и продакшн паритет; Nginx маршрутизирует `/api/*` в Go и отдает фронтенд; `make check-arch` линтит архитектуру. |
-| **Тестирование** | Go unit-тесты (`-race`, `mockery v3`) + **pytest** E2E (`tests/`) | Мгновенные доменные тесты на Go + черный ящик (полные сценарии пользователя через HTTP API на Python pytest + httpx). |
+| **Тестирование & Python** | **uv** + **pytest** + **httpx** (`tests/`) | Ультрабыстрый запуск (`uv run pytest`), изоляция виртуального окружения, E2E проверка пользовательских сценариев через HTTP API. |
+| **Go Tooling** | `golang-migrate`, `mockery v2/v3`, `oapi-codegen` | Установка инструментов строго через `go install` в `$HOME/go/bin`. |
 
 ---
 
@@ -194,12 +195,10 @@ erDiagram
 > **Правило для AI-агентов**: Перед созданием новой папки или файла обязательно сверься с этой картой.
 > Лимит: не более **5–7 рабочих файлов в папке**, размер файла **< 350–400 строк**.
 
-### Backend (`backend/internal/`)
+### Backend (`backend/internal/` — СТРОГО 3 корневых подпакета: domain, application, infrastructure)
 
 | Слой / Подпакет | Путь | Назначение и зона ответственности |
 |---|---|---|
-| **App Wiring (DI)** | `internal/app` | Сборка сервисов, репозиториев и роутинга Echo (`app.go`, `repos.go`, `services.go`, `router.go`). `main.go` < 50 строк. |
-| **Config** | `internal/config` | Загрузка и валидация переменных окружения (`config.go`). |
 | **Domain: Shared** | `internal/domain/shared` | Базовые типы (ID, Pagination, системные доменные ошибки). |
 | **Domain: Workspace** | `internal/domain/workspace` | Модель Workspace, WorkspaceMember, роли и инварианты. |
 | **Domain: Project** | `internal/domain/project` | Модели Project, Board, Column, порядок и статусы. |
@@ -210,10 +209,12 @@ erDiagram
 | **App: Project** | `internal/application/project` | Сценарии управления проектами, досками и колонками + `ports.go`. |
 | **App: Task** | `internal/application/task` | Сценарии создания задач (Inbox capture), перемещения, отметки Done + `ports.go`. |
 | **App: Automation** | `internal/application/automation` | Подписка на события домена, вычисление условий и исполнение действий + `ports.go`. |
+| **Infra: Container (DI)** | `internal/infrastructure/container` | Сборка сервисов, репозиториев и роутинга Echo (`repos.go`, `services.go`, `router.go`, `container.go`). `main.go < 50 строк`. |
+| **Infra: Config** | `internal/infrastructure/config` | Загрузка и валидация переменных окружения из .env (`config.go`). |
+| **Infra: HTTP** | `internal/infrastructure/http` | Роутер Echo, хендлеры API (по OpenAPI), middleware (Auth, Tenant, ErrorMapper). |
 | **Infra: DB** | `internal/infrastructure/db` | Инициализация `pgxpool`, Unit of Work / Transactor через `context.Context`, сгенерированный `sqlc`-код. |
 | **Infra: EventBus** | `internal/infrastructure/eventbus` | In-memory диспетчер доменных событий с пулом горутин (задел под Kafka). |
 | **Infra: Repositories** | `internal/infrastructure/repository` | Реализация интерфейсов хранения на базе `sqlc` по подпакетам. |
-| **Delivery: HTTP** | `internal/delivery/http` | Роутер Echo, хендлеры API (по OpenAPI), middleware (Auth, Tenant, Logging, ErrorMapper). |
 
 ### Frontend (`frontend/src/`)
 

@@ -1,0 +1,34 @@
+openapi: 3.0.3
+info:
+  title: Takt API
+  description: High-speed task tracker & personal productivity system with GTD workflows and automations.
+  version: 0.1.0
+servers:
+  - url: /api/v1
+    description: Current API v1 endpoint
+  - url: http://localhost:8080/api/v1
+    description: Local development backend
+
+tags:
+  - name: Health
+    description: Service health and readiness checks
+  - name: Workspaces
+    description: Workspace management and membership
+  - name: Projects
+    description: Projects and boards organization
+  - name: Tasks
+    description: Quick capture, tasks management and focus
+  - name: Automations
+    description: Background workflows and trigger rules
+
+paths:
+  /health:
+    $ref: './paths/health.yaml'
+
+components:
+  schemas:
+    HealthResponse:
+      $ref: './schemas/health.yaml'
+    ErrorResponse:
+      $ref: './schemas/error.yaml'
+

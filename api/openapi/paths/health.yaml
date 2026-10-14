@@ -1,0 +1,20 @@
+get:
+  tags:
+    - Health
+  summary: Service Health Check
+  description: Returns system status, version and database connectivity.
+  operationId: getHealth
+  responses:
+    '200':
+      description: Service is healthy and operational
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/health.yaml'
+    '503':
+      description: Service or dependent system is unhealthy
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/health.yaml'
+

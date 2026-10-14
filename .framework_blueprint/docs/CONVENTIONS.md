@@ -31,34 +31,33 @@
 
 ## 🐹 2. Backend конвенции (Clean Architecture / DDD + Подпакеты без `import cycle`)
 
-### Архитектурные слои и структура подпакетов
+#### Архитектурные слои и структура подпакетов (СТРОГО 4 пакета в internal/)
+
+> **Закон архитектуры**: В директории `backend/internal/` разрешены **СТРОГО 4 корневых подпакета**: `container` (или `di`), `application`, `domain`, `infrastructure`.  
+> Создавать другие папки на верхнем уровне `internal/` (например, `delivery/`, `config/`, `app/`) **запрещено** и блокируется скриптом `make check-arch`. Все внешние адаптеры (HTTP-хендлеры, чтение конфига, БД) размещаются строго внутри подпакетов `infrastructure/*`.
 
 ```text
 backend/internal/
-├── app/                 # DI и сборка приложения: repos.go, services.go, router.go (чтобы cmd/main.go был < 50 строк)
-├── domain/
+├── container/           # DI и сборка приложения (Composition Root): repos.go, services.go, router.go, container.go
+├── domain/              # Чистый домен (сущности, инварианты, доменные ошибки и события)
 │   ├── shared/          # Базовые примитивы (UserID, Money, Pagination, базовые коды ошибок)
 │   ├── user/            # Подпакет user: entity.go, value_objects.go, errors.go, repository.go
 │   └── billing/         # Подпакет billing: invoice.go, subscription.go, errors.go, repository.go
-├── application/
+├── application/         # Сценарии использования (Use Cases) + интерфейсы зависимостей (ports.go)
 │   ├── user/            # Подпакет userapp: register.go, profile.go, ports.go
 │   └── billing/         # Подпакет billingapp: charge.go, webhook.go, ports.go
-└── infrastructure/
-    ├── postgres/
-    │   ├── userrepo/    # Реализация репозитория пользователя
-    │   └── billingrepo/ # Реализация репозитория биллинга
-    └── http/
-        ├── middleware/  # Auth, RateLimit, Recovery, ErrorMapper
-        ├── userhandler/ # HTTP-обработчики домена user
-        └── billinghandler/
+└── infrastructure/      # ВСЕ внешние адаптеры и драйверы
+    ├── config/          # Загрузка и валидация .env (config.go)
+    ├── postgres/        # userrepo, billingrepo
+    └── http/            # middleware, userhandler, billinghandler
 ```
 
 | Слой | Назначение | Что может импортировать | Чего НЕ должно быть внутри |
 |---|---|---|---|
 | **`domain/<pkg>`** | Чистые бизнес-сущности, Value Objects, доменные ошибки и интерфейсы репозиториев своего домена. | Только стандартную библиотеку и `internal/domain/shared`. | Никаких импортов SQL, HTTP, сторонних библиотек и **никаких импортов соседних `domain/<other>`**. |
 | **`application/<pkg>`** | Сценарии использования (Use Cases), оркестрация доменной логики, проверка прав доступа. | Свой `internal/domain/<pkg>` и `internal/domain/shared`. | Никаких прямых SQL-запросов, HTTP-роутеров и **никаких прямых импортов соседних `application/<other>`**. |
-| **`infrastructure/<pkg>`** | Адаптеры внешнего мира (PostgreSQL, Valkey/Redis, HTTP handlers, S3, внешние API). | `domain/*` + `application/*` + сторонние драйверы. | Здесь живут SQL-запросы, маппинг DTO и роутинг. Бизнес-правила здесь запрещены. |
-| **`app/` (DI Wiring)** | Сборка всех репозиториев, сервисов, адаптеров и роутов. | Все слои (`domain`, `application`, `infrastructure`). | Никакой бизнес-логики — только инициализация и передача зависимостей. |
+| **`infrastructure/<pkg>`** | Адаптеры внешнего мира (PostgreSQL, Valkey/Redis, HTTP handlers, S3, Config). | `domain/*` + `application/*` + сторонние драйверы. | Здесь живут SQL-запросы, маппинг DTO, роутинг и чтение ENV. Чистая бизнес-логика здесь запрещена. |
+| **`container/` (DI Wiring)** | Сборка всех репозиториев, сервисов, адаптеров и роутов. | Все слои (`domain`, `application`, `infrastructure`). | Никакой бизнес-логики — только инициализация и передача зависимостей (`cmd/main.go < 50 строк`). |
 
 ### Защита от циклических зависимостей в Go (`No Import Cycles Rule`) и `cmd/main.go`
 При разбиении кода на подпакеты в Go действуют два закона:
@@ -219,7 +218,7 @@ echo "✅ [check-arch] Архитектурные конвенции соблю�
 
 ### Конвенции тестирования
 1. **Unit-тесты (`make test`)**: Запускаются локально за секунды без внешних контейнеров, обязательно с флагом `-race` (`go test -race ./...`). Покрывают доменные инварианты и сервисный слой.
-2. **E2E-тесты (`make test-e2e`)**: Запускаются в изолированном окружении Docker Compose поверх реальной БД. Проверяют полный цикл CRUD и негативные сценарии безопасности (401/403/404).
+2. **E2E-тесты (`make test-e2e`)**: Запускаются в изолированном окружении поверх тестовой БД. Рекомендуемый стек: Python + **`uv`** (`uv run pytest`) + `httpx` в каталоге `tests/`. Проверяют полный цикл пользовательских сценариев и негативные сценарии безопасности (401/403/404).
 
 ---
 
@@ -228,5 +227,7 @@ echo "✅ [check-arch] Архитектурные конвенции соблю�
 > *Этот раздел заполняется при старте проекта на Шаге 3 сценария `BOOTSTRAP.md` (индивидуальные требования CTO / разработчика для конкретного репозитория).*
 
 * **Правило 1 (Работа с БД / ORM / Генераторы)**: `[Например: Используем чистый pgx v5 + sqlc, ORM GORM строго запрещен]`
-* **Правило 2 (State Management и запросы на фронте)**: `[Например: Используем TanStack Query (React Query) для серверного стейта; Redux не используем]`
-* **Правило 3 (Дополнительные ограничения)**: `[Любые ваши личные предпочтения по коду проекта]`
+* **Правило 2 (State Management и запросы на фронте)**: `[Например: Используем TanStack Query (React Query) для серверного стейта, Zustand для UI-стейта; Redux не используем]`
+* **Правило 3 (E2E-тестирование)**: `[Например: Используем Python с менеджером uv (uv run pytest) и httpx в папке tests/]`
+* **Правило 4 (Установка Go инструментов)**: `[Например: golang-migrate, mockery v3, oapi-codegen устанавливаются через go install в $HOME/go/bin]`
+* **Правило 5 (Дополнительные ограничения)**: `[Любые ваши личные предпочтения по коду проекта]`

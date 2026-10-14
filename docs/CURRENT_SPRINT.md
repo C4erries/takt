@@ -2,9 +2,9 @@
 
 > Этот файл — **единственная точка правды** о том, какие решения приняты по текущей задаче и что команда и AI-агенты делают прямо сейчас.
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
-> Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.md` с записью в реестр `docs/sprints/README.md`.
+> Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущая фаза: Фаза 0 — Инженерный фундамент, Архитектурный линтер и UI-Kit «Soft Editorial GTD» 🔵 В РАБОТЕ
+## Текущий спринт: Спринт 0.1.1 (Этап 0.1: Инженерный фундамент, Архитектурный линтер и UI-Kit «Soft Editorial GTD») ✅ ЗАВЕРШЕН (Готов к архивации)
 
 ---
 
@@ -26,7 +26,7 @@
 ### 3. Архитектура изменений и затрагиваемые директории
 * **Инфраструктура**: `docker-compose.yml`, `Makefile`, `deploy/nginx/default.conf`, `scripts/check_arch.sh`.
 * **API Контракты**: `api/openapi/openapi.yaml`, `api/openapi/paths/health.yaml`, `api/openapi/schemas/error.yaml`.
-* **Backend**: `backend/cmd/server/main.go`, `backend/internal/app/`, `backend/internal/config/`, `backend/internal/delivery/http/`, `backend/sqlc.yaml`.
+* **Backend**: `backend/cmd/server/main.go`, `backend/internal/infrastructure/container/`, `backend/internal/infrastructure/config/`, `backend/internal/infrastructure/http/`, `backend/sqlc.yaml`.
 * **Frontend**: `frontend/src/app/`, `frontend/src/shared/components/ui/`, `frontend/tailwind.config.js`.
 * **Tests**: `tests/requirements.txt`, `tests/conftest.py`, `tests/e2e/test_health.py`.
 
@@ -36,13 +36,13 @@
 
 | # | Задача | Статус | Приоритет | Ответственный / Субагент | Заметки и контракты |
 |---|--------|--------|-----------|---------------------------|---------------------|
-| 1 | Каркас монорепозитория, Makefile и Docker Compose с Nginx | 🔲 Planned | Критический | `devops_engineer` | `docker-compose.yml`, `deploy/nginx/default.conf`, `Makefile` |
-| 2 | Скрипт архитектурного линтера `scripts/check_arch.sh` | 🔲 Planned | Критический | `lead_architect` | Проверка строк < 400, файлов <= 7, слоев DDD, токенов |
-| 3 | Каркас мультифайлового OpenAPI 3.0 и Redocly бандлер | 🔲 Planned | Высокий | `backend_developer` | `api/openapi/*`, скрипт бандлинга в Makefile |
-| 4 | Каркас Go-сервиса (Echo v4, config, internal/app, sqlc.yaml) | 🔲 Planned | Критический | `backend_developer` | Тонкий main.go, DI-сборка, healthcheck эндпоинт |
-| 5 | Фронтенд-каркас Vite + React + Tailwind (Editorial токен-паспорт) | 🔲 Planned | Критический | `frontend_developer` | Палитра Washi/Matcha, шрифты Newsreader/Geist, SVG grain |
-| 6 | Базовый атомарный UI-Kit в `shared/components/ui/` | 🔲 Planned | Критический | `frontend_developer` | Button, Input, Checkbox (18px круг), Card, Badge, Modal, Skeleton... |
-| 7 | Настройка Pytest E2E тест-контура в `tests/` | 🔲 Planned | Высокий | `qa_engineer` | `requirements.txt`, `conftest.py`, `test_health.py` |
+| 1 | Каркас монорепозитория, Makefile и Docker Compose с Nginx | ✅ Done | Критический | `devops_engineer` | `docker-compose.yml`, `deploy/nginx/default.conf`, `Makefile` |
+| 2 | Скрипт архитектурного линтера `scripts/check_arch.sh` | ✅ Done | Критический | `lead_architect` | Проверка строк < 400, файлов <= 7, слоев DDD, токенов |
+| 3 | Каркас мультифайлового OpenAPI 3.0 и Redocly бандлер | ✅ Done | Высокий | `backend_developer` | `api/openapi/*`, скрипт бандлинга в Makefile |
+| 4 | Каркас Go-сервиса (Echo v4, config, internal/app, sqlc.yaml) | ✅ Done | Критический | `backend_developer` | Тонкий main.go, DI-сборка, healthcheck эндпоинт |
+| 5 | Фронтенд-каркас Vite + React + Tailwind (Editorial токен-паспорт) | ✅ Done | Критический | `frontend_developer` | Палитра Washi/Matcha, шрифты Newsreader/Geist, SVG grain |
+| 6 | Базовый атомарный UI-Kit в `shared/components/ui/` | ✅ Done | Критический | `frontend_developer` | Button, Input, Checkbox (18px круг), Card, Badge, Modal, Skeleton... |
+| 7 | Настройка Pytest E2E тест-контура в `tests/` | ✅ Done | Высокий | `qa_engineer` | `requirements.txt`, `conftest.py`, `test_health.py` |
 
 > **Статусы задач**: `🔲 Planned` (Запланировано) · `🔵 In Progress` (В работе) · `🛑 Blocked` (Блокер) · `✅ Done` (Завершено)
 
@@ -77,10 +77,10 @@
 ---
 
 ### Задача 4: Go-сервис (Echo v4 + Clean Architecture)
-* **Пакеты**: `backend/cmd/server/main.go`, `backend/internal/app/`, `backend/internal/config/`, `backend/internal/delivery/http/`, `backend/sqlc.yaml`.
+* **Пакеты**: `backend/cmd/server/main.go`, `backend/internal/infrastructure/container/`, `backend/internal/infrastructure/config/`, `backend/internal/infrastructure/http/`, `backend/sqlc.yaml`.
 * **Требования**:
-  - `main.go` < 50 строк: только чтение конфигурации и вызов `app.Run(ctx, cfg)`.
-  - `internal/app/` разделен на логические файлы (`app.go`, `router.go`).
+  - `main.go` < 50 строк: только чтение конфигурации и вызов `container.Run(ctx, cfg)`.
+  - `internal/infrastructure/container/` разделен на логические файлы (`container.go`, `router.go`).
   - Эндпоинты `/health` и `/api/v1/health` возвращают статус `200 OK` и статус подключения к БД.
   - Настроен `sqlc.yaml` для генерации кода из `backend/queries/` с драйвером `pgx/v5`.
 
@@ -115,12 +115,12 @@
 
 ## 🎯 Definition of Done (DoD) Спринта
 
-- [ ] **Архитектурный линтер (`make check-arch`) проходит с 0 ошибок**: все файлы `< 400 строк`, в пакетах `<= 7 файлов`, чистые слои DDD, нет сырых цветов Tailwind.
-- [ ] Сервис и база данных успешно стартуют в `docker compose up`.
-- [ ] Эндпоинт `/api/v1/health` отвечает `200 OK`.
-- [ ] UI-Kit задокументирован или доступен на демо-странице/storybook.
-- [ ] `pytest tests/` отрабатывает с результатом `100% PASS`.
-- [ ] Карта пакетов в `PROJECT_CONTEXT.md` актуальна.
+- [x] **Архитектурный линтер (`make check-arch`) проходит с 0 ошибок**: все файлы `< 400 строк`, в пакетах `<= 7 файлов`, чистые слои DDD, нет сырых цветов Tailwind.
+- [x] Сервис и база данных успешно стартуют в `docker compose up` / контейнерах.
+- [x] Эндпоинт `/api/v1/health` отвечает `200 OK`.
+- [x] UI-Kit задокументирован и доступен на интерактивной демо-витрине `src/app/App.tsx`.
+- [x] `pytest tests/` (`make test-e2e`) отрабатывает с результатом `100% PASS` (3/3 теста).
+- [x] Карта пакетов в `PROJECT_CONTEXT.md` актуальна.
 
 ---
 
@@ -129,3 +129,4 @@
 | Дата | Что изменилось |
 |------|---------------|
 | 2026-10-14 | **Фаза А (Штаб)**: завершен этап инициализации BOOTSTRAP.md, сформирован Спринт 0 (Фаза 0: Инженерный фундамент, Архитектурный линтер и UI-Kit «Soft Editorial GTD»). |
+| 2026-10-14 | **Фаза Б (Конвейер)**: Завершены Задачи 1–7 Спринта 0.1.1. Независимый гейткипинг пройден: `make check-arch` (0 ошибок), `make test` (PASS), `make test-e2e` (3/3 PASS), сборка фронтенда и бэкенда (`make build`) успешна. |

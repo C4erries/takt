@@ -27,7 +27,9 @@
 | **Кэш / Очереди / Лимиты** | `[Например: Valkey / Redis]` | `[Хранение сессий, кэширование, Token-Bucket Rate Limiting]` |
 | **Файловое хранилище** | `[Например: S3 / MinIO]` | `[Изолированное объектное хранилище медиафайлов и документов]` |
 | **Инфраструктура и Контроль** | `[Docker Compose, Nginx, Makefile, make check-arch]` | `[Dev/Prod parity в одну команду и автоматический контроль архитектуры]` |
-| **Контракты API** | `[OpenAPI 3.0 / gRPC]` | `[Contract-First кодогенерация серверных интерфейсов и клиентских типов]` |
+| **Контракты API** | `[OpenAPI 3.0 мультифайловый (redocly bundle + oapi-codegen) / gRPC]` | `[Contract-First кодогенерация серверных интерфейсов и клиентских типов]` |
+| **Тестирование & QA** | `[Python + uv (uv run pytest) + httpx, Go unit-тесты (-race)]` | `[Мгновенное развертывание сред через uv, сквозные E2E сценарии через HTTP API]` |
+| **Go Tooling** | `[golang-migrate, mockery v2/v3, oapi-codegen через go install]` | `[Установка CLI-инструментов в $HOME/go/bin]` |
 
 ---
 
@@ -95,16 +97,17 @@ erDiagram
 > **Правило для AI-агентов**: Перед созданием новой папки или пакета обязательно сверься с этой картой.
 > Не создавай дублирующие пакеты с похожими названиями (например, `auth` и `authorization`). При добавлении нового доменного подпакета — добавь строку в эту таблицу. Лимит файлов (`<= 7 рабочих файлов в папке`) контролируется автоматически через `make check-arch`.
 
-### Backend (`backend/internal/`)
+### Backend (`backend/internal/` — СТРОГО 3 корневых подпакета: domain, application, infrastructure)
 
 | Слой / Подпакет | Путь | Назначение и зона ответственности |
 |---|---|---|
-| **App Wiring (DI)** | `internal/app` | Сборка зависимостей и роутинга (`repos.go`, `services.go`, `router.go`), чтобы `cmd/main.go` оставался компактным (< 50 строк). |
 | **Domain: Shared** | `internal/domain/shared` | Общие примитивы без внешних зависимостей (UUID, Money, Pagination, базовые коды ошибок). |
 | **Domain: User** | `internal/domain/user` | Сущность `User`, роли, Value Objects (Email, PasswordHash), интерфейс репозитория. |
 | **Domain: [FeatureA]** | `internal/domain/[feature_a]` | `[Сущности и бизнес-инварианты домена FeatureA]`. |
 | **App: User** | `internal/application/user` | Сценарии регистрации, логина, профиля + `ports.go` (интерфейсы внешних зависимостей). |
 | **App: [FeatureA]** | `internal/application/[feature_a]` | `[Use-cases домена FeatureA + ports.go]`. |
+| **Infra: Container (DI)** | `internal/infrastructure/container` | Сборка зависимостей и роутинга (`repos.go`, `services.go`, `router.go`, `container.go`), чтобы `cmd/main.go` оставался компактным (< 50 строк). |
+| **Infra: Config** | `internal/infrastructure/config` | Загрузка и валидация переменных окружения из .env. |
 | **Infra: Postgres** | `internal/infrastructure/postgres/<pkg>` | Реализация репозиториев в подпакетах `userrepo`, `[feature_a]repo`. |
 | **Infra: HTTP** | `internal/infrastructure/http/<pkg>` | HTTP-хендлеры, middleware (Auth, RateLimit, ErrorMapper) в подпакетах по доменам. |
 

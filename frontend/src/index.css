@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Surfaces and Canvas */
+  --bg-canvas: #E8E5DA;         /* Dry bamboo / unbleached linen (base window background) */
+  --bg-surface: #F7F5EE;        /* Washi rice paper (central sheet, inspector cards) */
+  --border-subtle: #DCD7C8;     /* Subtle rice fiber (1px dividers) */
+
+  /* Text and Inks */
+  --text-primary: #21241E;      /* Sumi ink with soft warm undertone */
+  --text-muted: #74786C;        /* Dried tea leaf (secondary text, labels) */
+
+  /* Accents and Focus */
+  --accent-surface: #D6DEC8;    /* Milky matcha (soft active focus highlight) */
+  --accent-solid: #566B44;      /* Deep matcha green (solid button, active checkbox) */
+  --accent-solid-hover: #465737;
+
+  /* Pastel Context Tags (Pills) */
+  --tag-persimmon: #EBD5C3;     /* Persimmon / warm peach (@home) */
+  --tag-denim: #CFD8E0;         /* Indigo denim / muted grey-blue (project) */
+  --tag-straw: #EAE4CC;         /* Rice straw (time / estimates) */
+}
+
+@layer base {
+  * {
+    border-color: var(--border-subtle);
+  }
+
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    position: relative;
+  }
+
+  /* Tactile Washi paper noise overlay across the window */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+}
+
+/* Custom scrollbars matching the stationery aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

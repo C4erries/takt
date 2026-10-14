@@ -6,49 +6,46 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+
+	"takt/internal/infrastructure/http/generated"
 )
 
 var startTime = time.Now()
 
-// DBStatus represents the database connectivity status.
-type DBStatus struct {
-	Status string `json:"status"`
-}
-
-// HealthResponse represents the payload returned by healthcheck endpoints.
-type HealthResponse struct {
-	Status        string   `json:"status"`
-	Version       string   `json:"version"`
-	UptimeSeconds int64    `json:"uptime_seconds"`
-	Database      DBStatus `json:"database"`
-}
-
-// HealthCheck handles GET /health and GET /api/v1/health.
-func (h *Handler) HealthCheck(c echo.Context) error {
+// GetHealth handles GET /health and GET /api/v1/health.
+func (h *Handler) GetHealth(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 2*time.Second)
 	defer cancel()
 
-	dbStatus := "connected"
-	overallStatus := "ok"
+	dbStatus := generated.Connected
+	overallStatus := generated.HealthStatusOk
 
 	if h.dbChecker != nil {
 		if err := h.dbChecker.Ping(ctx); err != nil {
-			dbStatus = "disconnected"
-			overallStatus = "degraded"
+			dbStatus = generated.Disconnected
+			overallStatus = generated.HealthStatusDegraded
 		}
 	} else {
-		dbStatus = "disconnected"
-		overallStatus = "degraded"
+		dbStatus = generated.Disconnected
+		overallStatus = generated.HealthStatusDegraded
 	}
 
-	resp := HealthResponse{
+	uptime := int(time.Since(startTime).Seconds())
+	resp := generated.Health{
 		Status:        overallStatus,
 		Version:       h.version,
-		UptimeSeconds: int64(time.Since(startTime).Seconds()),
-		Database: DBStatus{
+		UptimeSeconds: &uptime,
+		Database: struct {
+			Status generated.HealthDatabaseStatus `json:"status"`
+		}{
 			Status: dbStatus,
 		},
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+// HealthCheck provides backward compatibility for health checking.
+func (h *Handler) HealthCheck(c echo.Context) error {
+	return h.GetHealth(c)
 }

@@ -8,54 +8,32 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	openapi_types "github.com/oapi-codegen/runtime/types"
+
 	taskApp "takt/internal/application/task"
 	domainTask "takt/internal/domain/task"
+	"takt/internal/infrastructure/http/generated"
 )
 
-type CreateInboxTaskRequest struct {
-	Title               string `json:"title"`
-	DescriptionMarkdown string `json:"descriptionMarkdown"`
-	Priority            string `json:"priority"`
-	DueDate             string `json:"dueDate"`
-}
-
-type TaskResponse struct {
-	ID                  uuid.UUID           `json:"id"`
-	WorkspaceID         uuid.UUID           `json:"workspaceId"`
-	ProjectID           *uuid.UUID          `json:"projectId"`
-	ColumnID            *uuid.UUID          `json:"columnId"`
-	Title               string              `json:"title"`
-	DescriptionMarkdown string              `json:"descriptionMarkdown"`
-	IsCompleted         bool                `json:"isCompleted"`
-	CompletedAt         *time.Time          `json:"completedAt"`
-	DueDate             *string             `json:"dueDate"`
-	Priority            domainTask.Priority `json:"priority"`
-	FocusOrder          *int                `json:"focusOrder"`
-	Position            int                 `json:"position"`
-	CreatedAt           time.Time           `json:"createdAt"`
-	UpdatedAt           time.Time           `json:"updatedAt"`
-}
-
-func mapDomainTaskToResponse(t *domainTask.Task) TaskResponse {
-	var dueDateStr *string
+func mapDomainTaskToGenerated(t *domainTask.Task) generated.Task {
+	var dueDate *openapi_types.Date
 	if t.DueDate != nil {
-		s := t.DueDate.Format("2006-01-02")
-		dueDateStr = &s
+		dueDate = &openapi_types.Date{Time: *t.DueDate}
 	}
 
-	return TaskResponse{
-		ID:                  t.ID,
-		WorkspaceID:         t.WorkspaceID,
-		ProjectID:           t.ProjectID,
-		ColumnID:            t.ColumnID,
+	return generated.Task{
+		Id:                  t.ID,
+		WorkspaceId:         t.WorkspaceID,
+		ProjectId:           t.ProjectID,
+		ColumnId:            t.ColumnID,
 		Title:               t.Title,
 		DescriptionMarkdown: t.DescriptionMarkdown,
 		IsCompleted:         t.IsCompleted,
 		CompletedAt:         t.CompletedAt,
-		DueDate:             dueDateStr,
-		Priority:            t.Priority,
+		DueDate:             dueDate,
+		Priority:            generated.TaskPriority(t.Priority),
 		FocusOrder:          t.FocusOrder,
-		Position:            t.Position,
+		Position:            float64(t.Position),
 		CreatedAt:           t.CreatedAt,
 		UpdatedAt:           t.UpdatedAt,
 	}
@@ -64,23 +42,23 @@ func mapDomainTaskToResponse(t *domainTask.Task) TaskResponse {
 func (h *Handler) GetInboxTasks(c echo.Context) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"code":    "UNAUTHORIZED",
-			"message": err.Error(),
+		return c.JSON(http.StatusUnauthorized, generated.Error{
+			Code:    "UNAUTHORIZED",
+			Message: err.Error(),
 		})
 	}
 
 	tasks, err := h.taskService.GetInboxTasks(c.Request().Context(), workspaceID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"code":    "INTERNAL_ERROR",
-			"message": "Failed to fetch inbox tasks",
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to fetch inbox tasks",
 		})
 	}
 
-	resp := make([]TaskResponse, 0, len(tasks))
+	resp := make([]generated.Task, 0, len(tasks))
 	for _, t := range tasks {
-		resp = append(resp, mapDomainTaskToResponse(t))
+		resp = append(resp, mapDomainTaskToGenerated(t))
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -89,129 +67,124 @@ func (h *Handler) GetInboxTasks(c echo.Context) error {
 func (h *Handler) CreateInboxTask(c echo.Context) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"code":    "UNAUTHORIZED",
-			"message": err.Error(),
+		return c.JSON(http.StatusUnauthorized, generated.Error{
+			Code:    "UNAUTHORIZED",
+			Message: err.Error(),
 		})
 	}
 
-	var req CreateInboxTaskRequest
+	var req generated.CreateInboxTaskJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"code":    "BAD_REQUEST",
-			"message": "Invalid request payload",
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Invalid request payload",
 		})
 	}
 
-	req.Title = strings.TrimSpace(req.Title)
-	if req.Title == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"code":    "BAD_REQUEST",
-			"message": "Title cannot be empty",
+	title := strings.TrimSpace(req.Title)
+	if title == "" {
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Title cannot be empty",
 		})
 	}
 
 	var dueDate *time.Time
-	if strings.TrimSpace(req.DueDate) != "" {
-		parsedDate, err := time.Parse("2006-01-02", strings.TrimSpace(req.DueDate))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"code":    "BAD_REQUEST",
-				"message": "Invalid dueDate format, expected YYYY-MM-DD",
-			})
-		}
-		dueDate = &parsedDate
+	if req.DueDate != nil {
+		d := req.DueDate.Time
+		dueDate = &d
 	}
 
-	priority := domainTask.Priority(strings.TrimSpace(req.Priority))
-	if priority == "" {
-		priority = domainTask.PriorityNone
+	priority := domainTask.PriorityNone
+	if req.Priority != nil && *req.Priority != "" {
+		priority = domainTask.Priority(*req.Priority)
+	}
+
+	desc := ""
+	if req.DescriptionMarkdown != nil {
+		desc = *req.DescriptionMarkdown
 	}
 
 	t, err := h.taskService.CreateInboxTask(c.Request().Context(), taskApp.CreateInboxTaskInput{
 		WorkspaceID:         workspaceID,
-		Title:               req.Title,
-		DescriptionMarkdown: req.DescriptionMarkdown,
+		Title:               title,
+		DescriptionMarkdown: desc,
 		Priority:            priority,
 		DueDate:             dueDate,
 	})
 	if err != nil {
 		if errors.Is(err, domainTask.ErrInvalidTaskTitle) || errors.Is(err, domainTask.ErrInvalidPriority) {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"code":    "BAD_REQUEST",
-				"message": err.Error(),
+			return c.JSON(http.StatusBadRequest, generated.Error{
+				Code:    "BAD_REQUEST",
+				Message: err.Error(),
 			})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"code":    "INTERNAL_ERROR",
-			"message": "Failed to create task",
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to create task",
 		})
 	}
 
-	return c.JSON(http.StatusCreated, mapDomainTaskToResponse(t))
+	return c.JSON(http.StatusCreated, mapDomainTaskToGenerated(t))
 }
 
+func (h *Handler) ToggleTaskCompletion(c echo.Context, id openapi_types.UUID) error {
+	workspaceID, err := GetWorkspaceIDFromContext(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, generated.Error{
+			Code:    "UNAUTHORIZED",
+			Message: err.Error(),
+		})
+	}
+
+	t, err := h.taskService.ToggleTask(c.Request().Context(), id, workspaceID)
+	if err != nil {
+		if errors.Is(err, domainTask.ErrTaskNotFound) {
+			return c.JSON(http.StatusNotFound, generated.Error{
+				Code:    "NOT_FOUND",
+				Message: "Task not found in workspace",
+			})
+		}
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to toggle task",
+		})
+	}
+
+	return c.JSON(http.StatusOK, mapDomainTaskToGenerated(t))
+}
+
+// ToggleTask provides backward compatibility for callers not using ServerInterface directly.
 func (h *Handler) ToggleTask(c echo.Context) error {
-	workspaceID, err := GetWorkspaceIDFromContext(c)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"code":    "UNAUTHORIZED",
-			"message": err.Error(),
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Invalid task ID format",
 		})
 	}
-
-	taskID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"code":    "BAD_REQUEST",
-			"message": "Invalid task ID format",
-		})
-	}
-
-	t, err := h.taskService.ToggleTask(c.Request().Context(), taskID, workspaceID)
-	if err != nil {
-		if errors.Is(err, domainTask.ErrTaskNotFound) {
-			return c.JSON(http.StatusNotFound, map[string]string{
-				"code":    "NOT_FOUND",
-				"message": "Task not found in workspace",
-			})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"code":    "INTERNAL_ERROR",
-			"message": "Failed to toggle task",
-		})
-	}
-
-	return c.JSON(http.StatusOK, mapDomainTaskToResponse(t))
+	return h.ToggleTaskCompletion(c, id)
 }
 
-func (h *Handler) DeleteTask(c echo.Context) error {
+func (h *Handler) DeleteTask(c echo.Context, id openapi_types.UUID) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"code":    "UNAUTHORIZED",
-			"message": err.Error(),
+		return c.JSON(http.StatusUnauthorized, generated.Error{
+			Code:    "UNAUTHORIZED",
+			Message: err.Error(),
 		})
 	}
 
-	taskID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"code":    "BAD_REQUEST",
-			"message": "Invalid task ID format",
-		})
-	}
-
-	if err := h.taskService.DeleteTask(c.Request().Context(), taskID, workspaceID); err != nil {
+	if err := h.taskService.DeleteTask(c.Request().Context(), id, workspaceID); err != nil {
 		if errors.Is(err, domainTask.ErrTaskNotFound) {
-			return c.JSON(http.StatusNotFound, map[string]string{
-				"code":    "NOT_FOUND",
-				"message": "Task not found in workspace",
+			return c.JSON(http.StatusNotFound, generated.Error{
+				Code:    "NOT_FOUND",
+				Message: "Task not found in workspace",
 			})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"code":    "INTERNAL_ERROR",
-			"message": "Failed to delete task",
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to delete task",
 		})
 	}
 

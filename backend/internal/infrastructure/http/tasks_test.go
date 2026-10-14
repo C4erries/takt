@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 	taskApp "takt/internal/application/task"
 	domainTask "takt/internal/domain/task"
+	"takt/internal/infrastructure/http/generated"
 )
 
 type mockTaskService struct {
@@ -91,7 +92,7 @@ func TestHandler_GetInboxTasks_Success(t *testing.T) {
 		t.Fatalf("expected 200 OK, got %d", rec.Code)
 	}
 
-	var tasks []TaskResponse
+	var tasks []generated.Task
 	if err := json.Unmarshal(rec.Body.Bytes(), &tasks); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -137,11 +138,11 @@ func TestHandler_CreateInboxTask_Success(t *testing.T) {
 		t.Fatalf("expected 201 Created, got %d", rec.Code)
 	}
 
-	var task TaskResponse
+	var task generated.Task
 	if err := json.Unmarshal(rec.Body.Bytes(), &task); err != nil {
 		t.Fatalf("failed to parse task: %v", err)
 	}
-	if task.Title != "Quick Task" || task.Priority != domainTask.PriorityMedium {
+	if task.Title != "Quick Task" || string(task.Priority) != string(domainTask.PriorityMedium) {
 		t.Errorf("unexpected task fields: %v", task)
 	}
 }
@@ -176,7 +177,7 @@ func TestHandler_ToggleTask_Success(t *testing.T) {
 	c.SetParamValues(taskID.String())
 	c.Set(string(WorkspaceIDContextKey), wsID)
 
-	if err := handler.ToggleTask(c); err != nil {
+	if err := handler.ToggleTaskCompletion(c, taskID); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -184,7 +185,7 @@ func TestHandler_ToggleTask_Success(t *testing.T) {
 		t.Fatalf("expected 200 OK, got %d", rec.Code)
 	}
 
-	var task TaskResponse
+	var task generated.Task
 	if err := json.Unmarshal(rec.Body.Bytes(), &task); err != nil {
 		t.Fatalf("failed to parse task: %v", err)
 	}
@@ -213,7 +214,7 @@ func TestHandler_DeleteTask_Success(t *testing.T) {
 	c.SetParamValues(taskID.String())
 	c.Set(string(WorkspaceIDContextKey), wsID)
 
-	if err := handler.DeleteTask(c); err != nil {
+	if err := handler.DeleteTask(c, taskID); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 

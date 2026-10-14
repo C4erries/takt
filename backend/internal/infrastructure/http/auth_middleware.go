@@ -91,9 +91,20 @@ func (h *BcryptHasher) Compare(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
+// Skipper defines a function to skip middleware.
+type Skipper func(c echo.Context) bool
+
 func AuthMiddleware(jwtManager *JWTManager) echo.MiddlewareFunc {
+	return AuthMiddlewareWithSkipper(jwtManager, nil)
+}
+
+func AuthMiddlewareWithSkipper(jwtManager *JWTManager, skipper Skipper) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
+			if skipper != nil && skipper(c) {
+				return next(c)
+			}
+
 			var tokenStr string
 
 			// 1. Check HTTP-only cookie

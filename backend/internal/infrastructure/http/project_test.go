@@ -17,6 +17,7 @@ import (
 	projectApp "takt/internal/application/project"
 	domainProject "takt/internal/domain/project"
 	domainTask "takt/internal/domain/task"
+	"takt/internal/infrastructure/http/generated"
 )
 
 type mockProjectService struct {
@@ -130,18 +131,16 @@ func TestHandler_Projects_CRUD(t *testing.T) {
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetParamNames("workspace_id")
-		c.SetParamValues(wsID.String())
 
-		err := handler.CreateProject(c)
+		err := handler.CreateProject(c, wsID)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, rec.Code)
 
-		var resp ProjectResponse
+		var resp generated.Project
 		err = json.Unmarshal(rec.Body.Bytes(), &resp)
 		require.NoError(t, err)
 		assert.Equal(t, "Новый проект", resp.Name)
-		assert.Equal(t, projID, resp.ID)
+		assert.Equal(t, projID, resp.Id)
 	})
 
 	t.Run("ListProjects success", func(t *testing.T) {
@@ -149,14 +148,12 @@ func TestHandler_Projects_CRUD(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/"+wsID.String()+"/projects", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetParamNames("workspace_id")
-		c.SetParamValues(wsID.String())
 
-		err := handler.ListProjects(c)
+		err := handler.ListProjects(c, wsID)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 
-		var list []ProjectResponse
+		var list []generated.Project
 		err = json.Unmarshal(rec.Body.Bytes(), &list)
 		require.NoError(t, err)
 		assert.Len(t, list, 1)
@@ -180,10 +177,8 @@ func TestHandler_DeleteColumn_Conflict(t *testing.T) {
 	req := httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/"+wsID.String()+"/boards/"+boardID.String()+"/columns/"+colID.String(), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	c.SetParamNames("workspace_id", "board_id", "column_id")
-	c.SetParamValues(wsID.String(), boardID.String(), colID.String())
 
-	err := handler.DeleteBoardColumn(c)
+	err := handler.DeleteBoardColumn(c, wsID, boardID, colID)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusConflict, rec.Code)
 }
@@ -216,16 +211,14 @@ func TestHandler_MoveTask(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	c.SetParamNames("workspace_id", "task_id")
-	c.SetParamValues(wsID.String(), taskID.String())
 
-	err := handler.MoveTaskToColumn(c)
+	err := handler.MoveTaskToColumn(c, wsID, taskID)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	var resp TaskResponse
+	var resp generated.Task
 	err = json.Unmarshal(rec.Body.Bytes(), &resp)
 	require.NoError(t, err)
-	assert.Equal(t, 1500, resp.Position)
-	assert.Equal(t, &colID, resp.ColumnID)
+	assert.Equal(t, float64(1500), resp.Position)
+	assert.Equal(t, &colID, resp.ColumnId)
 }

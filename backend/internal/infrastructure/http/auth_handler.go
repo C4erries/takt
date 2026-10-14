@@ -4,167 +4,128 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	openapi_types "github.com/oapi-codegen/runtime/types"
+
 	workspaceApp "takt/internal/application/workspace"
 	domainWorkspace "takt/internal/domain/workspace"
+	"takt/internal/infrastructure/http/generated"
 )
 
-type RegisterRequest struct {
-	Email       string `json:"email"`
-	Password    string `json:"password"`
-	DisplayName string `json:"displayName"`
+func mapUserToGenerated(u *domainWorkspace.User) generated.User {
+	return generated.User{
+		Id:          u.ID,
+		Email:       openapi_types.Email(u.Email),
+		DisplayName: u.DisplayName,
+		CreatedAt:   u.CreatedAt,
+	}
 }
 
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-type UserResponse struct {
-	ID          uuid.UUID `json:"id"`
-	Email       string    `json:"email"`
-	DisplayName string    `json:"displayName"`
-	CreatedAt   time.Time `json:"createdAt"`
-}
-
-type WorkspaceResponse struct {
-	ID        uuid.UUID                      `json:"id"`
-	Name      string                         `json:"name"`
-	Type      domainWorkspace.WorkspaceType  `json:"type"`
-	Role      domainWorkspace.MemberRole     `json:"role"`
-	CreatedAt time.Time                      `json:"createdAt"`
-}
-
-type AuthResponse struct {
-	Token     string            `json:"token"`
-	User      UserResponse      `json:"user"`
-	Workspace WorkspaceResponse `json:"workspace"`
-}
-
-type MeResponse struct {
-	User      UserResponse      `json:"user"`
-	Workspace WorkspaceResponse `json:"workspace"`
+func mapWorkspaceToGenerated(w *domainWorkspace.UserWorkspace) generated.Workspace {
+	return generated.Workspace{
+		Id:        w.ID,
+		Name:      w.Name,
+		Type:      generated.WorkspaceType(w.Type),
+		Role:      generated.WorkspaceRole(w.Role),
+		CreatedAt: w.CreatedAt,
+	}
 }
 
 func (h *Handler) Register(c echo.Context) error {
-	var req RegisterRequest
+	var req generated.RegisterJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"code":    "BAD_REQUEST",
-			"message": "Invalid request payload",
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Invalid request payload",
 		})
 	}
 
-	req.Email = strings.TrimSpace(req.Email)
-	req.DisplayName = strings.TrimSpace(req.DisplayName)
+	email := strings.TrimSpace(string(req.Email))
+	displayName := strings.TrimSpace(req.DisplayName)
 
-	if req.Email == "" || req.Password == "" || req.DisplayName == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"code":    "BAD_REQUEST",
-			"message": "Email, password and displayName are required",
+	if email == "" || req.Password == "" || displayName == "" {
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Email, password and displayName are required",
 		})
 	}
 
 	out, err := h.workspaceService.Register(c.Request().Context(), workspaceApp.RegisterInput{
-		Email:       req.Email,
+		Email:       email,
 		Password:    req.Password,
-		DisplayName: req.DisplayName,
+		DisplayName: displayName,
 	})
 	if err != nil {
 		if errors.Is(err, domainWorkspace.ErrUserAlreadyExists) {
-			return c.JSON(http.StatusConflict, map[string]string{
-				"code":    "CONFLICT",
-				"message": "User with this email already exists",
+			return c.JSON(http.StatusConflict, generated.Error{
+				Code:    "CONFLICT",
+				Message: "User with this email already exists",
 			})
 		}
 		if errors.Is(err, domainWorkspace.ErrInvalidPassword) ||
 			errors.Is(err, domainWorkspace.ErrInvalidEmail) ||
 			errors.Is(err, domainWorkspace.ErrInvalidDisplayName) {
-			return c.JSON(http.StatusBadRequest, map[string]string{
-				"code":    "BAD_REQUEST",
-				"message": err.Error(),
+			return c.JSON(http.StatusBadRequest, generated.Error{
+				Code:    "BAD_REQUEST",
+				Message: err.Error(),
 			})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"code":    "INTERNAL_ERROR",
-			"message": "Failed to register user",
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to register user",
 		})
 	}
 
 	SetAuthCookie(c, out.Token, h.isProduction)
 
-	return c.JSON(http.StatusCreated, AuthResponse{
-		Token: out.Token,
-		User: UserResponse{
-			ID:          out.User.ID,
-			Email:       out.User.Email,
-			DisplayName: out.User.DisplayName,
-			CreatedAt:   out.User.CreatedAt,
-		},
-		Workspace: WorkspaceResponse{
-			ID:        out.Workspace.ID,
-			Name:      out.Workspace.Name,
-			Type:      out.Workspace.Type,
-			Role:      out.Workspace.Role,
-			CreatedAt: out.Workspace.CreatedAt,
-		},
+	return c.JSON(http.StatusCreated, generated.AuthResponse{
+		Token:     out.Token,
+		User:      mapUserToGenerated(out.User),
+		Workspace: mapWorkspaceToGenerated(out.Workspace),
 	})
 }
 
 func (h *Handler) Login(c echo.Context) error {
-	var req LoginRequest
+	var req generated.LoginJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"code":    "BAD_REQUEST",
-			"message": "Invalid request payload",
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Invalid request payload",
 		})
 	}
 
-	req.Email = strings.TrimSpace(req.Email)
-	if req.Email == "" || req.Password == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"code":    "BAD_REQUEST",
-			"message": "Email and password are required",
+	email := strings.TrimSpace(string(req.Email))
+	if email == "" || req.Password == "" {
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Email and password are required",
 		})
 	}
 
 	out, err := h.workspaceService.Login(c.Request().Context(), workspaceApp.LoginInput{
-		Email:    req.Email,
+		Email:    email,
 		Password: req.Password,
 	})
 	if err != nil {
 		if errors.Is(err, domainWorkspace.ErrInvalidCredentials) || errors.Is(err, domainWorkspace.ErrUserNotFound) {
-			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"code":    "UNAUTHORIZED",
-				"message": "Invalid email or password",
+			return c.JSON(http.StatusUnauthorized, generated.Error{
+				Code:    "UNAUTHORIZED",
+				Message: "Invalid email or password",
 			})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"code":    "INTERNAL_ERROR",
-			"message": "Failed to log in",
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to log in",
 		})
 	}
 
 	SetAuthCookie(c, out.Token, h.isProduction)
 
-	return c.JSON(http.StatusOK, AuthResponse{
-		Token: out.Token,
-		User: UserResponse{
-			ID:          out.User.ID,
-			Email:       out.User.Email,
-			DisplayName: out.User.DisplayName,
-			CreatedAt:   out.User.CreatedAt,
-		},
-		Workspace: WorkspaceResponse{
-			ID:        out.Workspace.ID,
-			Name:      out.Workspace.Name,
-			Type:      out.Workspace.Type,
-			Role:      out.Workspace.Role,
-			CreatedAt: out.Workspace.CreatedAt,
-		},
+	return c.JSON(http.StatusOK, generated.AuthResponse{
+		Token:     out.Token,
+		User:      mapUserToGenerated(out.User),
+		Workspace: mapWorkspaceToGenerated(out.Workspace),
 	})
 }
 
@@ -178,47 +139,36 @@ func (h *Handler) Logout(c echo.Context) error {
 func (h *Handler) GetMe(c echo.Context) error {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"code":    "UNAUTHORIZED",
-			"message": err.Error(),
+		return c.JSON(http.StatusUnauthorized, generated.Error{
+			Code:    "UNAUTHORIZED",
+			Message: err.Error(),
 		})
 	}
 
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"code":    "UNAUTHORIZED",
-			"message": err.Error(),
+		return c.JSON(http.StatusUnauthorized, generated.Error{
+			Code:    "UNAUTHORIZED",
+			Message: err.Error(),
 		})
 	}
 
 	out, err := h.workspaceService.GetMe(c.Request().Context(), userID, workspaceID)
 	if err != nil {
 		if errors.Is(err, domainWorkspace.ErrUserNotFound) || errors.Is(err, domainWorkspace.ErrAccessDenied) {
-			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"code":    "UNAUTHORIZED",
-				"message": err.Error(),
+			return c.JSON(http.StatusUnauthorized, generated.Error{
+				Code:    "UNAUTHORIZED",
+				Message: err.Error(),
 			})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"code":    "INTERNAL_ERROR",
-			"message": "Failed to fetch user profile",
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to fetch user profile",
 		})
 	}
 
-	return c.JSON(http.StatusOK, MeResponse{
-		User: UserResponse{
-			ID:          out.User.ID,
-			Email:       out.User.Email,
-			DisplayName: out.User.DisplayName,
-			CreatedAt:   out.User.CreatedAt,
-		},
-		Workspace: WorkspaceResponse{
-			ID:        out.Workspace.ID,
-			Name:      out.Workspace.Name,
-			Type:      out.Workspace.Type,
-			Role:      out.Workspace.Role,
-			CreatedAt: out.Workspace.CreatedAt,
-		},
+	return c.JSON(http.StatusOK, generated.MeResponse{
+		User:      mapUserToGenerated(out.User),
+		Workspace: mapWorkspaceToGenerated(out.Workspace),
 	})
 }

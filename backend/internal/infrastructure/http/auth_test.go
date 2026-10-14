@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 	workspaceApp "takt/internal/application/workspace"
 	domainWorkspace "takt/internal/domain/workspace"
+	"takt/internal/infrastructure/http/generated"
 )
 
 type mockWorkspaceService struct {
@@ -167,12 +168,12 @@ func TestHandler_Register_Success(t *testing.T) {
 		t.Fatalf("expected 201 Created, got %d", rec.Code)
 	}
 
-	var resp AuthResponse
+	var resp generated.AuthResponse
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
 
-	if resp.Token != "sample-token" || resp.User.Email != "test@takt.dev" {
+	if resp.Token != "sample-token" || string(resp.User.Email) != "test@takt.dev" {
 		t.Errorf("unexpected response content")
 	}
 

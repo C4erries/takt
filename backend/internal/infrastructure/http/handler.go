@@ -6,7 +6,10 @@ import (
 	projectApp "takt/internal/application/project"
 	taskApp "takt/internal/application/task"
 	workspaceApp "takt/internal/application/workspace"
+	"takt/internal/infrastructure/http/generated"
 )
+
+var _ generated.ServerInterface = (*Handler)(nil)
 
 // DBChecker defines an interface for pinging the database.
 type DBChecker interface {

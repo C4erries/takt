@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/labstack/echo/v4"
+
+	"takt/internal/infrastructure/http/generated"
 )
 
 type mockDBChecker struct {
@@ -27,7 +29,7 @@ func TestHealthCheck_Success(t *testing.T) {
 
 	handler := NewHandler(&mockDBChecker{err: nil}, "0.1.0", false, nil, nil, nil, nil)
 
-	if err := handler.HealthCheck(c); err != nil {
+	if err := handler.GetHealth(c); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -35,15 +37,15 @@ func TestHealthCheck_Success(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	var resp HealthResponse
+	var resp generated.Health
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to parse json response: %v", err)
 	}
 
-	if resp.Status != "ok" {
+	if resp.Status != generated.HealthStatusOk {
 		t.Errorf("expected status ok, got %s", resp.Status)
 	}
-	if resp.Database.Status != "connected" {
+	if resp.Database.Status != generated.Connected {
 		t.Errorf("expected db status connected, got %s", resp.Database.Status)
 	}
 }
@@ -56,7 +58,7 @@ func TestHealthCheck_DBDisconnected(t *testing.T) {
 
 	handler := NewHandler(&mockDBChecker{err: errors.New("connection refused")}, "0.1.0", false, nil, nil, nil, nil)
 
-	if err := handler.HealthCheck(c); err != nil {
+	if err := handler.GetHealth(c); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -64,15 +66,15 @@ func TestHealthCheck_DBDisconnected(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", rec.Code)
 	}
 
-	var resp HealthResponse
+	var resp generated.Health
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to parse json response: %v", err)
 	}
 
-	if resp.Status != "degraded" {
+	if resp.Status != generated.HealthStatusDegraded {
 		t.Errorf("expected status degraded, got %s", resp.Status)
 	}
-	if resp.Database.Status != "disconnected" {
+	if resp.Database.Status != generated.Disconnected {
 		t.Errorf("expected db status disconnected, got %s", resp.Database.Status)
 	}
 }

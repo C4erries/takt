@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+export type NavDestination = 'inbox' | 'today' | 'projects' | (string & {});
+
 export interface TaskNavigationState {
   selectedTaskId: string | null;
   setSelectedTaskId: (id: string | null) => void;
@@ -7,8 +9,12 @@ export interface TaskNavigationState {
   setQuickCaptureOpen: (isOpen: boolean) => void;
   activeFilter: string;
   setActiveFilter: (filter: string) => void;
-  activeNav: 'inbox' | 'today' | 'projects';
-  setActiveNav: (nav: 'inbox' | 'today' | 'projects') => void;
+  activeNav: NavDestination;
+  setActiveNav: (nav: NavDestination) => void;
+  selectedProjectId: string | null;
+  setSelectedProjectId: (id: string | null) => void;
+  viewMode: 'kanban' | 'list';
+  setViewMode: (mode: 'kanban' | 'list') => void;
 }
 
 export const useTaskStore = create<TaskNavigationState>((set) => ({
@@ -20,4 +26,8 @@ export const useTaskStore = create<TaskNavigationState>((set) => ({
   setActiveFilter: (activeFilter) => set({ activeFilter }),
   activeNav: 'inbox',
   setActiveNav: (activeNav) => set({ activeNav }),
+  selectedProjectId: null,
+  setSelectedProjectId: (selectedProjectId) => set({ selectedProjectId }),
+  viewMode: 'kanban',
+  setViewMode: (viewMode) => set({ viewMode }),
 }));

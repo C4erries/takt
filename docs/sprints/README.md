@@ -40,6 +40,7 @@
 | **Sprint 0.1.1** | [sprint-0.1.1.md](sprint-0.1.1.md) | 2026-10-14 | `✅ Done` | Инженерный фундамент монорепо, архитектурный линтер scripts/check_arch.sh, Echo backend, Washi/Matcha UI-Kit, Pytest E2E |
 | **Sprint 0.2.1** | [sprint-0.2.1.md](sprint-0.2.1.md) | 2026-10-14 | `✅ Done` | Авторизация JWT (Cookie+Bearer), онбординг личного воркспейса, 3-колоночный Washi UI, Inbox Quick Capture, J/K навигация, Pytest IDOR |
 | **Sprint 0.2.2** | [sprint-0.2.2.md](sprint-0.2.2.md) | 2026-10-14 | `✅ Done` | Подгонка под конвенции: TanStack Query v5 + Zustand во фронтенде, Table-Driven + Testify + Mockery v3 в Go тестах |
+| **Sprint 0.3.1** | [sprint-0.3.1.md](sprint-0.3.1.md) | 2026-10-14 | `✅ Done` | Проекты, доски, GTD-колонки, Fractional Indexing DND, Канбан-доска @dnd-kit/core, переключатель видов |
 
 ---
 

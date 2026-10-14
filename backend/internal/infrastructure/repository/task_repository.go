@@ -53,7 +53,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *domainTask.Task) error {
 		DueDate:             dateToPg(t.DueDate),
 		Priority:            string(t.Priority),
 		FocusOrder:          focusOrder,
-		Position:            int32(t.Position),
+		Position:            float64(t.Position),
 	})
 	if err != nil {
 		return err

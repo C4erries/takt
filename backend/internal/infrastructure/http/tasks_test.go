@@ -75,7 +75,7 @@ func TestHandler_GetInboxTasks_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil)
+	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks/inbox", nil)
@@ -119,7 +119,7 @@ func TestHandler_CreateInboxTask_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil)
+	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
 
 	payload := `{"title":"Quick Task","priority":"medium"}`
 	e := echo.New()
@@ -166,7 +166,7 @@ func TestHandler_ToggleTask_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil)
+	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPatch, "/api/v1/tasks/"+taskID.String()+"/toggle", nil)
@@ -203,7 +203,7 @@ func TestHandler_DeleteTask_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil)
+	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodDelete, "/api/v1/tasks/"+taskID.String(), nil)

@@ -41,7 +41,7 @@ type CreateTaskParams struct {
 	DueDate             pgtype.Date        `json:"due_date"`
 	Priority            string             `json:"priority"`
 	FocusOrder          pgtype.Int4        `json:"focus_order"`
-	Position            int32              `json:"position"`
+	Position            float64            `json:"position"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {

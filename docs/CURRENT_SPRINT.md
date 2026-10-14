@@ -4,55 +4,52 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.3.1 (Фаза 2 / Этап 0.3: Проекты, Колонки и Канбан-доска) 🔵 В РАБОТЕ
+## Текущий спринт: Спринт 0.3.1b (Технический: адаптация HTTP-сервера под ServerInterface из oapi-codegen) 🔵 В РАБОТЕ
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Режим «Штаб»)
 
-* **Бизнес-цель**: Дать пользователю возможность создавать проекты с дефолтными досками и колонками, раскладывать задачи по колонкам и визуально управлять потоком работы через тактильную Drag-and-Drop Канбан-доску (`@dnd-kit/core`) и плоский вид Списка (List View).
-* **Зафиксированные продуктовые и архитектурные микро-решения**:
-  1. **Колонки проекта по умолчанию**: При создании проекта транзакционно генерируется базовая доска «Основная» с 3 колонками:
-     - «К выполнению» (`status_category: todo`, `position: 1000.0`)
-     - «В работе» (`status_category: in_progress`, `position: 2000.0`)
-     - «Готово» (`status_category: done`, `position: 3000.0`)
-  2. **Позиционирование Drag-and-Drop (Fractional Indexing)**:
-     - Поле `position` задач и колонок использует тип `DOUBLE PRECISION`.
-     - При перемещении карточки между $A$ и $B$ новая позиция вычисляется как $(pos_A + pos_B) / 2$.
-     - При переносе в начало списка: $pos_{first} / 2$; в конец: $pos_{last} + 1000.0$.
-     - Это обеспечивает $O(1)$ точечный UPDATE одной задачи без каскадных блокировок соседних строк в PostgreSQL.
-  3. **Защитные барьеры при удалении (Safety Guard / No Data Loss)**:
-     - Запрещено удалять колонку, пока в ней находятся задачи (`409 Conflict` / доменная ошибка `ErrColumnNotEmpty`). Пользователь обязан сначала переместить или закрыть задачи.
-     - При удалении проекта все входящие в него задачи НЕ удаляются, а безопасно разлинковываются (`project_id = NULL, column_id = NULL`) и возвращаются во «Входящие» (Inbox).
-  4. **Contract-First Двухфазная поставка**:
-     - *Шаг 1*: SQL-миграция `000003_projects_and_boards.up.sql`, `backend/queries/projects.sql`, OpenAPI эндпоинты в `api/openapi/paths/projects.yaml`, схемы в `schemas/project.yaml`, генерация `make generate` и чистый домен `backend/internal/domain/project` с тестами.
-     - *Шаг 2*: Репозитории, Use-Cases `internal/application/project`, HTTP-хендлеры, связывание в `container/` + параллельная разработка фронтенда с `@dnd-kit/core` и переключателем видов.
+* **Бизнес-цель**: Привести HTTP-слой бэкенда (`internal/infrastructure/http/`) в 100% соответствие с обновленной конвенцией Contract-First из коммита `2497366` (`docs/conventions/backend.md`).
+* **Зафиксированные архитектурные микро-решения**:
+  1. **Имплементация `generated.ServerInterface`**:
+     - Главный HTTP-хендлер/фасад (`Handler` или `Server` в `internal/infrastructure/http/`) обязан реализовывать интерфейс `generated.ServerInterface` из `internal/infrastructure/http/generated/api.gen.go`.
+     - На уровне компилятора объявляется строгая статическая проверка:
+       ```go
+       var _ generated.ServerInterface = (*Handler)(nil)
+       ```
+  2. **Табу на рукописные DTO**:
+     - Удалить все рукописные структуры запросов и ответов (`ProjectResponse`, `CreateProjectHTTPRequest`, `TaskResponse`, `RegisterRequest` и т.д.) из файлов хендлеров `auth_handler.go`, `tasks_handler.go`, `project_handler.go`.
+     - Все методы обязаны принимать и возвращать сгенерированные типы из пакета `generated.*` (например, `generated.CreateProjectRequest`, `generated.Project`, `generated.Task`).
+  3. **Стандартная регистрация роутов через oapi-codegen**:
+     - В `internal/infrastructure/container/router.go` ручная регистрация эндпоинтов (`api.POST("/workspaces/:id/projects", ...)`) заменяется на `generated.RegisterHandlers(apiGroup, handler)`.
+     - JWT Auth Middleware монтируется на защищенную группу роутов `/api/v1` или на уровне Echo middleware.
+  4. **Сохранение чистоты слоев**:
+     - Пакет `generated` изолирован в `internal/infrastructure/http/generated/` и не протекает в `domain/` или `application/`.
+     - Преобразования между DTO `generated.*` и DTO application-слоя происходят исключительно внутри `internal/infrastructure/http/`.
 
 ---
 
-## 📋 Таблица задач спринта 0.3.1
+## 📋 Таблица задач спринта 0.3.1b
 
 | # | Задача | Статус | Приоритет | Ответственный | Заметки и контракты |
 |---|--------|--------|-----------|---------------|---------------------|
-| 1 | **[Backend Step 1]**: Миграция 0003, sqlc-запросы, OpenAPI контракты и чистый домен `project` | ✅ Done | Критический | `backend_developer` | `projects`, `boards`, `columns`, `internal/domain/project`, `make check-arch` |
-| 2 | **[Gatekeeper Checkpoint 1]**: Валидация контрактов и кодогенерации | ✅ Done | Критический | `lead_architect` | `make check-arch && make generate && make test` (0 ошибок) |
-| 3 | **[Backend Step 2]**: Use-Cases, репозитории, HTTP-хендлеры и сборка в контейнере | ✅ Done | Высокий | `backend_developer` | `internal/application/project`, `infrastructure/http`, `infrastructure/repository` |
-| 4 | **[Frontend]**: Канбан-доска (@dnd-kit/core), колонки, DND перемещение и переключатель видов | ✅ Done | Высокий | `frontend_developer` | `@dnd-kit/core`, семантические токены Washi, оптимистичные мутации |
-| 5 | **[QA & Verification]**: E2E тесты полного цикла проектов, колонок и DND перемещения | 🔲 Planned | Критический | `qa_engineer` | `tests/e2e/test_projects_kanban.py`, `make check-arch`, `make test`, `make test-e2e` |
+| 1 | Рефакторинг `internal/infrastructure/http/` под реализацию `generated.ServerInterface` | 🔵 In Progress | Критический | `backend_developer` | Замена рукописных DTO на `generated.*`, имплементация всех методов интерфейса |
+| 2 | Перевод регистрации роутов в `container/router.go` на `generated.RegisterHandlers` | 🔲 Planned | Высокий | `backend_developer` | Подключение Auth Middleware и Echo группы |
+| 3 | Обновление HTTP unit-тестов под вызовы `ServerInterface` | 🔲 Planned | Высокий | `backend_developer` | `auth_test.go`, `tasks_test.go`, `project_test.go` |
+| 4 | Приемочный контроль и верификация конвейера | 🔲 Planned | Критический | `lead_architect` | `make generate && make check-arch && make test && npm run build` |
 
 ---
 
 ## 🎯 Definition of Done (DoD)
 
-- [x] Создана миграция `000003_projects_and_boards.up.sql` с внешними ключами и дробным `position`.
-- [x] Описаны контракты OpenAPI для проектов, колонок и перемещения задач (`/api/v1/workspaces/{id}/projects`).
-- [x] Доменный пакет `backend/internal/domain/project` покрыт юнит-тестами с проверкой инвариантов.
-- [x] Use-Cases `internal/application/project` покрыты табличными тестами с `testify` и `mockery v3`.
-- [x] Реализован DND интерфейс Канбан-доски с переключением в плоский список (List View) на фронтенде.
-- [x] `make check-arch` — 0 ошибок (все 5 уровней пройдены).
-- [x] `make test` — 100% PASS с флагом `-race`.
-- [x] `cd frontend && npm run build` — 0 ошибок, 0 предупреждений.
-- [ ] `make test-e2e` — 100% PASS (все новые E2E сценарии проектов и канбана зеленые).
+- [ ] В `backend/internal/infrastructure/http/` реализован интерфейс `generated.ServerInterface` со статической проверкой компилятора `var _ generated.ServerInterface = (*Handler)(nil)`.
+- [ ] Полностью отсутствуют рукописные DTO запросов/ответов в хендлерах; используются исключительно структуры из `internal/infrastructure/http/generated`.
+- [ ] Роутинг в `internal/infrastructure/container/router.go` привязан через `generated.RegisterHandlers`.
+- [ ] `make generate` успешно пересобирает спецификацию OpenAPI и код Echo сервера.
+- [ ] `make check-arch` — 0 ошибок по всем 5 проверкам.
+- [ ] `make test` — 100% PASS с флагом `-race`.
+- [ ] `cd frontend && npm run build` — 0 ошибок сборки.
 
 ---
 
@@ -60,4 +57,4 @@
 
 | Дата | Что изменилось |
 |------|---------------|
-| 2026-10-14 | **Спринт 0.3.1 открыт (Фаза «Штаб» завершена)**: Проведен блиц-опрос, утверждены 4 ключевых продуктовых и архитектурных микро-решения (дефолтные колонки GTD, Fractional Indexing, защита от потери данных, двухфазная поставка). Сформирован план спринта и критерии DoD. |
+| 2026-10-14 | **Спринт 0.3.1b открыт**: Технический спринт по адаптации HTTP-сервера под `generated.ServerInterface` и исключению рукописных DTO в соответствии с коммитом `2497366` (`docs/conventions/backend.md`). |

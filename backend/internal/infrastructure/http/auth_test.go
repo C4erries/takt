@@ -150,7 +150,7 @@ func TestHandler_Register_Success(t *testing.T) {
 		},
 	}
 
-	handler := NewHandler(nil, "0.2.1", false, mockSvc, nil, jwtManager)
+	handler := NewHandler(nil, "0.2.1", false, mockSvc, nil, nil, jwtManager)
 
 	payload := `{"email":"test@takt.dev","password":"password123","displayName":"Pavel"}`
 	e := echo.New()

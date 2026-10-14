@@ -1,6 +1,7 @@
 package container
 
 import (
+	projectApp "takt/internal/application/project"
 	taskApp "takt/internal/application/task"
 	workspaceApp "takt/internal/application/workspace"
 	"takt/internal/infrastructure/config"
@@ -11,6 +12,7 @@ import (
 type Services struct {
 	WorkspaceService workspaceApp.UseCases
 	TaskService      taskApp.UseCases
+	ProjectService   projectApp.UseCases
 	JWTManager       *httpDelivery.JWTManager
 }
 
@@ -36,9 +38,22 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 		)
 	}
 
+	var projectService *projectApp.Service
+	if repos.ProjectRepo != nil && repos.BoardRepo != nil && repos.ColumnRepo != nil && repos.TaskMoveRepo != nil && repos.DB != nil {
+		projectService = projectApp.NewService(
+			repos.ProjectRepo,
+			repos.BoardRepo,
+			repos.ColumnRepo,
+			repos.TaskMoveRepo,
+			nil,
+			repos.DB,
+		)
+	}
+
 	return &Services{
 		WorkspaceService: workspaceService,
 		TaskService:      taskService,
+		ProjectService:   projectService,
 		JWTManager:       jwtManager,
 	}
 }

@@ -25,7 +25,7 @@ func TestHealthCheck_Success(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	handler := NewHandler(&mockDBChecker{err: nil}, "0.1.0", false, nil, nil, nil)
+	handler := NewHandler(&mockDBChecker{err: nil}, "0.1.0", false, nil, nil, nil, nil)
 
 	if err := handler.HealthCheck(c); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -54,7 +54,7 @@ func TestHealthCheck_DBDisconnected(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	handler := NewHandler(&mockDBChecker{err: errors.New("connection refused")}, "0.1.0", false, nil, nil, nil)
+	handler := NewHandler(&mockDBChecker{err: errors.New("connection refused")}, "0.1.0", false, nil, nil, nil, nil)
 
 	if err := handler.HealthCheck(c); err != nil {
 		t.Fatalf("unexpected error: %v", err)

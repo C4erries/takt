@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 
+	projectApp "takt/internal/application/project"
 	taskApp "takt/internal/application/task"
 	workspaceApp "takt/internal/application/workspace"
 )
@@ -19,6 +20,7 @@ type Handler struct {
 	isProduction     bool
 	workspaceService workspaceApp.UseCases
 	taskService      taskApp.UseCases
+	projectService   projectApp.UseCases
 	jwtManager       *JWTManager
 }
 
@@ -29,6 +31,7 @@ func NewHandler(
 	isProduction bool,
 	workspaceService workspaceApp.UseCases,
 	taskService taskApp.UseCases,
+	projectService projectApp.UseCases,
 	jwtManager *JWTManager,
 ) *Handler {
 	return &Handler{
@@ -37,6 +40,7 @@ func NewHandler(
 		isProduction:     isProduction,
 		workspaceService: workspaceService,
 		taskService:      taskService,
+		projectService:   projectService,
 		jwtManager:       jwtManager,
 	}
 }

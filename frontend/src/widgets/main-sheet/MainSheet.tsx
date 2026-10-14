@@ -1,7 +1,4 @@
-import React, { useState } from 'react';
-import { Plus, Inbox } from 'lucide-react';
-import { Button, Input, Skeleton, EmptyState, ErrorBanner } from '@/shared/components/ui';
-import { TaskRow } from './TaskRow';
+import React from 'react';
 import type { Task, CreateInboxTaskRequest } from '@/shared/api';
 import {
   useInboxTasks,
@@ -10,6 +7,8 @@ import {
   useDeleteTaskMutation,
   useTaskStore,
 } from '@/features/task-navigation';
+import { InboxView } from './InboxView';
+import { ProjectView } from './ProjectView';
 
 export interface MainSheetProps {
   tasks?: Task[];
@@ -22,6 +21,7 @@ export interface MainSheetProps {
   onDeleteTask?: (taskId: string) => void;
   onCreateTask?: (req: CreateInboxTaskRequest) => Promise<void>;
   onOpenQuickCapture?: () => void;
+  workspaceId?: string;
 }
 
 export const MainSheet: React.FC<MainSheetProps> = ({
@@ -35,12 +35,19 @@ export const MainSheet: React.FC<MainSheetProps> = ({
   onDeleteTask,
   onCreateTask,
   onOpenQuickCapture,
+  workspaceId,
 }) => {
   const query = useInboxTasks();
   const createTaskMutation = useCreateTaskMutation();
   const toggleTaskMutation = useToggleTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
-  const { selectedTaskId, setSelectedTaskId, setQuickCaptureOpen } = useTaskStore();
+  const {
+    activeNav,
+    selectedProjectId,
+    selectedTaskId,
+    setSelectedTaskId,
+    setQuickCaptureOpen,
+  } = useTaskStore();
 
   const currentTasks = tasks ?? query.data ?? [];
   const currentLoading = isLoading !== undefined ? isLoading : query.isLoading;
@@ -75,159 +82,35 @@ export const MainSheet: React.FC<MainSheetProps> = ({
   const handleOpenQuickCapture =
     onOpenQuickCapture ?? (() => setQuickCaptureOpen(true));
 
-  const [inlineTitle, setInlineTitle] = useState('');
-  const [isSubmittingInline, setIsSubmittingInline] = useState(false);
-
-  const handleInlineSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = inlineTitle.trim();
-    if (!trimmed || isSubmittingInline) return;
-
-    setIsSubmittingInline(true);
-    try {
-      await handleCreateTask({ title: trimmed });
-      setInlineTitle('');
-    } finally {
-      setIsSubmittingInline(false);
-    }
-  };
+  // Determine if a project is active
+  const isProjectNav = activeNav.startsWith('project:') || Boolean(selectedProjectId);
+  const activeProjectId =
+    selectedProjectId ||
+    (activeNav.startsWith('project:') ? activeNav.replace('project:', '') : null);
 
   return (
     <div className="flex-1 max-w-[880px] w-full bg-surface border border-subtle rounded-sheet shadow-washi flex flex-col overflow-hidden my-3">
-      {/* Sheet Header */}
-      <div className="p-8 pb-4 border-b border-subtle/50 space-y-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-muted">
-            <span className="w-2 h-2 rounded-full bg-accent-solid inline-block" />
-            <span>Horizon · Inbox</span>
-          </div>
-          <div className="text-xs font-mono text-muted">
-            {currentTasks.length} {currentTasks.length === 1 ? 'задача' : 'задач'}
-          </div>
-        </div>
-
-        <h1 className="font-serif text-3xl font-normal tracking-tight text-primary">
-          Входящие
-        </h1>
-        <p className="text-xs text-muted">
-          Мгновенный сброс мыслей, организация и разбор входящих задач
-        </p>
-
-        {/* Inline Quick Capture row */}
-        <form onSubmit={handleInlineSubmit} className="pt-4 flex items-center gap-2">
-          <Input
-            value={inlineTitle}
-            onChange={(e) => setInlineTitle(e.target.value)}
-            placeholder="Записать мысль или задачу... (Enter для сохранения)"
-            className="bg-canvas/50 border-subtle focus-within:bg-surface text-sm"
-            disabled={isSubmittingInline}
-          />
-          <Button
-            type="submit"
-            variant="solid"
-            size="md"
-            isLoading={isSubmittingInline}
-            disabled={!inlineTitle.trim()}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Добавить
-          </Button>
-        </form>
-      </div>
-
-      {/* Main Content Area: 4 States */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-1">
-        {/* State 1: Loading (Skeleton) */}
-        {currentLoading && (
-          <div className="space-y-3 py-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-3 rounded-lg border-b border-subtle/40"
-              >
-                <Skeleton variant="circle" className="w-[18px] h-[18px] shrink-0" />
-                <Skeleton variant="text" className="w-3/5 h-4" />
-                <Skeleton variant="rect" className="w-14 h-5 ml-auto" />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* State 2: Error */}
-        {!currentLoading && currentError && (
-          <div className="py-6">
-            <ErrorBanner
-              title="Не удалось загрузить задачи"
-              message={currentError}
-              onRetry={handleRetry}
-            />
-          </div>
-        )}
-
-        {/* State 3: Empty State */}
-        {!currentLoading && !currentError && currentTasks.length === 0 && (
-          <div className="py-12">
-            <EmptyState
-              icon={<Inbox className="w-7 h-7 stroke-[1.5]" />}
-              title="Входящие пусты"
-              description="Нажмите C чтобы быстро записать мысль или воспользуйтесь полем ввода выше."
-              action={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleOpenQuickCapture}
-                  leftIcon={<Plus className="w-3.5 h-3.5" />}
-                >
-                  Новая задача (C)
-                </Button>
-              }
-            />
-          </div>
-        )}
-
-        {/* State 4: Success - Lined task list */}
-        {!currentLoading && !currentError && currentTasks.length > 0 && (
-          <div className="space-y-0.5">
-            {currentTasks.map((task, index) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                isSelected={currentSelectedIndex === index}
-                onSelect={() => handleSelectTask(index)}
-                onToggle={handleToggleTask}
-                onDelete={handleDeleteTask}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Sheet Footer: Shortcuts indicator */}
-      <div className="p-3 px-6 border-t border-subtle/40 bg-canvas/30 flex items-center justify-between text-[11px] font-mono text-muted">
-        <div className="flex items-center gap-3">
-          <span>
-            <kbd className="px-1.5 py-0.5 rounded bg-surface border border-subtle mr-1 text-[10px]">
-              J
-            </kbd>
-            <kbd className="px-1.5 py-0.5 rounded bg-surface border border-subtle mr-1 text-[10px]">
-              K
-            </kbd>
-            навигация
-          </span>
-          <span>
-            <kbd className="px-1.5 py-0.5 rounded bg-surface border border-subtle mr-1 text-[10px]">
-              Space
-            </kbd>
-            завершить
-          </span>
-        </div>
-        <div>
-          <kbd className="px-1.5 py-0.5 rounded bg-surface border border-subtle mr-1 text-[10px]">
-            C
-          </kbd>
-          захват
-        </div>
-      </div>
+      {isProjectNav && activeProjectId ? (
+        <ProjectView
+          projectId={activeProjectId}
+          workspaceId={workspaceId}
+          selectedTaskId={selectedTaskId}
+          onSelectTask={(id) => setSelectedTaskId(id)}
+        />
+      ) : (
+        <InboxView
+          tasks={currentTasks}
+          isLoading={currentLoading}
+          error={currentError}
+          onRetry={handleRetry}
+          selectedIndex={currentSelectedIndex}
+          onSelectTask={handleSelectTask}
+          onToggleTask={handleToggleTask}
+          onDeleteTask={handleDeleteTask}
+          onCreateTask={handleCreateTask}
+          onOpenQuickCapture={handleOpenQuickCapture}
+        />
+      )}
     </div>
   );
 };

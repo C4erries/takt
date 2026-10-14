@@ -1,0 +1,199 @@
+Project:
+  type: object
+  required:
+    - id
+    - workspaceId
+    - name
+    - description
+    - color
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "a0000000-0000-0000-0000-000000000001"
+    workspaceId:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174001"
+    name:
+      type: string
+      example: "Запуск редизайна"
+    description:
+      type: string
+      example: "Подготовка и релиз новой версии продукта"
+    color:
+      type: string
+      example: "#6366f1"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+    updatedAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+CreateProjectRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: "Запуск редизайна"
+    description:
+      type: string
+      nullable: true
+      example: "Подготовка и релиз новой версии продукта"
+    color:
+      type: string
+      nullable: true
+      example: "#6366f1"
+
+UpdateProjectRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: "Обновленный проект"
+    description:
+      type: string
+      nullable: true
+      example: "Новое описание проекта"
+    color:
+      type: string
+      nullable: true
+      example: "#10b981"
+
+Board:
+  type: object
+  required:
+    - id
+    - projectId
+    - name
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "b0000000-0000-0000-0000-000000000001"
+    projectId:
+      type: string
+      format: uuid
+      example: "a0000000-0000-0000-0000-000000000001"
+    name:
+      type: string
+      example: "Основная"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+    updatedAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+Column:
+  type: object
+  required:
+    - id
+    - boardId
+    - name
+    - position
+    - statusCategory
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "c0000000-0000-0000-0000-000000000001"
+    boardId:
+      type: string
+      format: uuid
+      example: "b0000000-0000-0000-0000-000000000001"
+    name:
+      type: string
+      example: "К выполнению"
+    position:
+      type: number
+      format: double
+      example: 1000.0
+    statusCategory:
+      type: string
+      enum: [backlog, todo, in_progress, done]
+      example: "todo"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+    updatedAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+CreateColumnRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: "К выполнению"
+    position:
+      type: number
+      format: double
+      nullable: true
+      example: 1000.0
+    statusCategory:
+      type: string
+      enum: [backlog, todo, in_progress, done]
+      default: "todo"
+      example: "todo"
+
+UpdateColumnRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: "В работе"
+    position:
+      type: number
+      format: double
+      example: 2000.0
+    statusCategory:
+      type: string
+      enum: [backlog, todo, in_progress, done]
+      example: "in_progress"
+
+MoveTaskRequest:
+  type: object
+  required:
+    - columnId
+    - position
+  properties:
+    columnId:
+      type: string
+      format: uuid
+      example: "c0000000-0000-0000-0000-000000000001"
+    position:
+      type: number
+      format: double
+      example: 1500.0
+    projectId:
+      type: string
+      format: uuid
+      nullable: true
+      example: "a0000000-0000-0000-0000-000000000001"
+

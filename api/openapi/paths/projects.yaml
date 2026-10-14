@@ -1,0 +1,263 @@
+projects:
+  get:
+    tags: [Projects]
+    summary: List all projects in a workspace
+    operationId: listProjects
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '200':
+        description: List of projects
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '../schemas/project.yaml#/Project' }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+  post:
+    tags: [Projects]
+    summary: Create a new project
+    operationId: createProject
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../schemas/project.yaml#/CreateProjectRequest' }
+    responses:
+      '201':
+        description: Project created
+        content:
+          application/json:
+            schema: { $ref: '../schemas/project.yaml#/Project' }
+      '400': { description: Invalid request, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+projectItem:
+  get:
+    tags: [Projects]
+    summary: Get project by ID
+    operationId: getProject
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: project_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '200':
+        description: Project details
+        content:
+          application/json:
+            schema: { $ref: '../schemas/project.yaml#/Project' }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Project not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+  patch:
+    tags: [Projects]
+    summary: Update a project
+    operationId: updateProject
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: project_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../schemas/project.yaml#/UpdateProjectRequest' }
+    responses:
+      '200':
+        description: Updated project
+        content:
+          application/json:
+            schema: { $ref: '../schemas/project.yaml#/Project' }
+      '400': { description: Invalid input, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Project not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+  delete:
+    tags: [Projects]
+    summary: Delete a project
+    operationId: deleteProject
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: project_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '204': { description: Project deleted }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Project not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+projectBoards:
+  get:
+    tags: [Projects]
+    summary: List boards for a project
+    operationId: listProjectBoards
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: project_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '200':
+        description: List of boards
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '../schemas/project.yaml#/Board' }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Project not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+  post:
+    tags: [Projects]
+    summary: Create a board in a project
+    operationId: createProjectBoard
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: project_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name]
+            properties:
+              name: { type: string, minLength: 1, maxLength: 255, example: "Вторая доска" }
+    responses:
+      '201':
+        description: Board created
+        content:
+          application/json:
+            schema: { $ref: '../schemas/project.yaml#/Board' }
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Project not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+boardColumns:
+  get:
+    tags: [Projects]
+    summary: List columns for a board
+    operationId: listBoardColumns
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: board_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '200':
+        description: List of columns
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '../schemas/project.yaml#/Column' }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Board not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+  post:
+    tags: [Projects]
+    summary: Create a column in a board
+    operationId: createBoardColumn
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: board_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../schemas/project.yaml#/CreateColumnRequest' }
+    responses:
+      '201':
+        description: Column created
+        content:
+          application/json:
+            schema: { $ref: '../schemas/project.yaml#/Column' }
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Board not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+columnItem:
+  patch:
+    tags: [Projects]
+    summary: Update a column
+    operationId: updateBoardColumn
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: board_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: column_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../schemas/project.yaml#/UpdateColumnRequest' }
+    responses:
+      '200':
+        description: Updated column
+        content:
+          application/json:
+            schema: { $ref: '../schemas/project.yaml#/Column' }
+      '400': { description: Invalid input, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Column not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+  delete:
+    tags: [Projects]
+    summary: Delete a column
+    operationId: deleteBoardColumn
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: board_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: column_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '204': { description: Column deleted }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Column not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '409': { description: Column is not empty, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+moveTask:
+  post:
+    tags: [Tasks, Projects]
+    summary: Move task to column and position
+    operationId: moveTaskToColumn
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: task_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../schemas/project.yaml#/MoveTaskRequest' }
+    responses:
+      '200':
+        description: Task moved successfully
+        content:
+          application/json:
+            schema: { $ref: '../schemas/task.yaml#/Task' }
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task or column not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+projectTasks:
+  get:
+    tags: [Tasks, Projects]
+    summary: List all tasks for a project
+    operationId: listProjectTasks
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: project_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '200':
+        description: List of project tasks ordered by position
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '../schemas/task.yaml#/Task' }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Project not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+

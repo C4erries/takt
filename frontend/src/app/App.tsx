@@ -163,6 +163,7 @@ export const App: React.FC = () => {
               await createTaskMutation.mutateAsync(req);
             }}
             onOpenQuickCapture={() => setQuickCaptureOpen(true)}
+            workspaceId={workspace?.id}
           />
 
           {/* Column 3: Right Bento Panel (Inspector + MiniCalendar) */}

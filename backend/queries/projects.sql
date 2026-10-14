@@ -1,0 +1,126 @@
+-- name: CreateProject :one
+INSERT INTO projects (
+    workspace_id,
+    name,
+    description,
+    color
+) VALUES (
+    $1, $2, $3, $4
+)
+RETURNING *;
+
+-- name: GetProjectByID :one
+SELECT * FROM projects
+WHERE id = $1 AND workspace_id = $2;
+
+-- name: ListProjectsByWorkspace :many
+SELECT * FROM projects
+WHERE workspace_id = $1
+ORDER BY created_at ASC;
+
+-- name: UpdateProject :one
+UPDATE projects
+SET name = $3,
+    description = $4,
+    color = $5,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING *;
+
+-- name: DeleteProject :exec
+DELETE FROM projects
+WHERE id = $1 AND workspace_id = $2;
+
+-- name: CreateBoard :one
+INSERT INTO boards (
+    project_id,
+    name
+) VALUES (
+    $1, $2
+)
+RETURNING *;
+
+-- name: GetBoardByID :one
+SELECT * FROM boards
+WHERE id = $1;
+
+-- name: ListBoardsByProject :many
+SELECT * FROM boards
+WHERE project_id = $1
+ORDER BY created_at ASC;
+
+-- name: UpdateBoard :one
+UPDATE boards
+SET name = $2,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteBoard :exec
+DELETE FROM boards
+WHERE id = $1;
+
+-- name: CreateColumn :one
+INSERT INTO columns (
+    board_id,
+    name,
+    position,
+    status_category
+) VALUES (
+    $1, $2, $3, $4
+)
+RETURNING *;
+
+-- name: GetColumnByID :one
+SELECT * FROM columns
+WHERE id = $1;
+
+-- name: ListColumnsByBoard :many
+SELECT * FROM columns
+WHERE board_id = $1
+ORDER BY position ASC, created_at ASC;
+
+-- name: UpdateColumn :one
+UPDATE columns
+SET name = $2,
+    position = $3,
+    status_category = $4,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteColumn :exec
+DELETE FROM columns
+WHERE id = $1;
+
+-- name: CountTasksInColumn :one
+SELECT COUNT(*)::BIGINT AS task_count
+FROM tasks
+WHERE column_id = $1;
+
+-- name: MoveTaskToColumnAndPosition :one
+UPDATE tasks
+SET column_id = $1,
+    project_id = $2,
+    position = $3,
+    updated_at = NOW()
+WHERE id = $4 AND workspace_id = $5
+RETURNING *;
+
+-- name: ResetProjectTasksToInbox :exec
+UPDATE tasks
+SET project_id = NULL,
+    column_id = NULL,
+    updated_at = NOW()
+WHERE project_id = $1 AND workspace_id = $2;
+
+-- name: ListTasksByProject :many
+SELECT * FROM tasks
+WHERE project_id = $1 AND workspace_id = $2
+ORDER BY position ASC, created_at DESC;
+
+-- name: ListTasksByColumn :many
+SELECT * FROM tasks
+WHERE column_id = $1 AND workspace_id = $2
+ORDER BY position ASC, created_at DESC;
+

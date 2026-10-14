@@ -12,21 +12,41 @@ import (
 
 type Querier interface {
 	CheckHealth(ctx context.Context) (int32, error)
+	CountTasksInColumn(ctx context.Context, columnID pgtype.UUID) (int64, error)
+	CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error)
+	CreateColumn(ctx context.Context, arg CreateColumnParams) (Column, error)
+	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error)
 	CreateWorkspaceMember(ctx context.Context, arg CreateWorkspaceMemberParams) (WorkspaceMember, error)
+	DeleteBoard(ctx context.Context, id pgtype.UUID) error
+	DeleteColumn(ctx context.Context, id pgtype.UUID) error
+	DeleteProject(ctx context.Context, arg DeleteProjectParams) error
 	DeleteTask(ctx context.Context, arg DeleteTaskParams) error
+	GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, error)
+	GetColumnByID(ctx context.Context, id pgtype.UUID) (Column, error)
 	GetInboxTasks(ctx context.Context, workspaceID pgtype.UUID) ([]Task, error)
 	GetMaxInboxPosition(ctx context.Context, workspaceID pgtype.UUID) (int32, error)
 	GetPersonalWorkspaceByUserID(ctx context.Context, userID pgtype.UUID) (GetPersonalWorkspaceByUserIDRow, error)
+	GetProjectByID(ctx context.Context, arg GetProjectByIDParams) (Project, error)
 	GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error)
 	GetWorkspaceMember(ctx context.Context, arg GetWorkspaceMemberParams) (WorkspaceMember, error)
 	GetWorkspacesByUserID(ctx context.Context, userID pgtype.UUID) ([]GetWorkspacesByUserIDRow, error)
+	ListBoardsByProject(ctx context.Context, projectID pgtype.UUID) ([]Board, error)
+	ListColumnsByBoard(ctx context.Context, boardID pgtype.UUID) ([]Column, error)
+	ListProjectsByWorkspace(ctx context.Context, workspaceID pgtype.UUID) ([]Project, error)
+	ListTasksByColumn(ctx context.Context, arg ListTasksByColumnParams) ([]Task, error)
+	ListTasksByProject(ctx context.Context, arg ListTasksByProjectParams) ([]Task, error)
+	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)
+	ResetProjectTasksToInbox(ctx context.Context, arg ResetProjectTasksToInboxParams) error
 	ToggleTaskCompletion(ctx context.Context, arg ToggleTaskCompletionParams) (Task, error)
+	UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error)
+	UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Column, error)
+	UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error)
 }
 
 var _ Querier = (*Queries)(nil)

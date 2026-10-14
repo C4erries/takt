@@ -57,8 +57,9 @@ Task:
       nullable: true
       example: null
     position:
-      type: integer
-      example: 0
+      type: number
+      format: double
+      example: 1000.0
     createdAt:
       type: string
       format: date-time

@@ -8,6 +8,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Board struct {
+	ID        pgtype.UUID        `json:"id"`
+	ProjectID pgtype.UUID        `json:"project_id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Column struct {
+	ID             pgtype.UUID        `json:"id"`
+	BoardID        pgtype.UUID        `json:"board_id"`
+	Name           string             `json:"name"`
+	Position       float64            `json:"position"`
+	StatusCategory string             `json:"status_category"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Project struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Color       string             `json:"color"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type SchemaVersionCheck struct {
 	ID            int32              `json:"id"`
 	InitializedAt pgtype.Timestamptz `json:"initialized_at"`
@@ -25,7 +53,7 @@ type Task struct {
 	DueDate             pgtype.Date        `json:"due_date"`
 	Priority            string             `json:"priority"`
 	FocusOrder          pgtype.Int4        `json:"focus_order"`
-	Position            int32              `json:"position"`
+	Position            float64            `json:"position"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 }

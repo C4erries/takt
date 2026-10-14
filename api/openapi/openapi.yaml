@@ -40,6 +40,20 @@ paths:
     $ref: './paths/tasks.yaml#/toggle'
   /tasks/{id}:
     $ref: './paths/tasks.yaml#/item'
+  /workspaces/{workspace_id}/projects:
+    $ref: './paths/projects.yaml#/projects'
+  /workspaces/{workspace_id}/projects/{project_id}:
+    $ref: './paths/projects.yaml#/projectItem'
+  /workspaces/{workspace_id}/projects/{project_id}/boards:
+    $ref: './paths/projects.yaml#/projectBoards'
+  /workspaces/{workspace_id}/boards/{board_id}/columns:
+    $ref: './paths/projects.yaml#/boardColumns'
+  /workspaces/{workspace_id}/boards/{board_id}/columns/{column_id}:
+    $ref: './paths/projects.yaml#/columnItem'
+  /workspaces/{workspace_id}/projects/{project_id}/tasks:
+    $ref: './paths/projects.yaml#/projectTasks'
+  /workspaces/{workspace_id}/tasks/{task_id}/move:
+    $ref: './paths/projects.yaml#/moveTask'
 
 components:
   securitySchemes:
@@ -62,3 +76,19 @@ components:
       $ref: './schemas/workspace.yaml'
     Task:
       $ref: './schemas/task.yaml#/Task'
+    Project:
+      $ref: './schemas/project.yaml#/Project'
+    Board:
+      $ref: './schemas/project.yaml#/Board'
+    Column:
+      $ref: './schemas/project.yaml#/Column'
+    CreateProjectRequest:
+      $ref: './schemas/project.yaml#/CreateProjectRequest'
+    UpdateProjectRequest:
+      $ref: './schemas/project.yaml#/UpdateProjectRequest'
+    CreateColumnRequest:
+      $ref: './schemas/project.yaml#/CreateColumnRequest'
+    UpdateColumnRequest:
+      $ref: './schemas/project.yaml#/UpdateColumnRequest'
+    MoveTaskRequest:
+      $ref: './schemas/project.yaml#/MoveTaskRequest'

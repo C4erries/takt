@@ -11,14 +11,15 @@ import {
 } from 'lucide-react';
 import { Button, Badge } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
+import { useTaskStore, useInboxTasks } from '@/features/task-navigation';
 
 export interface SidebarProps {
   user: User | null;
   workspace: Workspace | null;
-  inboxCount: number;
-  activeNav: 'inbox' | 'today' | 'projects';
-  onNavChange: (nav: 'inbox' | 'today' | 'projects') => void;
-  onOpenQuickCapture: () => void;
+  inboxCount?: number;
+  activeNav?: 'inbox' | 'today' | 'projects';
+  onNavChange?: (nav: 'inbox' | 'today' | 'projects') => void;
+  onOpenQuickCapture?: () => void;
   onOpenAuth: () => void;
   onLogout: () => void;
   showUiCatalog: boolean;
@@ -37,6 +38,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   showUiCatalog,
   onToggleUiCatalog,
 }) => {
+  const { setQuickCaptureOpen, activeNav: storeActiveNav, setActiveNav: storeSetActiveNav } = useTaskStore();
+  const { data: inboxTasks } = useInboxTasks();
+
+  const currentInboxCount =
+    inboxCount !== undefined
+      ? inboxCount
+      : (inboxTasks?.filter((t) => !t.isCompleted).length ?? 0);
+  const currentNav = activeNav ?? storeActiveNav;
+  const handleNavChange = onNavChange ?? storeSetActiveNav;
+  const handleOpenQuickCapture = onOpenQuickCapture ?? (() => setQuickCaptureOpen(true));
+
   return (
     <aside className="w-60 shrink-0 h-full flex flex-col justify-between py-6 px-4 select-none">
       {/* Top section: Workspace & Quick Action */}
@@ -62,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={onOpenQuickCapture}
+          onClick={handleOpenQuickCapture}
           className="w-full justify-between bg-surface/70 hover:bg-surface border-subtle shadow-washi-sm text-primary group"
         >
           <span className="flex items-center gap-2 text-xs font-medium">
@@ -83,9 +95,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Inbox */}
           <button
             type="button"
-            onClick={() => onNavChange('inbox')}
+            onClick={() => handleNavChange('inbox')}
             className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
-              activeNav === 'inbox' && !showUiCatalog
+              currentNav === 'inbox' && !showUiCatalog
                 ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
                 : 'text-primary hover:bg-surface/60'
             }`}
@@ -94,9 +106,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Inbox className="w-4 h-4 stroke-[1.8] text-muted" />
               <span>Входящие</span>
             </span>
-            {inboxCount > 0 && (
+            {currentInboxCount > 0 && (
               <Badge variant="subtle" size="sm" className="font-mono text-[11px] px-1.5 py-0">
-                {inboxCount}
+                {currentInboxCount}
               </Badge>
             )}
           </button>
@@ -104,9 +116,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Today */}
           <button
             type="button"
-            onClick={() => onNavChange('today')}
+            onClick={() => handleNavChange('today')}
             className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
-              activeNav === 'today' && !showUiCatalog
+              currentNav === 'today' && !showUiCatalog
                 ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
                 : 'text-primary hover:bg-surface/60 opacity-80'
             }`}
@@ -121,9 +133,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Projects */}
           <button
             type="button"
-            onClick={() => onNavChange('projects')}
+            onClick={() => handleNavChange('projects')}
             className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
-              activeNav === 'projects' && !showUiCatalog
+              currentNav === 'projects' && !showUiCatalog
                 ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
                 : 'text-primary hover:bg-surface/60 opacity-80'
             }`}

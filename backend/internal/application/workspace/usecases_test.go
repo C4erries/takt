@@ -1,264 +1,319 @@
-package workspace
+package workspace_test
 
 import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	workspaceapp "takt/internal/application/workspace"
+	"takt/internal/application/workspace/mocks"
 	domainWorkspace "takt/internal/domain/workspace"
 )
 
-type mockUserRepo struct {
-	usersByID    map[uuid.UUID]*domainWorkspace.User
-	usersByEmail map[string]*domainWorkspace.User
+var errTestDB = errors.New("database connection failed")
+
+type mockDeps struct {
+	userRepo     *mocks.MockUserRepository
+	wsRepo       *mocks.MockWorkspaceRepository
+	hasher       *mocks.MockPasswordHasher
+	tokenGen     *mocks.MockTokenGenerator
+	tasksCreator *mocks.MockInitialTasksCreator
+	transactor   *mocks.MockTransactor
 }
 
-func newMockUserRepo() *mockUserRepo {
-	return &mockUserRepo{
-		usersByID:    make(map[uuid.UUID]*domainWorkspace.User),
-		usersByEmail: make(map[string]*domainWorkspace.User),
-	}
-}
-
-func (m *mockUserRepo) Create(ctx context.Context, u *domainWorkspace.User) error {
-	m.usersByID[u.ID] = u
-	m.usersByEmail[u.Email] = u
-	return nil
-}
-
-func (m *mockUserRepo) GetByEmail(ctx context.Context, email string) (*domainWorkspace.User, error) {
-	u, ok := m.usersByEmail[email]
-	if !ok {
-		return nil, domainWorkspace.ErrUserNotFound
-	}
-	return u, nil
-}
-
-func (m *mockUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*domainWorkspace.User, error) {
-	u, ok := m.usersByID[id]
-	if !ok {
-		return nil, domainWorkspace.ErrUserNotFound
-	}
-	return u, nil
-}
-
-type mockWorkspaceRepo struct {
-	workspacesByID map[uuid.UUID]*domainWorkspace.Workspace
-	members        map[string]*domainWorkspace.WorkspaceMember
-}
-
-func newMockWorkspaceRepo() *mockWorkspaceRepo {
-	return &mockWorkspaceRepo{
-		workspacesByID: make(map[uuid.UUID]*domainWorkspace.Workspace),
-		members:        make(map[string]*domainWorkspace.WorkspaceMember),
+func newMockDeps(t *testing.T) mockDeps {
+	return mockDeps{
+		userRepo:     mocks.NewMockUserRepository(t),
+		wsRepo:       mocks.NewMockWorkspaceRepository(t),
+		hasher:       mocks.NewMockPasswordHasher(t),
+		tokenGen:     mocks.NewMockTokenGenerator(t),
+		tasksCreator: mocks.NewMockInitialTasksCreator(t),
+		transactor:   mocks.NewMockTransactor(t),
 	}
 }
 
-func (m *mockWorkspaceRepo) Create(ctx context.Context, ws *domainWorkspace.Workspace) error {
-	m.workspacesByID[ws.ID] = ws
-	return nil
+func (d mockDeps) newService() *workspaceapp.Service {
+	return workspaceapp.NewService(
+		d.userRepo, d.wsRepo, d.hasher, d.tokenGen, d.tasksCreator, d.transactor,
+	)
 }
 
-func (m *mockWorkspaceRepo) GetByID(ctx context.Context, id uuid.UUID) (*domainWorkspace.Workspace, error) {
-	ws, ok := m.workspacesByID[id]
-	if !ok {
-		return nil, domainWorkspace.ErrWorkspaceNotFound
-	}
-	return ws, nil
-}
-
-func (m *mockWorkspaceRepo) CreateMember(ctx context.Context, member *domainWorkspace.WorkspaceMember) error {
-	key := member.WorkspaceID.String() + ":" + member.UserID.String()
-	m.members[key] = member
-	return nil
-}
-
-func (m *mockWorkspaceRepo) GetMember(ctx context.Context, wsID, userID uuid.UUID) (*domainWorkspace.WorkspaceMember, error) {
-	key := wsID.String() + ":" + userID.String()
-	mem, ok := m.members[key]
-	if !ok {
-		return nil, domainWorkspace.ErrAccessDenied
-	}
-	return mem, nil
-}
-
-func (m *mockWorkspaceRepo) GetWorkspacesByUserID(ctx context.Context, userID uuid.UUID) ([]*domainWorkspace.UserWorkspace, error) {
-	var list []*domainWorkspace.UserWorkspace
-	for _, ws := range m.workspacesByID {
-		key := ws.ID.String() + ":" + userID.String()
-		if mem, ok := m.members[key]; ok {
-			list = append(list, &domainWorkspace.UserWorkspace{
-				ID:        ws.ID,
-				Name:      ws.Name,
-				Type:      ws.Type,
-				Role:      mem.Role,
-				CreatedAt: ws.CreatedAt,
-			})
-		}
-	}
-	return list, nil
-}
-
-func (m *mockWorkspaceRepo) GetPersonalWorkspaceByUserID(ctx context.Context, userID uuid.UUID) (*domainWorkspace.UserWorkspace, error) {
-	list, err := m.GetWorkspacesByUserID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	for _, ws := range list {
-		if ws.Type == domainWorkspace.TypePersonal {
-			return ws, nil
-		}
-	}
-	return nil, domainWorkspace.ErrWorkspaceNotFound
-}
-
-type mockHasher struct{}
-
-func (h *mockHasher) Hash(p string) (string, error) {
-	return "hash_" + p, nil
-}
-
-func (h *mockHasher) Compare(hashed, p string) error {
-	if hashed == "hash_"+p {
-		return nil
-	}
-	return errors.New("mismatch")
-}
-
-type mockTokenGen struct{}
-
-func (t *mockTokenGen) GenerateToken(userID, wsID uuid.UUID) (string, error) {
-	return "jwt_token_" + userID.String(), nil
-}
-
-type mockTasksCreator struct {
-	createdWorkspaces []uuid.UUID
-}
-
-func (c *mockTasksCreator) CreateInitialInboxTasks(ctx context.Context, wsID uuid.UUID) error {
-	c.createdWorkspaces = append(c.createdWorkspaces, wsID)
-	return nil
-}
-
-func TestService_Register_Success(t *testing.T) {
-	userRepo := newMockUserRepo()
-	wsRepo := newMockWorkspaceRepo()
-	hasher := &mockHasher{}
-	tokenGen := &mockTokenGen{}
-	tasksCreator := &mockTasksCreator{}
-
-	svc := NewService(userRepo, wsRepo, hasher, tokenGen, tasksCreator, nil)
-
-	out, err := svc.Register(context.Background(), RegisterInput{
-		Email:       "pavel@takt.dev",
-		Password:    "password123",
-		DisplayName: "Pavel",
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+func TestService_Register(t *testing.T) {
+	testCases := []struct {
+		name      string
+		input     workspaceapp.RegisterInput
+		setupMock func(d mockDeps)
+		checkOut  func(t *testing.T, out *workspaceapp.RegisterOutput)
+		wantErr   error
+	}{
+		{
+			name:  "успешная регистрация пользователя и создание личного воркспейса",
+			input: workspaceapp.RegisterInput{Email: "pavel@takt.dev", Password: "password123", DisplayName: "Pavel"},
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByEmail(mock.Anything, "pavel@takt.dev").Return(nil, domainWorkspace.ErrUserNotFound).Once()
+				d.hasher.EXPECT().Hash("password123").Return("hash_password123", nil).Once()
+				d.transactor.EXPECT().WithinTx(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+					return fn(ctx)
+				}).Once()
+				d.userRepo.EXPECT().Create(mock.Anything, mock.MatchedBy(func(u *domainWorkspace.User) bool {
+					return u.Email == "pavel@takt.dev" && u.DisplayName == "Pavel" && u.PasswordHash == "hash_password123"
+				})).Return(nil).Once()
+				d.wsRepo.EXPECT().Create(mock.Anything, mock.MatchedBy(func(ws *domainWorkspace.Workspace) bool {
+					return ws.Name == "Личное" && ws.Type == domainWorkspace.TypePersonal
+				})).Return(nil).Once()
+				d.wsRepo.EXPECT().CreateMember(mock.Anything, mock.MatchedBy(func(m *domainWorkspace.WorkspaceMember) bool {
+					return m.Role == domainWorkspace.RoleOwner
+				})).Return(nil).Once()
+				d.tasksCreator.EXPECT().CreateInitialInboxTasks(mock.Anything, mock.Anything).Return(nil).Once()
+				d.tokenGen.EXPECT().GenerateToken(mock.Anything, mock.Anything).Return("jwt_register_token", nil).Once()
+			},
+			checkOut: func(t *testing.T, out *workspaceapp.RegisterOutput) {
+				assert.Equal(t, "jwt_register_token", out.Token)
+				assert.Equal(t, "pavel@takt.dev", out.User.Email)
+				assert.Equal(t, "Личное", out.Workspace.Name)
+				assert.Equal(t, domainWorkspace.RoleOwner, out.Workspace.Role)
+				assert.Equal(t, domainWorkspace.TypePersonal, out.Workspace.Type)
+			},
+		},
+		{
+			name:  "ошибка: дубликат email",
+			input: workspaceapp.RegisterInput{Email: "user@example.com", Password: "secret123", DisplayName: "Second"},
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByEmail(mock.Anything, "user@example.com").Return(&domainWorkspace.User{ID: uuid.New(), Email: "user@example.com"}, nil).Once()
+			},
+			wantErr: domainWorkspace.ErrUserAlreadyExists,
+		},
+		{
+			name:      "ошибка: короткий пароль",
+			input:     workspaceapp.RegisterInput{Email: "user@example.com", Password: "123", DisplayName: "Short Pass"},
+			setupMock: func(d mockDeps) {},
+			wantErr:   domainWorkspace.ErrInvalidPassword,
+		},
+		{
+			name:  "ошибка: сбой транзакции при создании воркспейса",
+			input: workspaceapp.RegisterInput{Email: "error@takt.dev", Password: "password123", DisplayName: "Error User"},
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByEmail(mock.Anything, "error@takt.dev").Return(nil, domainWorkspace.ErrUserNotFound).Once()
+				d.hasher.EXPECT().Hash("password123").Return("hash_pass", nil).Once()
+				d.transactor.EXPECT().WithinTx(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+					return fn(ctx)
+				}).Once()
+				d.userRepo.EXPECT().Create(mock.Anything, mock.Anything).Return(errTestDB).Once()
+			},
+			wantErr: errTestDB,
+		},
 	}
 
-	if out.User.Email != "pavel@takt.dev" {
-		t.Errorf("expected email pavel@takt.dev, got %s", out.User.Email)
-	}
-	if out.Workspace.Name != "Личное" {
-		t.Errorf("expected personal workspace 'Личное', got %s", out.Workspace.Name)
-	}
-	if out.Workspace.Role != domainWorkspace.RoleOwner {
-		t.Errorf("expected owner role, got %s", out.Workspace.Role)
-	}
-	if len(tasksCreator.createdWorkspaces) != 1 {
-		t.Errorf("expected initial tasks to be created for 1 workspace, got %d", len(tasksCreator.createdWorkspaces))
-	}
-	if out.Token == "" {
-		t.Errorf("expected non-empty token")
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			deps := newMockDeps(t)
+			tc.setupMock(deps)
+
+			svc := deps.newService()
+			out, err := svc.Register(context.Background(), tc.input)
+
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+				assert.Nil(t, out)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, out)
+				if tc.checkOut != nil {
+					tc.checkOut(t, out)
+				}
+			}
+		})
 	}
 }
 
-func TestService_Register_DuplicateEmail(t *testing.T) {
-	userRepo := newMockUserRepo()
-	wsRepo := newMockWorkspaceRepo()
-	svc := NewService(userRepo, wsRepo, &mockHasher{}, &mockTokenGen{}, &mockTasksCreator{}, nil)
-
-	_, err := svc.Register(context.Background(), RegisterInput{
-		Email:       "user@example.com",
-		Password:    "secret123",
-		DisplayName: "First",
-	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+func TestService_Login(t *testing.T) {
+	userID, wsID := uuid.New(), uuid.New()
+	user := &domainWorkspace.User{ID: userID, Email: "login@takt.dev", PasswordHash: "hashed_pass"}
+	personalWs := &domainWorkspace.UserWorkspace{
+		ID: wsID, Name: "Личное", Type: domainWorkspace.TypePersonal, Role: domainWorkspace.RoleOwner, CreatedAt: time.Now(),
 	}
 
-	_, err = svc.Register(context.Background(), RegisterInput{
-		Email:       "user@example.com",
-		Password:    "secret123",
-		DisplayName: "Second",
-	})
-	if !errors.Is(err, domainWorkspace.ErrUserAlreadyExists) {
-		t.Errorf("expected ErrUserAlreadyExists, got %v", err)
+	testCases := []struct {
+		name      string
+		input     workspaceapp.LoginInput
+		setupMock func(d mockDeps)
+		checkOut  func(t *testing.T, out *workspaceapp.LoginOutput)
+		wantErr   error
+	}{
+		{
+			name:  "успешный вход в систему с личным воркспейсом",
+			input: workspaceapp.LoginInput{Email: "login@takt.dev", Password: "correct_password"},
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByEmail(mock.Anything, "login@takt.dev").Return(user, nil).Once()
+				d.hasher.EXPECT().Compare("hashed_pass", "correct_password").Return(nil).Once()
+				d.wsRepo.EXPECT().GetPersonalWorkspaceByUserID(mock.Anything, userID).Return(personalWs, nil).Once()
+				d.tokenGen.EXPECT().GenerateToken(userID, wsID).Return("jwt_login_token", nil).Once()
+			},
+			checkOut: func(t *testing.T, out *workspaceapp.LoginOutput) {
+				assert.Equal(t, "jwt_login_token", out.Token)
+				assert.Equal(t, "login@takt.dev", out.User.Email)
+				assert.Equal(t, "Личное", out.Workspace.Name)
+			},
+		},
+		{
+			name:  "успешный вход с fallback на первый доступный воркспейс",
+			input: workspaceapp.LoginInput{Email: "login@takt.dev", Password: "correct_password"},
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByEmail(mock.Anything, "login@takt.dev").Return(user, nil).Once()
+				d.hasher.EXPECT().Compare("hashed_pass", "correct_password").Return(nil).Once()
+				d.wsRepo.EXPECT().GetPersonalWorkspaceByUserID(mock.Anything, userID).Return(nil, domainWorkspace.ErrWorkspaceNotFound).Once()
+				fallbackWs := &domainWorkspace.UserWorkspace{ID: wsID, Name: "Команда", Type: domainWorkspace.TypeShared, Role: domainWorkspace.RoleMember}
+				d.wsRepo.EXPECT().GetWorkspacesByUserID(mock.Anything, userID).Return([]*domainWorkspace.UserWorkspace{fallbackWs}, nil).Once()
+				d.tokenGen.EXPECT().GenerateToken(userID, wsID).Return("jwt_team_token", nil).Once()
+			},
+			checkOut: func(t *testing.T, out *workspaceapp.LoginOutput) {
+				assert.Equal(t, "jwt_team_token", out.Token)
+				assert.Equal(t, "Команда", out.Workspace.Name)
+			},
+		},
+		{
+			name:  "ошибка: пользователь не найден",
+			input: workspaceapp.LoginInput{Email: "unknown@takt.dev", Password: "any_password"},
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByEmail(mock.Anything, "unknown@takt.dev").Return(nil, domainWorkspace.ErrUserNotFound).Once()
+			},
+			wantErr: domainWorkspace.ErrInvalidCredentials,
+		},
+		{
+			name:  "ошибка: неверный пароль",
+			input: workspaceapp.LoginInput{Email: "login@takt.dev", Password: "wrong_password"},
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByEmail(mock.Anything, "login@takt.dev").Return(user, nil).Once()
+				d.hasher.EXPECT().Compare("hashed_pass", "wrong_password").Return(errors.New("mismatch")).Once()
+			},
+			wantErr: domainWorkspace.ErrInvalidCredentials,
+		},
+		{
+			name:  "ошибка: у пользователя нет доступных воркспейсов",
+			input: workspaceapp.LoginInput{Email: "login@takt.dev", Password: "correct_password"},
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByEmail(mock.Anything, "login@takt.dev").Return(user, nil).Once()
+				d.hasher.EXPECT().Compare("hashed_pass", "correct_password").Return(nil).Once()
+				d.wsRepo.EXPECT().GetPersonalWorkspaceByUserID(mock.Anything, userID).Return(nil, domainWorkspace.ErrWorkspaceNotFound).Once()
+				d.wsRepo.EXPECT().GetWorkspacesByUserID(mock.Anything, userID).Return(nil, domainWorkspace.ErrWorkspaceNotFound).Once()
+			},
+			wantErr: domainWorkspace.ErrWorkspaceNotFound,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			deps := newMockDeps(t)
+			tc.setupMock(deps)
+
+			svc := deps.newService()
+			out, err := svc.Login(context.Background(), tc.input)
+
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+				assert.Nil(t, out)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, out)
+				if tc.checkOut != nil {
+					tc.checkOut(t, out)
+				}
+			}
+		})
 	}
 }
 
-func TestService_Register_ShortPassword(t *testing.T) {
-	svc := NewService(newMockUserRepo(), newMockWorkspaceRepo(), &mockHasher{}, &mockTokenGen{}, nil, nil)
+func TestService_GetMe(t *testing.T) {
+	userID, wsID := uuid.New(), uuid.New()
+	user := &domainWorkspace.User{ID: userID, Email: "me@takt.dev"}
+	member := &domainWorkspace.WorkspaceMember{WorkspaceID: wsID, UserID: userID, Role: domainWorkspace.RoleOwner}
+	ws := &domainWorkspace.Workspace{ID: wsID, Name: "Личное", Type: domainWorkspace.TypePersonal}
 
-	_, err := svc.Register(context.Background(), RegisterInput{
-		Email:       "user@example.com",
-		Password:    "123",
-		DisplayName: "Short Pass",
-	})
-	if !errors.Is(err, domainWorkspace.ErrInvalidPassword) {
-		t.Errorf("expected ErrInvalidPassword, got %v", err)
+	testCases := []struct {
+		name      string
+		userID    uuid.UUID
+		wsID      uuid.UUID
+		setupMock func(d mockDeps)
+		checkOut  func(t *testing.T, out *workspaceapp.GetProfileOutput)
+		wantErr   error
+	}{
+		{
+			name:   "успешное получение профиля",
+			userID: userID,
+			wsID:   wsID,
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByID(mock.Anything, userID).Return(user, nil).Once()
+				d.wsRepo.EXPECT().GetMember(mock.Anything, wsID, userID).Return(member, nil).Once()
+				d.wsRepo.EXPECT().GetByID(mock.Anything, wsID).Return(ws, nil).Once()
+			},
+			checkOut: func(t *testing.T, out *workspaceapp.GetProfileOutput) {
+				assert.Equal(t, "me@takt.dev", out.User.Email)
+				assert.Equal(t, "Личное", out.Workspace.Name)
+				assert.Equal(t, domainWorkspace.RoleOwner, out.Workspace.Role)
+			},
+		},
+		{
+			name:   "ошибка: пользователь не найден",
+			userID: userID,
+			wsID:   wsID,
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByID(mock.Anything, userID).Return(nil, domainWorkspace.ErrUserNotFound).Once()
+			},
+			wantErr: domainWorkspace.ErrUserNotFound,
+		},
+		{
+			name:   "ошибка: доступ запрещен (не участник)",
+			userID: userID,
+			wsID:   wsID,
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByID(mock.Anything, userID).Return(user, nil).Once()
+				d.wsRepo.EXPECT().GetMember(mock.Anything, wsID, userID).Return(nil, domainWorkspace.ErrAccessDenied).Once()
+			},
+			wantErr: domainWorkspace.ErrAccessDenied,
+		},
+		{
+			name:   "ошибка: воркспейс не найден",
+			userID: userID,
+			wsID:   wsID,
+			setupMock: func(d mockDeps) {
+				d.userRepo.EXPECT().GetByID(mock.Anything, userID).Return(user, nil).Once()
+				d.wsRepo.EXPECT().GetMember(mock.Anything, wsID, userID).Return(member, nil).Once()
+				d.wsRepo.EXPECT().GetByID(mock.Anything, wsID).Return(nil, domainWorkspace.ErrWorkspaceNotFound).Once()
+			},
+			wantErr: domainWorkspace.ErrWorkspaceNotFound,
+		},
 	}
-}
 
-func TestService_Login_Success(t *testing.T) {
-	userRepo := newMockUserRepo()
-	wsRepo := newMockWorkspaceRepo()
-	svc := NewService(userRepo, wsRepo, &mockHasher{}, &mockTokenGen{}, &mockTasksCreator{}, nil)
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			deps := newMockDeps(t)
+			tc.setupMock(deps)
 
-	_, err := svc.Register(context.Background(), RegisterInput{
-		Email:       "login@takt.dev",
-		Password:    "secret123",
-		DisplayName: "Login User",
-	})
-	if err != nil {
-		t.Fatalf("failed to register: %v", err)
-	}
+			svc := deps.newService()
+			out, err := svc.GetMe(context.Background(), tc.userID, tc.wsID)
 
-	loginOut, err := svc.Login(context.Background(), LoginInput{
-		Email:    "login@takt.dev",
-		Password: "secret123",
-	})
-	if err != nil {
-		t.Fatalf("unexpected login error: %v", err)
-	}
-
-	if loginOut.Token == "" {
-		t.Errorf("expected token on login")
-	}
-	if loginOut.Workspace.Name != "Личное" {
-		t.Errorf("expected workspace 'Личное', got %s", loginOut.Workspace.Name)
-	}
-}
-
-func TestService_Login_InvalidPassword(t *testing.T) {
-	userRepo := newMockUserRepo()
-	wsRepo := newMockWorkspaceRepo()
-	svc := NewService(userRepo, wsRepo, &mockHasher{}, &mockTokenGen{}, nil, nil)
-
-	_, _ = svc.Register(context.Background(), RegisterInput{
-		Email:       "test@takt.dev",
-		Password:    "correct_password",
-		DisplayName: "Test",
-	})
-
-	_, err := svc.Login(context.Background(), LoginInput{
-		Email:    "test@takt.dev",
-		Password: "wrong_password",
-	})
-	if !errors.Is(err, domainWorkspace.ErrInvalidCredentials) {
-		t.Errorf("expected ErrInvalidCredentials, got %v", err)
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+				assert.Nil(t, out)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, out)
+				if tc.checkOut != nil {
+					tc.checkOut(t, out)
+				}
+			}
+		})
 	}
 }

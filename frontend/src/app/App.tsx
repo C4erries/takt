@@ -1,134 +1,55 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth, AuthModal } from '@/features/auth';
-import { useTaskNavigation } from '@/features/task-navigation';
+import {
+  useTaskNavigation,
+  useInboxTasks,
+  useCreateTaskMutation,
+  useToggleTaskMutation,
+  useDeleteTaskMutation,
+  useTaskStore,
+  TASKS_QUERY_KEY,
+} from '@/features/task-navigation';
 import { QuickCaptureModal } from '@/features/quick-capture';
 import { Sidebar } from '@/widgets/sidebar';
 import { MainSheet } from '@/widgets/main-sheet';
 import { TaskInspector } from '@/widgets/task-inspector';
 import { MiniCalendar } from '@/widgets/mini-calendar';
-import { tasksApi } from '@/shared/api';
-import type { Task, CreateInboxTaskRequest } from '@/shared/api';
 import { UiCatalog } from './components/UiCatalog';
 import { StatesShowcase } from './components/StatesShowcase';
 import { Button } from '@/shared/components/ui';
 
-const ONBOARDING_TASKS: Task[] = [
-  {
-    id: 'onboarding-1',
-    workspaceId: 'demo-workspace',
-    title: 'Нажми J и K для клавиатурного перемещения по строкам',
-    descriptionMarkdown: 'Клавиши J (вниз) и K (вверх) позволяют мгновенно перемещаться между задачами со snappy-анимацией.',
-    isCompleted: false,
-    priority: 'high',
-    position: 0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'onboarding-2',
-    workspaceId: 'demo-workspace',
-    title: 'Нажми Пробел или кликни круглый чекбокс, чтобы завершить задачу',
-    descriptionMarkdown: 'Клавиша Space или X переключает статус задачи.',
-    isCompleted: false,
-    priority: 'medium',
-    position: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'onboarding-3',
-    workspaceId: 'demo-workspace',
-    title: 'Нажми C в любом месте экрана для мгновенного сброса мысли (Quick Capture)',
-    descriptionMarkdown: 'Горячая клавиша C открывает всплывающее окно быстрого захвата.',
-    isCompleted: false,
-    priority: 'urgent',
-    position: 2,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
 export const App: React.FC = () => {
+  const queryClient = useQueryClient();
   const { user, workspace, login, register, logout } = useAuth();
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoadingTasks, setIsLoadingTasks] = useState<boolean>(true);
-  const [tasksError, setTasksError] = useState<string | null>(null);
+  const {
+    selectedTaskId,
+    isQuickCaptureOpen,
+    setQuickCaptureOpen,
+    activeNav,
+    setActiveNav,
+  } = useTaskStore();
 
-  const [activeNav, setActiveNav] = useState<'inbox' | 'today' | 'projects'>('inbox');
+  const {
+    data: tasks = [],
+    isLoading: isLoadingTasks,
+    error: tasksError,
+    refetch: refetchTasks,
+  } = useInboxTasks();
+
+  const createTaskMutation = useCreateTaskMutation();
+  const toggleTaskMutation = useToggleTaskMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
+
   const [showUiCatalog, setShowUiCatalog] = useState<boolean>(false);
   const [catalogTab, setCatalogTab] = useState<'ui-kit' | 'states'>('ui-kit');
-  const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
-  // Load tasks from API or fallback to onboarding
-  const fetchTasks = useCallback(async () => {
-    setIsLoadingTasks(true);
-    setTasksError(null);
-    try {
-      const data = await tasksApi.getInbox();
-      setTasks(data);
-    } catch {
-      // If unauthorized or server offline, fall back to onboarding tasks
-      setTasks(ONBOARDING_TASKS);
-    } finally {
-      setIsLoadingTasks(false);
-    }
-  }, []);
-
+  // Invalidate tasks query when user auth state changes
   useEffect(() => {
-    fetchTasks();
-  }, [user, fetchTasks]);
-
-  // Task mutation handlers
-  const handleToggleTask = useCallback(
-    async (taskId: string) => {
-      // Optimistic local update
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, isCompleted: !t.isCompleted } : t))
-      );
-
-      try {
-        await tasksApi.toggle(taskId);
-      } catch {
-        // If demo/offline mode, keep optimistic state
-      }
-    },
-    []
-  );
-
-  const handleDeleteTask = useCallback(async (taskId: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    try {
-      await tasksApi.delete(taskId);
-    } catch {
-      // Ignored for demo tasks
-    }
-  }, []);
-
-  const handleCreateTask = useCallback(
-    async (req: CreateInboxTaskRequest) => {
-      try {
-        const created = await tasksApi.createInbox(req);
-        setTasks((prev) => [created, ...prev]);
-      } catch {
-        // Fallback for offline/guest
-        const demoTask: Task = {
-          id: `task-${Date.now()}`,
-          workspaceId: workspace?.id || 'demo-workspace',
-          title: req.title,
-          descriptionMarkdown: req.descriptionMarkdown || '',
-          isCompleted: false,
-          priority: req.priority || 'none',
-          position: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        setTasks((prev) => [demoTask, ...prev]);
-      }
-    },
-    [workspace]
-  );
+    queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
+  }, [user, queryClient]);
 
   // Global hotkey 'c' for Quick Capture
   useEffect(() => {
@@ -147,22 +68,23 @@ export const App: React.FC = () => {
 
       if (e.key === 'c' || e.key === 'C') {
         e.preventDefault();
-        setIsQuickCaptureOpen(true);
+        setQuickCaptureOpen(true);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isQuickCaptureOpen, isAuthModalOpen, showUiCatalog]);
+  }, [isQuickCaptureOpen, isAuthModalOpen, showUiCatalog, setQuickCaptureOpen]);
 
   // J/K Task Navigation
   const { selectedIndex, setSelectedIndex } = useTaskNavigation({
     tasks,
-    onToggleTask: handleToggleTask,
+    onToggleTask: (id) => toggleTaskMutation.mutate(id),
     isEnabled: !isQuickCaptureOpen && !isAuthModalOpen && !showUiCatalog,
   });
 
-  const selectedTask = tasks[selectedIndex] ?? null;
+  const selectedTask =
+    tasks.find((t) => t.id === selectedTaskId) ?? tasks[selectedIndex] ?? null;
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex">
@@ -173,7 +95,7 @@ export const App: React.FC = () => {
         inboxCount={tasks.filter((t) => !t.isCompleted).length}
         activeNav={activeNav}
         onNavChange={setActiveNav}
-        onOpenQuickCapture={() => setIsQuickCaptureOpen(true)}
+        onOpenQuickCapture={() => setQuickCaptureOpen(true)}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={logout}
         showUiCatalog={showUiCatalog}
@@ -219,7 +141,7 @@ export const App: React.FC = () => {
             </div>
 
             {catalogTab === 'ui-kit' ? (
-              <UiCatalog onOpenModal={() => setIsQuickCaptureOpen(true)} />
+              <UiCatalog onOpenModal={() => setQuickCaptureOpen(true)} />
             ) : (
               <StatesShowcase />
             )}
@@ -231,22 +153,24 @@ export const App: React.FC = () => {
           <MainSheet
             tasks={tasks}
             isLoading={isLoadingTasks}
-            error={tasksError}
-            onRetry={fetchTasks}
+            error={tasksError ? tasksError.message : null}
+            onRetry={() => refetchTasks()}
             selectedIndex={selectedIndex}
             onSelectTask={setSelectedIndex}
-            onToggleTask={handleToggleTask}
-            onDeleteTask={handleDeleteTask}
-            onCreateTask={handleCreateTask}
-            onOpenQuickCapture={() => setIsQuickCaptureOpen(true)}
+            onToggleTask={(id) => toggleTaskMutation.mutate(id)}
+            onDeleteTask={(id) => deleteTaskMutation.mutate(id)}
+            onCreateTask={async (req) => {
+              await createTaskMutation.mutateAsync(req);
+            }}
+            onOpenQuickCapture={() => setQuickCaptureOpen(true)}
           />
 
           {/* Column 3: Right Bento Panel (Inspector + MiniCalendar) */}
           <div className="hidden lg:flex flex-col gap-3 py-3 h-full justify-start overflow-hidden">
             <TaskInspector
               task={selectedTask}
-              onToggleTask={handleToggleTask}
-              onDeleteTask={handleDeleteTask}
+              onToggleTask={(id) => toggleTaskMutation.mutate(id)}
+              onDeleteTask={(id) => deleteTaskMutation.mutate(id)}
             />
             <MiniCalendar />
           </div>
@@ -256,8 +180,10 @@ export const App: React.FC = () => {
       {/* Global Modals */}
       <QuickCaptureModal
         isOpen={isQuickCaptureOpen}
-        onClose={() => setIsQuickCaptureOpen(false)}
-        onSubmit={handleCreateTask}
+        onClose={() => setQuickCaptureOpen(false)}
+        onSubmit={async (req) => {
+          await createTaskMutation.mutateAsync(req);
+        }}
       />
 
       <AuthModal

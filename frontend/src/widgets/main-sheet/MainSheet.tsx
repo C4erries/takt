@@ -3,18 +3,25 @@ import { Plus, Inbox } from 'lucide-react';
 import { Button, Input, Skeleton, EmptyState, ErrorBanner } from '@/shared/components/ui';
 import { TaskRow } from './TaskRow';
 import type { Task, CreateInboxTaskRequest } from '@/shared/api';
+import {
+  useInboxTasks,
+  useCreateTaskMutation,
+  useToggleTaskMutation,
+  useDeleteTaskMutation,
+  useTaskStore,
+} from '@/features/task-navigation';
 
 export interface MainSheetProps {
-  tasks: Task[];
-  isLoading: boolean;
-  error: string | null;
-  onRetry: () => void;
-  selectedIndex: number;
-  onSelectTask: (index: number) => void;
-  onToggleTask: (taskId: string) => void;
-  onDeleteTask: (taskId: string) => void;
-  onCreateTask: (req: CreateInboxTaskRequest) => Promise<void>;
-  onOpenQuickCapture: () => void;
+  tasks?: Task[];
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
+  selectedIndex?: number;
+  onSelectTask?: (index: number) => void;
+  onToggleTask?: (taskId: string) => void;
+  onDeleteTask?: (taskId: string) => void;
+  onCreateTask?: (req: CreateInboxTaskRequest) => Promise<void>;
+  onOpenQuickCapture?: () => void;
 }
 
 export const MainSheet: React.FC<MainSheetProps> = ({
@@ -29,6 +36,45 @@ export const MainSheet: React.FC<MainSheetProps> = ({
   onCreateTask,
   onOpenQuickCapture,
 }) => {
+  const query = useInboxTasks();
+  const createTaskMutation = useCreateTaskMutation();
+  const toggleTaskMutation = useToggleTaskMutation();
+  const deleteTaskMutation = useDeleteTaskMutation();
+  const { selectedTaskId, setSelectedTaskId, setQuickCaptureOpen } = useTaskStore();
+
+  const currentTasks = tasks ?? query.data ?? [];
+  const currentLoading = isLoading !== undefined ? isLoading : query.isLoading;
+  const currentError = error !== undefined ? error : (query.error ? query.error.message : null);
+  const handleRetry = onRetry ?? (() => query.refetch());
+
+  const currentSelectedIndex =
+    selectedIndex !== undefined
+      ? selectedIndex
+      : Math.max(0, currentTasks.findIndex((t) => t.id === selectedTaskId));
+
+  const handleSelectTask =
+    onSelectTask ??
+    ((index: number) => {
+      if (currentTasks[index]) {
+        setSelectedTaskId(currentTasks[index].id);
+      }
+    });
+
+  const handleToggleTask =
+    onToggleTask ?? ((taskId: string) => toggleTaskMutation.mutate(taskId));
+
+  const handleDeleteTask =
+    onDeleteTask ?? ((taskId: string) => deleteTaskMutation.mutate(taskId));
+
+  const handleCreateTask =
+    onCreateTask ??
+    (async (req: CreateInboxTaskRequest) => {
+      await createTaskMutation.mutateAsync(req);
+    });
+
+  const handleOpenQuickCapture =
+    onOpenQuickCapture ?? (() => setQuickCaptureOpen(true));
+
   const [inlineTitle, setInlineTitle] = useState('');
   const [isSubmittingInline, setIsSubmittingInline] = useState(false);
 
@@ -39,7 +85,7 @@ export const MainSheet: React.FC<MainSheetProps> = ({
 
     setIsSubmittingInline(true);
     try {
-      await onCreateTask({ title: trimmed });
+      await handleCreateTask({ title: trimmed });
       setInlineTitle('');
     } finally {
       setIsSubmittingInline(false);
@@ -56,7 +102,7 @@ export const MainSheet: React.FC<MainSheetProps> = ({
             <span>Horizon · Inbox</span>
           </div>
           <div className="text-xs font-mono text-muted">
-            {tasks.length} {tasks.length === 1 ? 'задача' : 'задач'}
+            {currentTasks.length} {currentTasks.length === 1 ? 'задача' : 'задач'}
           </div>
         </div>
 
@@ -92,7 +138,7 @@ export const MainSheet: React.FC<MainSheetProps> = ({
       {/* Main Content Area: 4 States */}
       <div className="flex-1 overflow-y-auto p-6 space-y-1">
         {/* State 1: Loading (Skeleton) */}
-        {isLoading && (
+        {currentLoading && (
           <div className="space-y-3 py-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <div
@@ -108,18 +154,18 @@ export const MainSheet: React.FC<MainSheetProps> = ({
         )}
 
         {/* State 2: Error */}
-        {!isLoading && error && (
+        {!currentLoading && currentError && (
           <div className="py-6">
             <ErrorBanner
               title="Не удалось загрузить задачи"
-              message={error}
-              onRetry={onRetry}
+              message={currentError}
+              onRetry={handleRetry}
             />
           </div>
         )}
 
         {/* State 3: Empty State */}
-        {!isLoading && !error && tasks.length === 0 && (
+        {!currentLoading && !currentError && currentTasks.length === 0 && (
           <div className="py-12">
             <EmptyState
               icon={<Inbox className="w-7 h-7 stroke-[1.5]" />}
@@ -129,7 +175,7 @@ export const MainSheet: React.FC<MainSheetProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onOpenQuickCapture}
+                  onClick={handleOpenQuickCapture}
                   leftIcon={<Plus className="w-3.5 h-3.5" />}
                 >
                   Новая задача (C)
@@ -140,16 +186,16 @@ export const MainSheet: React.FC<MainSheetProps> = ({
         )}
 
         {/* State 4: Success - Lined task list */}
-        {!isLoading && !error && tasks.length > 0 && (
+        {!currentLoading && !currentError && currentTasks.length > 0 && (
           <div className="space-y-0.5">
-            {tasks.map((task, index) => (
+            {currentTasks.map((task, index) => (
               <TaskRow
                 key={task.id}
                 task={task}
-                isSelected={selectedIndex === index}
-                onSelect={() => onSelectTask(index)}
-                onToggle={onToggleTask}
-                onDelete={onDeleteTask}
+                isSelected={currentSelectedIndex === index}
+                onSelect={() => handleSelectTask(index)}
+                onToggle={handleToggleTask}
+                onDelete={handleDeleteTask}
               />
             ))}
           </div>

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Input, Button, Badge } from '@/shared/components/ui';
 import type { Priority, CreateInboxTaskRequest } from '@/shared/api';
+import { useTaskStore, useCreateTaskMutation } from '@/features/task-navigation';
 
 export interface QuickCaptureModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (task: CreateInboxTaskRequest) => Promise<void>;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onSubmit?: (task: CreateInboxTaskRequest) => Promise<void>;
   enableGlobalHotkey?: boolean;
 }
 
@@ -18,10 +19,16 @@ const PRIORITIES: { value: Priority; label: string; badgeVariant: 'subtle' | 'st
 ];
 
 export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
+  isOpen: propsIsOpen,
+  onClose: propsOnClose,
+  onSubmit: propsOnSubmit,
 }) => {
+  const { isQuickCaptureOpen, setQuickCaptureOpen } = useTaskStore();
+  const createTaskMutation = useCreateTaskMutation();
+
+  const isOpen = propsIsOpen !== undefined ? propsIsOpen : isQuickCaptureOpen;
+  const handleClose = propsOnClose ?? (() => setQuickCaptureOpen(false));
+
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState<Priority>('none');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,17 +47,24 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await onSubmit({
-        title: trimmedTitle,
-        priority,
-      });
+      if (propsOnSubmit) {
+        await propsOnSubmit({
+          title: trimmedTitle,
+          priority,
+        });
+      } else {
+        await createTaskMutation.mutateAsync({
+          title: trimmedTitle,
+          priority,
+        });
+      }
       setTitle('');
       setPriority('none');
-      onClose();
+      handleClose();
     } finally {
       setIsSubmitting(false);
     }
-  }, [title, priority, isSubmitting, onSubmit, onClose]);
+  }, [title, priority, isSubmitting, propsOnSubmit, createTaskMutation, handleClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -62,7 +76,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Быстрый захват мысли"
       description="Мгновенно сбросьте задачу в Inbox. Клавиши ⌘+Enter для быстрого сохранения."
       footer={
@@ -74,7 +88,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             <span>сохранить</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose} disabled={isSubmitting}>
+            <Button variant="ghost" size="sm" onClick={handleClose} disabled={isSubmitting}>
               Отмена
             </Button>
             <Button

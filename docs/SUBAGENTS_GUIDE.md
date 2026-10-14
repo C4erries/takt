@@ -159,9 +159,11 @@ Git: СТРОГО ЗАПРЕЩЕНО выполнять git commit, push, checko
 
 ## 🔗 Протоколы Contract-First, Защита общих точек сборки и Agent Continuity
 
-1. **Contract-First (Сначала контракты — потом реализация)**:
-   * Запрещено параллельно запускать `frontend_developer` и `backend_developer` писать код фичи «по договоренности на словах».
-   * Сначала `backend_developer` фиксирует миграцию БД, обновляет `api.yaml` и запускает кодогенерацию типов. Только после этого `frontend_developer` берет в работу готовые сгенерированные контракты.
+1. **Contract-First и Двухфазная постановка задач (Staged Delivery)**:
+   * **Строгий запрет на «мега-промпты»**: Запрещено выдавать бэкендеру в одном промпте всё скопом (миграции + контракты + use cases + http + di). Это ведет к размытию фокуса, нарушению лимитов файлов и потере контроля над архитектурой.
+   * **Шаг 1 (Контракты и Чистый Домен)**: Субагент `backend_developer` реализует строго SQL-миграцию БД, sqlc-запросы (`queries/*.sql`), OpenAPI-спецификацию в `api/openapi/`, запускает `make generate` и пишет чистый доменный слой (`internal/domain/<pkg>`) с тестами бизнес-инвариантов. На этом шаге субагенту **СТРОГО ЗАПРЕЩЕНО** писать Use Cases (`application/`), репозитории, HTTP-хендлеры и сборку в `container/`.
+   * **Чекпоинт Lead-агента & Разблокировка фронтенда**: Lead-агент принимает Шаг 1 (`make check-arch && make generate`). Контракты зафиксированы, сгенерированы типы — теперь `frontend_developer` может приступать к верстке экранов параллельно!
+   * **Шаг 2 (Use Cases & Адаптеры через `send_message`)**: Lead отправляет тому же `backend_developer` через `send_message` задачу на реализацию сценариев `internal/application/<pkg>` (с портами `ports.go`), репозиториев `infrastructure/repository/`, HTTP-хендлеров `infrastructure/http/`, связывание в `container/` и тесты.
 2. **Защита от конфликтов в общих файлах сборки (`internal/infrastructure/container/` и `app/router.tsx`)**:
    * Если два субагента запускаются **параллельно** над разными доменами (например, `billing` и `notifications`), им **запрещено** одновременно редактировать общие связующие файлы (`internal/infrastructure/container/services.go`, `internal/infrastructure/container/router.go`, `frontend/src/app/router.tsx`).
    * Каждый параллельный субагент создает и тестирует свой изолированный подпакет, а финальную регистрацию в `internal/infrastructure/container/` выполняет один агент на завершающем шаге.

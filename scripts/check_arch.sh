@@ -21,7 +21,7 @@ MAX_LINES=400
 # Scan all relevant code files excluding generated files, vendor, node_modules, lockfiles
 while IFS= read -r file; do
     # Skip generated files and assets
-    if [[ "$file" =~ \.gen\. || "$file" =~ _gen\. || "$file" =~ package-lock\.json || "$file" =~ \.min\. || "$file" =~ \.svg$ ]]; then
+    if [[ "$file" =~ \.gen\. || "$file" =~ _gen\. || "$file" =~ package-lock\.json || "$file" =~ \.min\. || "$file" =~ \.svg$ || "$file" =~ /mocks/ || "$file" =~ /mock_ ]]; then
         continue
     fi
 
@@ -61,6 +61,7 @@ check_dir_file_count() {
             ! -name "*.spec.tsx" \
             ! -name "*.gen.*" \
             ! -name "*_gen.*" \
+            ! -name "mock_*.go" \
             ! -name ".*" 2>/dev/null | wc -l || echo 0)
 
         if [ "$count" -gt "$MAX_FILES" ]; then
@@ -71,6 +72,7 @@ check_dir_file_count() {
         ! -path "*/node_modules*" \
         ! -path "*/.git*" \
         ! -path "*/dist*" \
+        ! -path "*/mocks*" \
         ! -path "*/shared/components/ui*" 2>/dev/null || true)
 }
 

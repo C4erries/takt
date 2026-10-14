@@ -292,7 +292,11 @@ takt/
 │
 ├── docs/                              # Контекстная ОС проекта
 │   ├── PROJECT_CONTEXT.md
-│   ├── CONVENTIONS.md
+│   ├── CONVENTIONS.md                 # Указатель на конвенции
+│   ├── conventions/                   # Инженерные конвенции
+│   │   ├── README.md                  # Общие конвенции, лимиты, безопасность, check-arch
+│   │   ├── backend.md                 # Go, Clean Architecture, 3 пакета, ports.go, testify, mockery
+│   │   └── frontend.md                # Feature-Sliced, Дизайн-паспорт «Soft Editorial GTD», UI-Kit
 │   ├── ROADMAP.md
 │   ├── CURRENT_SPRINT.md
 │   ├── decisions/                     # Реестр ADR

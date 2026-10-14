@@ -11,7 +11,7 @@
 
 * 🧭 [AGENTS.md](AGENTS.md) — Главная инструкция для AI-агентов (правила «Шага 0», режим «Штаб», лимиты файлов).
 * 🎯 [PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md) — Архитектурный и продуктовый паспорт проекта, ER-диаграмма и Карта пакетов.
-* 📏 [CONVENTIONS.md](docs/CONVENTIONS.md) — Инженерные законы, правила Clean Architecture / DDD и Дизайн-паспорт («Soft Editorial GTD»).
+* 📏 [Инженерные конвенции](docs/conventions/README.md) ([Backend](docs/conventions/backend.md), [Frontend](docs/conventions/frontend.md)) — правила Clean Architecture, Дизайн-паспорт («Soft Editorial GTD»), тестирование (testify, mockery v3).
 * 🗺️ [ROADMAP.md](docs/ROADMAP.md) — Стратегическая дорожная карта развития по фазам (Фаза 0 – Фаза 4).
 * ⚡ [CURRENT_SPRINT.md](docs/CURRENT_SPRINT.md) — Оперативный центр управления текущим спринтом (Фаза 0: Инженерный фундамент).
 * 🏛️ [ADR-0001: Архитектурный стек](docs/decisions/0001-initial-architecture-and-stack.md) — Обоснование выбора Go 1.23+ Echo, sqlc, React, OpenAPI и Pytest E2E.

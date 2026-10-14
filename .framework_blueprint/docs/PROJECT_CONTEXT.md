@@ -147,7 +147,7 @@ erDiagram
 │   └── src/api/             # Типизированный API-клиент
 ├── deploy/                  # Конфигурации Docker, Nginx, Compose
 ├── tests/                   # Изолированные сквозные E2E-тесты (Docker-ready)
-└── docs/                    # Полная база знаний проекта (CURRENT_SPRINT, CONVENTIONS, ADR, sprints)
+└── docs/                    # База знаний проекта (CURRENT_SPRINT, conventions/, ADR, sprints)
 ```
 
 ---

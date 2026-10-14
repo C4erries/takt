@@ -1,5 +1,4 @@
-.PHONY: all check-arch generate build run test test-e2e docker-up docker-down clean
-
+.PHONY: all check-arch generate build run test test-e2e mock docker-up docker-down clean
 SHELL := /bin/bash
 
 all: check-arch test
@@ -20,6 +19,17 @@ generate:
 	fi
 	@echo "==> OpenAPI bundled."
 
+mock:
+	@echo "==> Generating mocks via mockery..."
+	@cd backend && if command -v mockery >/dev/null 2>&1; then \
+		mockery; \
+	elif [ -f $(HOME)/go/bin/mockery ]; then \
+		$(HOME)/go/bin/mockery; \
+	else \
+		echo "mockery not found. Run: go install github.com/vektra/mockery/v3@latest"; exit 1; \
+	fi
+	@echo "==> Mocks generated."
+
 build:
 	@echo "==> Building Backend..."
 	@cd backend && go build -o bin/server ./cmd/server
@@ -35,8 +45,12 @@ test:
 	@cd backend && go test -v -race ./...
 
 test-e2e:
-	@echo "==> Running Pytest E2E suite..."
-	@python3 -m pytest tests/ -v
+	@echo "==> Running Pytest E2E suite via uv..."
+	@if command -v uv >/dev/null 2>&1; then \
+		uv run pytest tests/ -v; \
+	else \
+		python3 -m pytest tests/ -v; \
+	fi
 
 docker-up:
 	@docker compose up -d --build

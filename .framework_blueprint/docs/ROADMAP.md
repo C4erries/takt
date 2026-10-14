@@ -10,7 +10,7 @@
 ## Фаза 0: Инициализация, Архитектурный линтер и Атомарный UI-Kit 🔲
 > **Цель**: Провести стартовое интервью по `BOOTSTRAP.md`, развернуть скелет монорепозитория в Docker Compose, установить автоматический контроль архитектуры `make check-arch` и создать базовый UI-Kit по Дизайн-паспорту.
 
-- [ ] Прохождение `BOOTSTRAP.md` (фиксация `PROJECT_CONTEXT.md`, Дизайн-паспорта и конвенций в `CONVENTIONS.md`).
+- [ ] Прохождение `BOOTSTRAP.md` (фиксация `PROJECT_CONTEXT.md`, Дизайн-паспорта и конвенций в `docs/conventions/`).
 - [ ] Инициализация структуры монорепозитория (`backend/`, `frontend/`, `deploy/`, `tests/`, `scripts/`, `docs/`) и пакета DI-сборки `backend/internal/infrastructure/container/`.
 - [ ] Настройка скрипта **`scripts/check_arch.sh` и команды `make check-arch`** (автопроверка лимита `< 350–400 строк` в файле, `<= 7 файлов` в доменном пакете, чистоты слоев DDD и отсутствия сырых цветов Tailwind).
 - [ ] Docker Compose: база данных (PostgreSQL), кэш (Valkey/Redis), backend, frontend, reverse-proxy (Nginx) с конфигурацией `12-factor`.

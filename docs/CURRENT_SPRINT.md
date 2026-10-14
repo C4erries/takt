@@ -38,13 +38,13 @@
 
 | # | Задача | Статус | Приоритет | Ответственный / Субагент | Заметки и контракты |
 |---|--------|--------|-----------|---------------------------|---------------------|
-| 1 | Миграция БД (users, workspaces, tasks) и sqlc-запросы | 🔲 Planned | Критический | `backend_developer` | `000002_auth_and_inbox.up.sql`, `queries/*.sql` |
-| 2 | OpenAPI спецификация Auth & Inbox Tasks контрактов | 🔲 Planned | Критический | `backend_developer` | `paths/auth.yaml`, `paths/tasks.yaml`, `make generate` |
-| 3 | Domain & Application сценарии (User, Workspace, Task, JWT) | 🔲 Planned | Критический | `backend_developer` | `internal/domain/*`, `internal/application/*`, `ports.go` |
-| 4 | HTTP-хендлеры, Auth Middleware и Wiring в container | 🔲 Planned | Критический | `backend_developer` | `infrastructure/http/*`, `infrastructure/container/*` |
-| 5 | Фронтенд 3-колоночный каркас, лист Washi и Quick Capture | 🔲 Planned | Критический | `frontend_developer` | `widgets/sidebar`, `widgets/main-sheet`, `features/quick-capture` |
-| 6 | Пружинная J/K навигация и закрытие задач по шорткату | 🔲 Planned | Высокий | `frontend_developer` | `features/task-navigation`, хоткеи J/K/Space |
-| 7 | Pytest E2E тесты (Auth, Onboarding, Inbox CRUD, Tenant Isolation) | 🔲 Planned | Критический | `qa_engineer` | `tests/e2e/test_auth.py`, `tests/e2e/test_inbox.py` |
+| 1 | Миграция БД (users, workspaces, tasks) и sqlc-запросы | ✅ Done | Критический | `backend_developer` | `000002_auth_and_inbox.up.sql`, `queries/*.sql` |
+| 2 | OpenAPI спецификация Auth & Inbox Tasks контрактов | ✅ Done | Критический | `backend_developer` | `paths/auth.yaml`, `paths/tasks.yaml`, `make generate` |
+| 3 | Domain & Application сценарии (User, Workspace, Task, JWT) | ✅ Done | Критический | `backend_developer` | `internal/domain/*`, `internal/application/*`, `ports.go` |
+| 4 | HTTP-хендлеры, Auth Middleware и Wiring в container | ✅ Done | Критический | `backend_developer` | `infrastructure/http/*`, `infrastructure/container/*` |
+| 5 | Фронтенд 3-колоночный каркас, лист Washi и Quick Capture | 🔵 In Progress | Критический | `frontend_developer` | `widgets/sidebar`, `widgets/main-sheet`, `features/quick-capture` |
+| 6 | Пружинная J/K навигация и закрытие задач по шорткату | 🔵 In Progress | Высокий | `frontend_developer` | `features/task-navigation`, хоткеи J/K/Space |
+| 7 | Pytest E2E тесты (Auth, Onboarding, Inbox CRUD, Tenant Isolation) | 🔵 In Progress | Критический | `qa_engineer` | `tests/e2e/test_auth.py`, `tests/e2e/test_inbox.py` |
 
 > **Статусы задач**: `🔲 Planned` (Запланировано) · `🔵 In Progress` (В работе) · `🛑 Blocked` (Блокер) · `✅ Done` (Завершено)
 

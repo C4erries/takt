@@ -18,6 +18,25 @@ generate:
 		echo "Warning: redocly cli not found, skipping bundle"; \
 	fi
 	@echo "==> OpenAPI bundled."
+	@echo "==> Generating Go Echo server & types from OpenAPI via oapi-codegen..."
+	@mkdir -p backend/internal/infrastructure/http/generated
+	@cd backend && if command -v oapi-codegen >/dev/null 2>&1; then \
+		oapi-codegen --config oapi-codegen.yaml ../api/dist/openapi.json; \
+	elif [ -f $(HOME)/go/bin/oapi-codegen ]; then \
+		$(HOME)/go/bin/oapi-codegen --config oapi-codegen.yaml ../api/dist/openapi.json; \
+	else \
+		echo "oapi-codegen not found. Run: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest"; exit 1; \
+	fi
+	@echo "==> Echo server & types generated."
+	@echo "==> Generating sqlc code..."
+	@cd backend && if command -v sqlc >/dev/null 2>&1; then \
+		sqlc generate; \
+	elif [ -f $(HOME)/go/bin/sqlc ]; then \
+		$(HOME)/go/bin/sqlc generate; \
+	else \
+		echo "sqlc not found. Run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest"; exit 1; \
+	fi
+	@echo "==> sqlc code generated."
 
 mock:
 	@echo "==> Generating mocks via mockery..."

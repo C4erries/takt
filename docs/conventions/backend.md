@@ -80,12 +80,43 @@ backend/internal/
 
 ---
 
-## 📜 4. Контрактная разработка (Contract-First) и Ошибки
+## 📜 4. Контрактная разработка (Contract-First) и генерация Echo v4 через `oapi-codegen`
 
-* Все эндпоинты сначала фиксируются в `api/openapi/*`, после чего запускается кодогенерация (`make generate`).
-* Доменные ошибки типизированы (`ErrNotFound`, `ErrForbidden`, `ErrUnauthorized`, `ErrValidation`, `ErrConflict`).
-* Сервисы оборачивают ошибки с контекстом: `fmt.Errorf("taskapp.CreateTask: %w", err)`.
-* Единый HTTP Error Mapper переводит доменные ошибки в статус-коды (`404`, `403`, `401`, `400`, `409`, `429`), а неизвестные ошибки логирует в `stderr` и возвращает клиенту безопасный `500 Internal Server Error` без раскрытия стека.
+1. **Единый источник правды — OpenAPI 3.0**:
+   * Все эндпоинты, параметры, тела запросов и DTO ответов сначала проектируются в модульной спецификации `api/openapi/` (`paths/`, `schemas/`).
+   * Запуск `make generate` выполняет склейку (`@redocly/cli bundle` $\rightarrow$ `api/dist/openapi.json`), генерацию Go-сервера через `oapi-codegen` и генерацию SQL-запросов через `sqlc`.
+
+2. **Кодогенерация Echo v4 (`oapi-codegen v2`)**:
+   * Конфигурация хранится в `backend/oapi-codegen.yaml`:
+     ```yaml
+     package: generated
+     generate:
+       echo-server: true
+       models: true
+     output: internal/infrastructure/http/generated/api.gen.go
+     ```
+   * В пакете `backend` размещена директива кодогенерации `backend/generate.go`:
+     ```go
+     //go:generate oapi-codegen --config=oapi-codegen.yaml ../api/dist/openapi.json
+     ```
+   * Сгенерированный код помещается в `internal/infrastructure/http/generated/api.gen.go` и содержит:
+     - Все структуры моделей DTO (`generated.CreateInboxTaskRequest`, `generated.Task`, `generated.User` и др.).
+     - Интерфейс сервера Echo: `generated.ServerInterface`.
+     - Функции автоматической регистрации маршрутов: `generated.RegisterHandlers(e, server)` и `generated.RegisterHandlersWithBaseURL(e, server, "/api/v1")`.
+
+3. **Законы реализации HTTP-слоя (`internal/infrastructure/http/`)**:
+   * **Обязательная имплементация `ServerInterface`**: Серверный фасад или хендлеры в `internal/infrastructure/http/` обязаны реализовывать `generated.ServerInterface`. Для гарантии компилятора объявляется явная проверка:
+     ```go
+     var _ generated.ServerInterface = (*Server)(nil)
+     ```
+   * **Табу на рукописные DTO**: Запрещено создавать собственные структуры запросов/ответов (`type CreateTaskRequest struct`) вручную в файлах хендлеров. Используются исключительно типы из пакета `generated.*`.
+   * **Табу на ручную регистрацию роутов**: Маршрутизация привязывается к роутеру Echo через `generated.RegisterHandlers(apiGroup, server)`. Ручная регистрация `e.POST(...)` / `e.GET(...)` для API-эндпоинтов, описанных в схеме, запрещена.
+
+4. **Обработка ошибок и маппинг**:
+   * Доменные ошибки типизированы (`ErrNotFound`, `ErrForbidden`, `ErrUnauthorized`, `ErrValidation`, `ErrConflict`).
+   * Сервисы оборачивают ошибки с контекстом: `fmt.Errorf("taskapp.CreateTask: %w", err)`.
+   * Единый HTTP Error Mapper переводит доменные ошибки в статус-коды (`404`, `403`, `401`, `400`, `409`, `429`), а неизвестные ошибки логирует в `stderr` и возвращает клиенту безопасный `500 Internal Server Error` без раскрытия стека.
+
 
 ---
 

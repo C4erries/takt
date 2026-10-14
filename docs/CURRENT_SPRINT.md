@@ -34,24 +34,24 @@
 
 | # | Задача | Статус | Приоритет | Ответственный | Заметки и контракты |
 |---|--------|--------|-----------|---------------|---------------------|
-| 1 | **[Backend Step 1]**: Миграция 0003, sqlc-запросы, OpenAPI контракты и чистый домен `project` | 🔵 In Progress | Критический | `backend_developer` | `projects`, `boards`, `columns`, `internal/domain/project`, `make check-arch` |
-| 2 | **[Gatekeeper Checkpoint 1]**: Валидация контрактов и кодогенерации | 🔲 Planned | Критический | `lead_architect` | `make check-arch && make generate` |
-| 3 | **[Backend Step 2]**: Use-Cases, репозитории, HTTP-хендлеры и сборка в контейнере | 🔲 Planned | Высокий | `backend_developer` | `internal/application/project`, `infrastructure/http`, `infrastructure/repository` |
-| 4 | **[Frontend]**: Канбан-доска (@dnd-kit/core), колонки, DND перемещение и переключатель видов | 🔲 Planned | Высокий | `frontend_developer` | `@dnd-kit/core`, семантические токены Washi, оптимистичные мутации |
+| 1 | **[Backend Step 1]**: Миграция 0003, sqlc-запросы, OpenAPI контракты и чистый домен `project` | ✅ Done | Критический | `backend_developer` | `projects`, `boards`, `columns`, `internal/domain/project`, `make check-arch` |
+| 2 | **[Gatekeeper Checkpoint 1]**: Валидация контрактов и кодогенерации | ✅ Done | Критический | `lead_architect` | `make check-arch && make generate && make test` (0 ошибок) |
+| 3 | **[Backend Step 2]**: Use-Cases, репозитории, HTTP-хендлеры и сборка в контейнере | ✅ Done | Высокий | `backend_developer` | `internal/application/project`, `infrastructure/http`, `infrastructure/repository` |
+| 4 | **[Frontend]**: Канбан-доска (@dnd-kit/core), колонки, DND перемещение и переключатель видов | ✅ Done | Высокий | `frontend_developer` | `@dnd-kit/core`, семантические токены Washi, оптимистичные мутации |
 | 5 | **[QA & Verification]**: E2E тесты полного цикла проектов, колонок и DND перемещения | 🔲 Planned | Критический | `qa_engineer` | `tests/e2e/test_projects_kanban.py`, `make check-arch`, `make test`, `make test-e2e` |
 
 ---
 
 ## 🎯 Definition of Done (DoD)
 
-- [ ] Создана миграция `000003_projects_and_boards.up.sql` с внешними ключами и дробным `position`.
-- [ ] Описаны контракты OpenAPI для проектов, колонок и перемещения задач (`/api/v1/workspaces/{id}/projects`).
-- [ ] Доменный пакет `backend/internal/domain/project` покрыт юнит-тестами с проверкой инвариантов.
-- [ ] Use-Cases `internal/application/project` покрыты табличными тестами с `testify` и `mockery v3`.
-- [ ] Реализован DND интерфейс Канбан-доски с переключением в плоский список (List View) на фронтенде.
-- [ ] `make check-arch` — 0 ошибок (все 5 уровней пройдены).
-- [ ] `make test` — 100% PASS с флагом `-race`.
-- [ ] `cd frontend && npm run build` — 0 ошибок, 0 предупреждений.
+- [x] Создана миграция `000003_projects_and_boards.up.sql` с внешними ключами и дробным `position`.
+- [x] Описаны контракты OpenAPI для проектов, колонок и перемещения задач (`/api/v1/workspaces/{id}/projects`).
+- [x] Доменный пакет `backend/internal/domain/project` покрыт юнит-тестами с проверкой инвариантов.
+- [x] Use-Cases `internal/application/project` покрыты табличными тестами с `testify` и `mockery v3`.
+- [x] Реализован DND интерфейс Канбан-доски с переключением в плоский список (List View) на фронтенде.
+- [x] `make check-arch` — 0 ошибок (все 5 уровней пройдены).
+- [x] `make test` — 100% PASS с флагом `-race`.
+- [x] `cd frontend && npm run build` — 0 ошибок, 0 предупреждений.
 - [ ] `make test-e2e` — 100% PASS (все новые E2E сценарии проектов и канбана зеленые).
 
 ---

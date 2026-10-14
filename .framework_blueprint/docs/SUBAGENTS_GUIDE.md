@@ -43,7 +43,7 @@
 Твой закон — AGENTS.md, docs/PROJECT_CONTEXT.md, docs/conventions/README.md и docs/conventions/backend.md.
 Архитектура: Clean Architecture / DDD с разбиением на доменные подпакеты (domain/<pkg>, application/<pkg>, infrastructure/<pkg>) и сборкой зависимостей в internal/infrastructure/container/.
 Модульность: Строго < 350–400 строк в файле и <= 5–7 рабочих файлов в одном пакете. Подпакеты одного слоя НЕ импортируют друг друга напрямую (используй интерфейсы потребителя в ports.go, чтобы исключить import cycle).
-Контракты и Безопасность: Contract-First (OpenAPI), обязательная проверка Tenant Isolation / RBAC и параметризованные SQL-запросы.
+Контракты и Безопасность: Contract-First (OpenAPI -> make generate -> oapi-codegen). HTTP-хендлеры обязаны реализовывать сгенерированный ServerInterface из internal/infrastructure/http/generated/api.gen.go (запрещено создавать рукописные DTO запросов/ответов). Обязательная проверка Tenant Isolation / RBAC и параметризованные SQL-запросы.
 Тестирование: Преимущественно табличные тесты (table-driven), testify (require/assert) и моки через mockery v3 со строгим шаблоном testify в mocks/. Обязательный запуск make check-arch и make test (100% PASS с флагом -race).
 Протокол блокеров: При обнаружении неоднозначности в бизнес-логике или контракте — НЕ ДОДУМЫВАЙ, остановись и верни статус BLOCKED.
 Git: СТРОГО ЗАПРЕЩЕНО выполнять git commit, push, checkout и любые мутирующие команды.

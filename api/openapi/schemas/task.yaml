@@ -1,0 +1,94 @@
+Task:
+  type: object
+  required:
+    - id
+    - workspaceId
+    - title
+    - descriptionMarkdown
+    - isCompleted
+    - priority
+    - position
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    workspaceId:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174001"
+    projectId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    columnId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    title:
+      type: string
+      example: "Нажми J и K для клавиатурного перемещения по строкам"
+    descriptionMarkdown:
+      type: string
+      example: ""
+    isCompleted:
+      type: boolean
+      example: false
+    completedAt:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
+    dueDate:
+      type: string
+      format: date
+      nullable: true
+      example: null
+    priority:
+      type: string
+      enum: [none, low, medium, high, urgent]
+      example: "none"
+    focusOrder:
+      type: integer
+      nullable: true
+      example: null
+    position:
+      type: integer
+      example: 0
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+    updatedAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+CreateInboxTaskRequest:
+  type: object
+  required:
+    - title
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 500
+      example: "Купить чай сенча"
+    descriptionMarkdown:
+      type: string
+      nullable: true
+      example: ""
+    priority:
+      type: string
+      enum: [none, low, medium, high, urgent]
+      default: "none"
+      example: "none"
+    dueDate:
+      type: string
+      format: date
+      nullable: true
+      example: "2026-10-15"

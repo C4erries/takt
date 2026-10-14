@@ -4,7 +4,7 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.2.1 (Этап 0.2: Авторизация, Персональный Workspace и Захват в Inbox) 🔵 В РАБОТЕ (Фаза Б: Конвейер)
+## Текущий спринт: Спринт 0.2.1 (Этап 0.2: Авторизация, Персональный Workspace и Захват в Inbox) ✅ ЗАВЕРШЕН (Готов к архивации)
 
 ---
 
@@ -42,9 +42,9 @@
 | 2 | OpenAPI спецификация Auth & Inbox Tasks контрактов | ✅ Done | Критический | `backend_developer` | `paths/auth.yaml`, `paths/tasks.yaml`, `make generate` |
 | 3 | Domain & Application сценарии (User, Workspace, Task, JWT) | ✅ Done | Критический | `backend_developer` | `internal/domain/*`, `internal/application/*`, `ports.go` |
 | 4 | HTTP-хендлеры, Auth Middleware и Wiring в container | ✅ Done | Критический | `backend_developer` | `infrastructure/http/*`, `infrastructure/container/*` |
-| 5 | Фронтенд 3-колоночный каркас, лист Washi и Quick Capture | 🔵 In Progress | Критический | `frontend_developer` | `widgets/sidebar`, `widgets/main-sheet`, `features/quick-capture` |
-| 6 | Пружинная J/K навигация и закрытие задач по шорткату | 🔵 In Progress | Высокий | `frontend_developer` | `features/task-navigation`, хоткеи J/K/Space |
-| 7 | Pytest E2E тесты (Auth, Onboarding, Inbox CRUD, Tenant Isolation) | 🔵 In Progress | Критический | `qa_engineer` | `tests/e2e/test_auth.py`, `tests/e2e/test_inbox.py` |
+| 5 | Фронтенд 3-колоночный каркас, лист Washi и Quick Capture | ✅ Done | Критический | `frontend_developer` | `widgets/sidebar`, `widgets/main-sheet`, `features/quick-capture` |
+| 6 | Пружинная J/K навигация и закрытие задач по шорткату | ✅ Done | Высокий | `frontend_developer` | `features/task-navigation`, хоткеи J/K/Space |
+| 7 | Pytest E2E тесты (Auth, Onboarding, Inbox CRUD, Tenant Isolation) | ✅ Done | Критический | `qa_engineer` | `tests/e2e/test_auth.py`, `tests/e2e/test_inbox.py` |
 
 > **Статусы задач**: `🔲 Planned` (Запланировано) · `🔵 In Progress` (В работе) · `🛑 Blocked` (Блокер) · `✅ Done` (Завершено)
 
@@ -52,13 +52,13 @@
 
 ## 🎯 Definition of Done (DoD) Спринта
 
-- [ ] **Архитектурный линтер (`make check-arch`) проходит с 0 ошибок**: файлы `< 400 строк`, в пакетах `<= 7 файлов`, чистые слои DDD, 3 корневых подпакета в `internal/`, нет сырых цветов Tailwind.
-- [ ] Пользователь может зарегистрироваться и войти по email/паролю, сессионный JWT выставляется в HTTP-only cookie.
-- [ ] При регистрации автоматически создается Personal Workspace и 3 стартовые обучающие задачи в Inbox.
-- [ ] Задачи создаются в Inbox через инлайн-поле и модальное окно по хоткею `C`.
-- [ ] Работает J/K навигация по задачам и завершение задачи круглым чекбоксом.
-- [ ] Полная мультитенантная изоляция: пользователь не может прочитать или изменить чужие задачи.
-- [ ] `make test` и `make test-e2e` проходят со 100% результатом (PASS).
+- [x] **Архитектурный линтер (`make check-arch`) проходит с 0 ошибок**: файлы `< 400 строк`, в пакетах `<= 7 файлов`, чистые слои DDD, 3 корневых подпакета в `internal/`, нет сырых цветов Tailwind.
+- [x] Пользователь может зарегистрироваться и войти по email/паролю, сессионный JWT выставляется в HTTP-only cookie.
+- [x] При регистрации автоматически создается Personal Workspace и 3 стартовые обучающие задачи в Inbox.
+- [x] Задачи создаются в Inbox через инлайн-поле и модальное окно по хоткею `C`.
+- [x] Работает J/K навигация по задачам и завершение задачи круглым чекбоксом.
+- [x] Полная мультитенантная изоляция: пользователь не может прочитать или изменить чужие задачи.
+- [x] `make test` и `make test-e2e` проходят со 100% результатом (PASS, 14/14 E2E тестов зеленые).
 
 ---
 
@@ -68,3 +68,4 @@
 |------|---------------|
 | 2026-10-14 | **Фаза А (Штаб)**: согласован Блиц-опрос сооснователей, принят [ADR-0002](decisions/0002-jwt-auth-and-tenant-isolation.md), сформирован скоуп Спринта 0.2.1 (Этап 0.2). |
 | 2026-10-14 | **Фаза Б (Конвейер)**: запущен субагент `backend_developer` на Задачи 1–4 (Contract-First: миграции, OpenAPI, domain/app/infra). |
+| 2026-10-14 | **Фаза Б (Конвейер)**: Завершены Задачи 1–7 Спринта 0.2.1. Личный гейткипинг пройден: `make check-arch` (0 ошибок), `make test` (18/18 PASS), `make test-e2e` (14/14 PASS), сборка фронтенда (`npm run build`) успешна. |

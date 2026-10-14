@@ -1,0 +1,131 @@
+inbox:
+  get:
+    tags:
+      - Tasks
+    summary: List all Inbox tasks
+    description: Returns uncompleted and completed tasks currently in the Inbox ordered by position.
+    operationId: getInboxTasks
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    responses:
+      '200':
+        description: List of Inbox tasks
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../schemas/task.yaml#/Task'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+  post:
+    tags:
+      - Tasks
+    summary: Quickly create an Inbox task
+    description: Quick capture endpoint to create a task in the current user's workspace Inbox.
+    operationId: createInboxTask
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/task.yaml#/CreateInboxTaskRequest'
+    responses:
+      '201':
+        description: Created task
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/task.yaml#/Task'
+      '400':
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+toggle:
+  patch:
+    tags:
+      - Tasks
+    summary: Toggle task completion status
+    description: Toggles completed status of a task and updates completedAt timestamp.
+    operationId: toggleTaskCompletion
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Task UUID
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Updated task
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/task.yaml#/Task'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Task not found in workspace
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+item:
+  delete:
+    tags:
+      - Tasks
+    summary: Delete a task
+    description: Permanently deletes a task from the current workspace.
+    operationId: deleteTask
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Task UUID
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Task successfully deleted
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Task not found in workspace
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'

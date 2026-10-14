@@ -1,0 +1,13 @@
+dir: "{{.InterfaceDir}}/mocks"
+filename: "mock_{{.InterfaceName}}.go"
+structname: "Mock{{.InterfaceName}}"
+pkgname: "mocks"
+template: testify
+force-file-write: true
+recursive: true
+all: true
+packages:
+  takt:
+    config:
+      recursive: true
+      all: true

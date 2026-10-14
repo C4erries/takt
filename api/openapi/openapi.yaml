@@ -12,6 +12,8 @@ servers:
 tags:
   - name: Health
     description: Service health and readiness checks
+  - name: Auth
+    description: Authentication and user onboarding
   - name: Workspaces
     description: Workspace management and membership
   - name: Projects
@@ -24,11 +26,39 @@ tags:
 paths:
   /health:
     $ref: './paths/health.yaml'
+  /auth/register:
+    $ref: './paths/auth.yaml#/register'
+  /auth/login:
+    $ref: './paths/auth.yaml#/login'
+  /auth/logout:
+    $ref: './paths/auth.yaml#/logout'
+  /auth/me:
+    $ref: './paths/auth.yaml#/me'
+  /tasks/inbox:
+    $ref: './paths/tasks.yaml#/inbox'
+  /tasks/{id}/toggle:
+    $ref: './paths/tasks.yaml#/toggle'
+  /tasks/{id}:
+    $ref: './paths/tasks.yaml#/item'
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
   schemas:
     HealthResponse:
       $ref: './schemas/health.yaml'
     ErrorResponse:
       $ref: './schemas/error.yaml'
-
+    User:
+      $ref: './schemas/user.yaml#/User'
+    Workspace:
+      $ref: './schemas/workspace.yaml'
+    Task:
+      $ref: './schemas/task.yaml#/Task'

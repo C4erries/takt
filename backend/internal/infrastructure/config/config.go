@@ -11,6 +11,7 @@ type Config struct {
 	Environment string
 	LogLevel    string
 	DatabaseURL string
+	JWTSecret   string
 }
 
 // Load loads configuration from environment variables with sensible defaults.
@@ -37,10 +38,16 @@ func Load() (*Config, error) {
 		databaseURL = "postgres://postgres:postgres@localhost:5432/takt_db?sslmode=disable"
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "takt-dev-secret-key-change-in-production-123456"
+	}
+
 	return &Config{
 		Port:        port,
 		Environment: env,
 		LogLevel:    logLevel,
 		DatabaseURL: databaseURL,
+		JWTSecret:   jwtSecret,
 	}, nil
 }

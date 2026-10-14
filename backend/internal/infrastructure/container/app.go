@@ -14,7 +14,7 @@ import (
 	httpDelivery "takt/internal/infrastructure/http"
 )
 
-const AppVersion = "0.1.0"
+const AppVersion = "0.2.1"
 
 // Run boots up the application server and listens for graceful shutdown.
 func Run(ctx context.Context, cfg *config.Config) error {
@@ -28,14 +28,22 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		}
 	}()
 
-	_ = initServices(repos)
+	services := initServices(repos, cfg)
 
 	var dbChecker httpDelivery.DBChecker
 	if repos.DB != nil {
 		dbChecker = repos.DB
 	}
 
-	handler := httpDelivery.NewHandler(dbChecker, AppVersion)
+	isProduction := cfg.Environment == "production"
+	handler := httpDelivery.NewHandler(
+		dbChecker,
+		AppVersion,
+		isProduction,
+		services.WorkspaceService,
+		services.TaskService,
+		services.JWTManager,
+	)
 
 	e := echo.New()
 	e.HideBanner = true

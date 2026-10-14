@@ -1,0 +1,116 @@
+register:
+  post:
+    tags:
+      - Auth
+    summary: Register a new user
+    description: Creates a user account, initializes personal workspace and onboarding tasks.
+    operationId: register
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user.yaml#/RegisterRequest'
+    responses:
+      '201':
+        description: User registered successfully
+        headers:
+          Set-Cookie:
+            schema:
+              type: string
+              example: "token=eyJhbGciOi...; Path=/; HttpOnly; SameSite=Lax"
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/user.yaml#/AuthResponse'
+      '400':
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '409':
+        description: User with this email already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+login:
+  post:
+    tags:
+      - Auth
+    summary: Log in with email and password
+    description: Authenticates user credentials and returns session token with personal workspace.
+    operationId: login
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user.yaml#/LoginRequest'
+    responses:
+      '200':
+        description: Logged in successfully
+        headers:
+          Set-Cookie:
+            schema:
+              type: string
+              example: "token=eyJhbGciOi...; Path=/; HttpOnly; SameSite=Lax"
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/user.yaml#/AuthResponse'
+      '401':
+        description: Invalid credentials
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+logout:
+  post:
+    tags:
+      - Auth
+    summary: Log out user session
+    description: Clears HTTP-only session cookie.
+    operationId: logout
+    responses:
+      '200':
+        description: Successfully logged out
+        headers:
+          Set-Cookie:
+            schema:
+              type: string
+              example: "token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Logged out successfully"
+
+me:
+  get:
+    tags:
+      - Auth
+    summary: Get current authenticated user profile and active workspace
+    operationId: getMe
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    responses:
+      '200':
+        description: Current user profile
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/user.yaml#/MeResponse'
+      '401':
+        description: Unauthorized or session expired
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'

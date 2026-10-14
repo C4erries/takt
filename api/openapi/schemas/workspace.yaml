@@ -1,0 +1,27 @@
+type: object
+required:
+  - id
+  - name
+  - type
+  - role
+  - createdAt
+properties:
+  id:
+    type: string
+    format: uuid
+    example: "123e4567-e89b-12d3-a456-426614174000"
+  name:
+    type: string
+    example: "Личное"
+  type:
+    type: string
+    enum: [personal, shared]
+    example: "personal"
+  role:
+    type: string
+    enum: [owner, member]
+    example: "owner"
+  createdAt:
+    type: string
+    format: date-time
+    example: "2026-10-14T12:00:00Z"

@@ -1,0 +1,85 @@
+User:
+  type: object
+  required:
+    - id
+    - email
+    - displayName
+    - createdAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    email:
+      type: string
+      format: email
+      example: "user@takt.dev"
+    displayName:
+      type: string
+      example: "Pavel"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+RegisterRequest:
+  type: object
+  required:
+    - email
+    - password
+    - displayName
+  properties:
+    email:
+      type: string
+      format: email
+      example: "user@takt.dev"
+    password:
+      type: string
+      format: password
+      minLength: 6
+      example: "secret123"
+    displayName:
+      type: string
+      example: "Pavel"
+
+LoginRequest:
+  type: object
+  required:
+    - email
+    - password
+  properties:
+    email:
+      type: string
+      format: email
+      example: "user@takt.dev"
+    password:
+      type: string
+      format: password
+      example: "secret123"
+
+AuthResponse:
+  type: object
+  required:
+    - token
+    - user
+    - workspace
+  properties:
+    token:
+      type: string
+      description: JWT session token
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    user:
+      $ref: '#/User'
+    workspace:
+      $ref: './workspace.yaml'
+
+MeResponse:
+  type: object
+  required:
+    - user
+    - workspace
+  properties:
+    user:
+      $ref: '#/User'
+    workspace:
+      $ref: './workspace.yaml'

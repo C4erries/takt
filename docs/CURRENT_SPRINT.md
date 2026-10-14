@@ -4,38 +4,55 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.2.2 (Этап 0.2: Стабилизация и подгонка под обновленные конвенции) ✅ ЗАВЕРШЕН (Готов к архивации)
+## Текущий спринт: Спринт 0.3.1 (Фаза 2 / Этап 0.3: Проекты, Колонки и Канбан-доска) 🔵 В РАБОТЕ
 
 ---
 
-## 🧠 1. Аналитика и Зафиксированные микро-решения спринта
+## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Режим «Штаб»)
 
-* **Бизнес-цель**: Синхронизировать кодовую базу с обновленным сводом конвенций (`docs/conventions/backend.md`, `docs/conventions/frontend.md`, `docs/conventions/README.md`) перед переходом к Фазе 1.
-* **Принятые микро-решения**:
-  1. **Backend Tests**: Перевод всех тестов Use-Cases на паттерн **Table-Driven Tests** с библиотекой **`testify`** (`require.*` для прерывающих условий, `assert.*` для данных) и автогенерируемыми моками **`mockery v3`** (`mocks/`) вместо ad-hoc фейков.
-  2. **Frontend State**: Установка и внедрение **`TanStack Query v5`** (с оптимистичными обновлениями для мутаций) и **`Zustand`** для легковесного локального UI-состояния (навигация, активный фокус).
-  3. **Архитектурный линтер**: Гарантировать корректное игнорирование автогенерируемых моков `mock_*.go` в `scripts/check_arch.sh`.
+* **Бизнес-цель**: Дать пользователю возможность создавать проекты с дефолтными досками и колонками, раскладывать задачи по колонкам и визуально управлять потоком работы через тактильную Drag-and-Drop Канбан-доску (`@dnd-kit/core`) и плоский вид Списка (List View).
+* **Зафиксированные продуктовые и архитектурные микро-решения**:
+  1. **Колонки проекта по умолчанию**: При создании проекта транзакционно генерируется базовая доска «Основная» с 3 колонками:
+     - «К выполнению» (`status_category: todo`, `position: 1000.0`)
+     - «В работе» (`status_category: in_progress`, `position: 2000.0`)
+     - «Готово» (`status_category: done`, `position: 3000.0`)
+  2. **Позиционирование Drag-and-Drop (Fractional Indexing)**:
+     - Поле `position` задач и колонок использует тип `DOUBLE PRECISION`.
+     - При перемещении карточки между $A$ и $B$ новая позиция вычисляется как $(pos_A + pos_B) / 2$.
+     - При переносе в начало списка: $pos_{first} / 2$; в конец: $pos_{last} + 1000.0$.
+     - Это обеспечивает $O(1)$ точечный UPDATE одной задачи без каскадных блокировок соседних строк в PostgreSQL.
+  3. **Защитные барьеры при удалении (Safety Guard / No Data Loss)**:
+     - Запрещено удалять колонку, пока в ней находятся задачи (`409 Conflict` / доменная ошибка `ErrColumnNotEmpty`). Пользователь обязан сначала переместить или закрыть задачи.
+     - При удалении проекта все входящие в него задачи НЕ удаляются, а безопасно разлинковываются (`project_id = NULL, column_id = NULL`) и возвращаются во «Входящие» (Inbox).
+  4. **Contract-First Двухфазная поставка**:
+     - *Шаг 1*: SQL-миграция `000003_projects_and_boards.up.sql`, `backend/queries/projects.sql`, OpenAPI эндпоинты в `api/openapi/paths/projects.yaml`, схемы в `schemas/project.yaml`, генерация `make generate` и чистый домен `backend/internal/domain/project` с тестами.
+     - *Шаг 2*: Репозитории, Use-Cases `internal/application/project`, HTTP-хендлеры, связывание в `container/` + параллельная разработка фронтенда с `@dnd-kit/core` и переключателем видов.
 
 ---
 
-## 📋 Таблица задач микроспринта 0.2.2
+## 📋 Таблица задач спринта 0.3.1
 
 | # | Задача | Статус | Приоритет | Ответственный | Заметки и контракты |
 |---|--------|--------|-----------|---------------|---------------------|
-| 1 | Установка и интеграция TanStack Query v5 и Zustand | ✅ Done | Критический | `frontend_developer` | `@tanstack/react-query`, `zustand`, QueryClientProvider, useMutation |
-| 2 | Рефакторинг Go unit-тестов на Table-Driven + Testify + Mockery | ✅ Done | Критический | `backend_developer` | `application/task/usecases_test.go`, `application/workspace/usecases_test.go` |
-| 3 | Валидация качества, сборки и E2E тестов | ✅ Done | Критический | `lead_architect` / `qa_engineer` | `make check-arch && make test && make build && make test-e2e` |
+| 1 | **[Backend Step 1]**: Миграция 0003, sqlc-запросы, OpenAPI контракты и чистый домен `project` | 🔵 In Progress | Критический | `backend_developer` | `projects`, `boards`, `columns`, `internal/domain/project`, `make check-arch` |
+| 2 | **[Gatekeeper Checkpoint 1]**: Валидация контрактов и кодогенерации | 🔲 Planned | Критический | `lead_architect` | `make check-arch && make generate` |
+| 3 | **[Backend Step 2]**: Use-Cases, репозитории, HTTP-хендлеры и сборка в контейнере | 🔲 Planned | Высокий | `backend_developer` | `internal/application/project`, `infrastructure/http`, `infrastructure/repository` |
+| 4 | **[Frontend]**: Канбан-доска (@dnd-kit/core), колонки, DND перемещение и переключатель видов | 🔲 Planned | Высокий | `frontend_developer` | `@dnd-kit/core`, семантические токены Washi, оптимистичные мутации |
+| 5 | **[QA & Verification]**: E2E тесты полного цикла проектов, колонок и DND перемещения | 🔲 Planned | Критический | `qa_engineer` | `tests/e2e/test_projects_kanban.py`, `make check-arch`, `make test`, `make test-e2e` |
 
 ---
 
 ## 🎯 Definition of Done (DoD)
 
-- [x] Все Use-Cases тесты Go используют табличный паттерн, `testify/require`, `testify/assert` и `mockery` моки.
-- [x] Во фронтенде установлены `@tanstack/react-query` и `zustand`; серверные запросы кэшируются через TanStack Query.
-- [x] `make check-arch` — 0 ошибок (все 5 уровней пройдены).
-- [x] `make test` — 100% PASS с флагом `-race`.
-- [x] `cd frontend && npm run build` — 0 ошибок, 0 ворнингов.
-- [x] `make test-e2e` — 100% PASS (14/14 тестов зеленые).
+- [ ] Создана миграция `000003_projects_and_boards.up.sql` с внешними ключами и дробным `position`.
+- [ ] Описаны контракты OpenAPI для проектов, колонок и перемещения задач (`/api/v1/workspaces/{id}/projects`).
+- [ ] Доменный пакет `backend/internal/domain/project` покрыт юнит-тестами с проверкой инвариантов.
+- [ ] Use-Cases `internal/application/project` покрыты табличными тестами с `testify` и `mockery v3`.
+- [ ] Реализован DND интерфейс Канбан-доски с переключением в плоский список (List View) на фронтенде.
+- [ ] `make check-arch` — 0 ошибок (все 5 уровней пройдены).
+- [ ] `make test` — 100% PASS с флагом `-race`.
+- [ ] `cd frontend && npm run build` — 0 ошибок, 0 предупреждений.
+- [ ] `make test-e2e` — 100% PASS (все новые E2E сценарии проектов и канбана зеленые).
 
 ---
 
@@ -43,4 +60,4 @@
 
 | Дата | Что изменилось |
 |------|---------------|
-| 2026-10-14 | **Микроспринт 0.2.2**: инициализирован и завершен. Внедрены `@tanstack/react-query` v5 и `zustand`, Go тесты переведены на Table-Driven + Testify + Mockery v3. Конвейер верификации `make check-arch`, `make test`, `make build`, `make test-e2e` пройден на 100%. |
+| 2026-10-14 | **Спринт 0.3.1 открыт (Фаза «Штаб» завершена)**: Проведен блиц-опрос, утверждены 4 ключевых продуктовых и архитектурных микро-решения (дефолтные колонки GTD, Fractional Indexing, защита от потери данных, двухфазная поставка). Сформирован план спринта и критерии DoD. |

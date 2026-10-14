@@ -7,21 +7,21 @@
 
 ---
 
-## Фаза 0: Инженерный фундамент, Архитектурный линтер и UI-Kit «Soft Editorial GTD» 🔲
+## Фаза 0: Инженерный фундамент, Архитектурный линтер и UI-Kit «Soft Editorial GTD» ✅
 > **Цель**: Развернуть каркас монорепозитория в Docker Compose, настроить автоматический архитектурный контроль `make check-arch`, мультифайловый OpenAPI и создать атомарный UI-Kit по Дизайн-паспорту японской канцелярии.
 
-- [ ] Инициализация структуры монорепозитория (`backend/`, `frontend/`, `deploy/`, `tests/`, `scripts/`, `docs/`, `api/`).
-- [ ] Базовый Go-сервис на **Echo v4** с точкой сборки зависимостей `backend/internal/infrastructure/container/` (`main.go` < 50 строк).
-- [ ] Настройка пула БД `pgxpool`, транзактора через `context.Context` и конфигурации `sqlc.yaml`.
-- [ ] Настройка скрипта **`scripts/check_arch.sh` и команды `make check-arch`** (лимит строк < 400, лимит файлов в доменном пакете <= 7, запрет сырых цветов Tailwind, чистота слоев DDD).
-- [ ] Мультифайловый OpenAPI манифест (`api/openapi/*`), сборка через `@redocly/cli` и генерация через `oapi-codegen`.
-- [ ] Базовая инфраструктура: `docker-compose.yml` (PostgreSQL 16, Backend, Frontend, Nginx reverse-proxy) и `Makefile`.
-- [ ] Базовый атомарный **UI-Kit в `frontend/src/shared/components/ui/`** (`Button`, `Input`, `Checkbox` 18px круглый, `Card`, `Badge` капсульный, `Modal`, `Skeleton`, `EmptyState`, `ErrorBanner`) на токенах Washi/Matcha.
-- [ ] Каркас E2E-тестирования на Python (`pytest` + `httpx`) в `tests/` с фикстурами API-клиента.
+- [x] Инициализация структуры монорепозитория (`backend/`, `frontend/`, `deploy/`, `tests/`, `scripts/`, `docs/`, `api/`).
+- [x] Базовый Go-сервис на **Echo v4** с точкой сборки зависимостей `backend/internal/infrastructure/container/` (`main.go` < 50 строк).
+- [x] Настройка пула БД `pgxpool`, транзактора через `context.Context` и конфигурации `sqlc.yaml`.
+- [x] Настройка скрипта **`scripts/check_arch.sh` и команды `make check-arch`** (лимит строк < 400, лимит файлов в доменном пакете <= 7, запрет сырых цветов Tailwind, чистота слоев DDD).
+- [x] Мультифайловый OpenAPI манифест (`api/openapi/*`), сборка через `@redocly/cli` и генерация через `oapi-codegen`.
+- [x] Базовая инфраструктура: `docker-compose.yml` (PostgreSQL 16, Backend, Frontend, Nginx reverse-proxy) и `Makefile`.
+- [x] Базовый атомарный **UI-Kit в `frontend/src/shared/components/ui/`** (`Button`, `Input`, `Checkbox` 18px круглый, `Card`, `Badge` капсульный, `Modal`, `Skeleton`, `EmptyState`, `ErrorBanner`) на токенах Washi/Matcha.
+- [x] Каркас E2E-тестирования на Python (`pytest` + `httpx`) в `tests/` с фикстурами API-клиента.
 
 ---
 
-## Фаза 1: Авторизация, Персональный Workspace и Захват в Inbox (Quick Capture) 🔲
+## Фаза 1 (Этап 0.2): Авторизация, Персональный Workspace и Захват в Inbox (Quick Capture) 🔵
 > **Цель**: Полный цикл Zero-friction онбординга (регистрация $\rightarrow$ вход в личный воркспейс), быстрый сбор входящих мыслей/задач в Inbox с J/K навигацией.
 
 - [ ] Доменный пакет `internal/domain/workspace` и таблица `workspaces` (автосоздание `personal` воркспейса).

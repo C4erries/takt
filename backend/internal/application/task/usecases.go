@@ -3,8 +3,10 @@ package task
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"takt/internal/domain/events"
 	domainTask "takt/internal/domain/task"
 )
 
@@ -28,14 +30,24 @@ type Service struct {
 	taskRepo      TaskRepository
 	tagRepo       TagRepository
 	accessChecker WorkspaceAccessChecker
+	eventBus      EventPublisher
 }
 
-func NewService(taskRepo TaskRepository, tagRepo TagRepository, accessChecker WorkspaceAccessChecker) *Service {
+func NewService(taskRepo TaskRepository, tagRepo TagRepository, accessChecker WorkspaceAccessChecker, publisher ...EventPublisher) *Service {
+	var pub EventPublisher
+	if len(publisher) > 0 {
+		pub = publisher[0]
+	}
 	return &Service{
 		taskRepo:      taskRepo,
 		tagRepo:       tagRepo,
 		accessChecker: accessChecker,
+		eventBus:      pub,
 	}
+}
+
+func (s *Service) SetEventPublisher(pub EventPublisher) {
+	s.eventBus = pub
 }
 
 func (s *Service) loadTaskTags(ctx context.Context, tasks []*domainTask.Task) {
@@ -96,6 +108,20 @@ func (s *Service) CreateInboxTask(ctx context.Context, input CreateInboxTaskInpu
 	}
 
 	t.Tags = []*domainTask.Tag{}
+
+	if s.eventBus != nil {
+		_ = s.eventBus.Publish(ctx, events.TaskCreatedEvent{
+			TaskID:         t.ID,
+			WorkspaceIDVal: t.WorkspaceID,
+			ProjectID:      t.ProjectID,
+			ColumnID:       t.ColumnID,
+			Title:          t.Title,
+			DueDate:        t.DueDate,
+			OccurredAtVal:  time.Now().UTC(),
+			FromAutomation: events.IsAutomationTriggered(ctx),
+		})
+	}
+
 	return t, nil
 }
 
@@ -105,6 +131,37 @@ func (s *Service) ToggleTask(ctx context.Context, id, workspaceID uuid.UUID) (*d
 		return nil, err
 	}
 	s.loadSingleTaskTags(ctx, t)
+
+	if s.eventBus != nil {
+		if t.IsCompleted {
+			completedAt := time.Now().UTC()
+			if t.CompletedAt != nil {
+				completedAt = *t.CompletedAt
+			}
+			_ = s.eventBus.Publish(ctx, events.TaskCompletedEvent{
+				TaskID:         t.ID,
+				WorkspaceIDVal: t.WorkspaceID,
+				ProjectID:      t.ProjectID,
+				ColumnID:       t.ColumnID,
+				CompletedAt:    completedAt,
+				OccurredAtVal:  time.Now().UTC(),
+				FromAutomation: events.IsAutomationTriggered(ctx),
+			})
+		} else {
+			_ = s.eventBus.Publish(ctx, events.TaskUpdatedEvent{
+				TaskID:         t.ID,
+				WorkspaceIDVal: t.WorkspaceID,
+				ProjectID:      t.ProjectID,
+				ColumnID:       t.ColumnID,
+				Title:          t.Title,
+				DueDate:        t.DueDate,
+				IsCompleted:    false,
+				OccurredAtVal:  time.Now().UTC(),
+				FromAutomation: events.IsAutomationTriggered(ctx),
+			})
+		}
+	}
+
 	return t, nil
 }
 
@@ -146,6 +203,9 @@ func (s *Service) UpdateTask(ctx context.Context, input UpdateTaskInput) (*domai
 	if err != nil {
 		return nil, err
 	}
+
+	prevProj := t.ProjectID
+	prevCol := t.ColumnID
 
 	if input.Title != nil {
 		trimmed := strings.TrimSpace(*input.Title)
@@ -191,6 +251,23 @@ func (s *Service) UpdateTask(ctx context.Context, input UpdateTaskInput) (*domai
 	}
 
 	s.loadSingleTaskTags(ctx, t)
+
+	if s.eventBus != nil {
+		_ = s.eventBus.Publish(ctx, events.TaskUpdatedEvent{
+			TaskID:            t.ID,
+			WorkspaceIDVal:    t.WorkspaceID,
+			ProjectID:         t.ProjectID,
+			ColumnID:          t.ColumnID,
+			Title:             t.Title,
+			DueDate:           t.DueDate,
+			IsCompleted:       t.IsCompleted,
+			PreviousProjectID: prevProj,
+			PreviousColumnID:  prevCol,
+			OccurredAtVal:     time.Now().UTC(),
+			FromAutomation:    events.IsAutomationTriggered(ctx),
+		})
+	}
+
 	return t, nil
 }
 
@@ -210,6 +287,21 @@ func (s *Service) SetTaskFocus(ctx context.Context, input SetFocusInput) (*domai
 	}
 
 	s.loadSingleTaskTags(ctx, updated)
+
+	if s.eventBus != nil {
+		_ = s.eventBus.Publish(ctx, events.TaskUpdatedEvent{
+			TaskID:         updated.ID,
+			WorkspaceIDVal: updated.WorkspaceID,
+			ProjectID:      updated.ProjectID,
+			ColumnID:       updated.ColumnID,
+			Title:          updated.Title,
+			DueDate:        updated.DueDate,
+			IsCompleted:    updated.IsCompleted,
+			OccurredAtVal:  time.Now().UTC(),
+			FromAutomation: events.IsAutomationTriggered(ctx),
+		})
+	}
+
 	return updated, nil
 }
 

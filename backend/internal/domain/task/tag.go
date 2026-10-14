@@ -61,3 +61,4 @@ func NewTag(workspaceID uuid.UUID, name, colorHex string) (*Tag, error) {
 		CreatedAt:   time.Now().UTC(),
 	}, nil
 }
+

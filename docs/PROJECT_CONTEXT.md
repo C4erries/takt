@@ -169,17 +169,17 @@ erDiagram
 ## 🛡️ 5. Архитектурные границы MVP (Scope Boundaries)
 
 ### Входит в Core MVP v1 (IN SCOPE):
-- [ ] Инженерный каркас монорепозитория, скрипт `scripts/check_arch.sh` и команда `make check-arch`.
-- [ ] Базовый атомарный UI-Kit в стиле **Editorial Tech / Japanese Stationery** (`#E8E5DA` Canvas, `#F7F5EE` Washi, круговой чекбокс 18px, бейджи, кнопки, инпуты).
-- [ ] Регистрация и вход (Email + Password, JWT в HTTP-only cookies / Header), автоматическое создание Personal Workspace.
-- [ ] Быстрый захват задач в **Inbox** (Quick Capture).
-- [ ] Проекты, Канбан-доска (drag-and-drop колонок и карточек) и вид плоского Списка (List view).
-- [ ] Вид **«Сегодня / Focus of the Day»** с пружинной J/K навигацией клавиатуры.
-- [ ] Декларативный движок автоматизаций (EventBus + Rule Evaluator) с 3 готовыми правилами-тумблерами:
+- [x] Инженерный каркас монорепозитория, скрипт `scripts/check_arch.sh` и команда `make check-arch`.
+- [x] Базовый атомарный UI-Kit в стиле **Editorial Tech / Japanese Stationery** (`#E8E5DA` Canvas, `#F7F5EE` Washi, круговой чекбокс 18px, бейджи, кнопки, инпуты).
+- [x] Регистрация и вход (Email + Password, JWT в HTTP-only cookies / Header), автоматическое создание Personal Workspace.
+- [x] Быстрый захват задач в **Inbox** (Quick Capture).
+- [x] Проекты, Канбан-доска (drag-and-drop колонок и карточек) и вид плоского Списка (List view).
+- [x] Вид **«Сегодня / Focus of the Day»** с пружинной J/K навигацией клавиатуры.
+- [x] Декларативный движок автоматизаций (EventBus + Rule Evaluator) с 3 готовыми правилами-тумблерами:
   1. *Inbox Zero*: Задаче назначен проект или срок $\rightarrow$ автоперемещение из Inbox.
   2. *Done & Archive*: Чекбокс отмечен $\rightarrow$ автоперенос в колонку «Done» с фиксацией `completed_at`.
   3. *Auto-Focus*: Срок задачи наступил «Сегодня» $\rightarrow$ автоперевод в активный статус / фокус.
-- [ ] E2E тест-сьют на Python (`pytest` + `httpx`) в `tests/`.
+- [x] E2E тест-сьют на Python (`pytest` + `httpx`) в `tests/` (25/25 PASS).
 
 ### Вынесено за рамки v1 (OUT OF SCOPE, отложено на v2+):
 - Визуальный no-code / low-code конструктор произвольных правил автоматизаций (отложено на v2).

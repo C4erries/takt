@@ -42,3 +42,4 @@ ORDER BY t.name ASC;
 -- name: ClearTaskTags :exec
 DELETE FROM task_tags
 WHERE task_id = $1;
+

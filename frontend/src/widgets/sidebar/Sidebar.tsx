@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
   Layers,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { Button, Badge, Input } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
@@ -27,6 +28,7 @@ export interface SidebarProps {
   onLogout: () => void;
   showUiCatalog: boolean;
   onToggleUiCatalog: () => void;
+  onOpenAutomations?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -40,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
   showUiCatalog,
   onToggleUiCatalog,
+  onOpenAutomations,
 }) => {
   const {
     setQuickCaptureOpen,
@@ -254,8 +257,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* UI-Kit Showcase Toggle */}
-        <div className="pt-2 border-t border-subtle/50">
+        {/* Automations & UI-Kit section */}
+        <div className="pt-2 border-t border-subtle/50 space-y-1">
+          <button
+            type="button"
+            onClick={onOpenAutomations}
+            className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-all duration-150 text-muted hover:text-primary hover:bg-surface/60"
+            title="Автоматизации GTD"
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-accent-solid" />
+              <span>Автоматизации</span>
+            </span>
+            <Badge variant="subtle" size="sm" className="font-mono text-[10px] px-1.5 py-0">
+              3
+            </Badge>
+          </button>
+
           <button
             type="button"
             onClick={onToggleUiCatalog}

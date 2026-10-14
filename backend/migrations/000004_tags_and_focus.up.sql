@@ -17,3 +17,4 @@ CREATE TABLE IF NOT EXISTS task_tags (
 
 CREATE INDEX IF NOT EXISTS idx_tags_workspace ON tags(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_due_focus ON tasks(workspace_id, due_date, focus_order);
+

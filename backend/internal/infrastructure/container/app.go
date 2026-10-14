@@ -44,6 +44,7 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		services.TaskService,
 		services.ProjectService,
 		services.JWTManager,
+		services.AutomationService,
 	)
 
 	e := echo.New()
@@ -68,6 +69,12 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		log.Printf("[INFO] Shutdown signal received, shutting down gracefully...")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+
+		if services.EventBus != nil {
+			if err := services.EventBus.Close(shutdownCtx); err != nil {
+				log.Printf("[WARN] EventBus shutdown error: %v", err)
+			}
+		}
 
 		if err := e.Shutdown(shutdownCtx); err != nil {
 			return fmt.Errorf("server shutdown error: %w", err)

@@ -46,3 +46,4 @@ CreateTagRequest:
       maxLength: 32
       default: "matcha"
       example: "matcha"
+

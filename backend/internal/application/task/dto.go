@@ -42,3 +42,4 @@ type CreateTagInput struct {
 	Name        string
 	ColorHex    string
 }
+

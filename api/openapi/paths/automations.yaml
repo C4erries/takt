@@ -1,0 +1,98 @@
+automations:
+  get:
+    tags:
+      - Automations
+    summary: List all automations in a workspace
+    operationId: listWorkspaceAutomations
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: List of workspace automations
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../schemas/automation.yaml#/Automation'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+toggle:
+  patch:
+    tags:
+      - Automations
+    summary: Toggle automation enabled status
+    operationId: toggleAutomation
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: automation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/automation.yaml#/ToggleAutomationRequest'
+    responses:
+      '200':
+        description: Updated automation
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/automation.yaml#/Automation'
+      '400':
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Automation not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+

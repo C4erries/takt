@@ -44,3 +44,4 @@ type MoveTaskInput struct {
 	Position    float64
 	ProjectID   *uuid.UUID
 }
+

@@ -1,0 +1,64 @@
+Automation:
+  type: object
+  required:
+    - id
+    - workspaceId
+    - name
+    - triggerType
+    - conditionsJson
+    - actionsJson
+    - isEnabled
+    - createdAt
+    - updatedAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    workspaceId:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174001"
+    boardId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: "Done & Archive"
+    triggerType:
+      type: string
+      enum: [task_completed, task_updated, task_created, due_date_reached]
+      example: "task_completed"
+    conditionsJson:
+      type: object
+      additionalProperties: true
+      example: {}
+    actionsJson:
+      type: object
+      additionalProperties: true
+      example: { "action": "move_to_done" }
+    isEnabled:
+      type: boolean
+      example: true
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+    updatedAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+ToggleAutomationRequest:
+  type: object
+  required:
+    - is_enabled
+  properties:
+    is_enabled:
+      type: boolean
+      example: true
+

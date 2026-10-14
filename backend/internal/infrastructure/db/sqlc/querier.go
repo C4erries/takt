@@ -15,6 +15,7 @@ type Querier interface {
 	CheckHealth(ctx context.Context) (int32, error)
 	ClearTaskTags(ctx context.Context, taskID pgtype.UUID) error
 	CountTasksInColumn(ctx context.Context, columnID pgtype.UUID) (int64, error)
+	CreateAutomation(ctx context.Context, arg CreateAutomationParams) (Automation, error)
 	CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error)
 	CreateColumn(ctx context.Context, arg CreateColumnParams) (Column, error)
 	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
@@ -28,6 +29,7 @@ type Querier interface {
 	DeleteProject(ctx context.Context, arg DeleteProjectParams) error
 	DeleteTag(ctx context.Context, arg DeleteTagParams) error
 	DeleteTask(ctx context.Context, arg DeleteTaskParams) error
+	GetAutomationByID(ctx context.Context, arg GetAutomationByIDParams) (Automation, error)
 	GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, error)
 	GetColumnByID(ctx context.Context, id pgtype.UUID) (Column, error)
 	GetInboxTasks(ctx context.Context, workspaceID pgtype.UUID) ([]Task, error)
@@ -45,14 +47,17 @@ type Querier interface {
 	GetWorkspacesByUserID(ctx context.Context, userID pgtype.UUID) ([]GetWorkspacesByUserIDRow, error)
 	ListBoardsByProject(ctx context.Context, projectID pgtype.UUID) ([]Board, error)
 	ListColumnsByBoard(ctx context.Context, boardID pgtype.UUID) ([]Column, error)
+	ListEnabledAutomationsByTrigger(ctx context.Context, arg ListEnabledAutomationsByTriggerParams) ([]Automation, error)
 	ListProjectsByWorkspace(ctx context.Context, workspaceID pgtype.UUID) ([]Project, error)
 	ListTasksByColumn(ctx context.Context, arg ListTasksByColumnParams) ([]Task, error)
 	ListTasksByProject(ctx context.Context, arg ListTasksByProjectParams) ([]Task, error)
+	ListWorkspaceAutomations(ctx context.Context, workspaceID pgtype.UUID) ([]Automation, error)
 	ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID) ([]Tag, error)
 	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)
 	RemoveTagFromTask(ctx context.Context, arg RemoveTagFromTaskParams) error
 	ResetProjectTasksToInbox(ctx context.Context, arg ResetProjectTasksToInboxParams) error
 	SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Task, error)
+	ToggleAutomation(ctx context.Context, arg ToggleAutomationParams) (Automation, error)
 	ToggleTaskCompletion(ctx context.Context, arg ToggleTaskCompletionParams) (Task, error)
 	UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error)
 	UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Column, error)

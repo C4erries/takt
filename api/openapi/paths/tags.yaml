@@ -85,3 +85,4 @@ taskTagItem:
       '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
       '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
       '404': { description: Task or tag not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+

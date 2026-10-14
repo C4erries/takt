@@ -374,3 +374,4 @@ func mapColumnRowToDomain(row sqlc.Column) *domainProject.Column {
 		UpdatedAt:      pgToTime(row.UpdatedAt),
 	}
 }
+

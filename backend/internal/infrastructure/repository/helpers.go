@@ -28,6 +28,22 @@ func pgToUUID(id pgtype.UUID) uuid.UUID {
 	return id.Bytes
 }
 
+func uuidPtrToPg(id *uuid.UUID) pgtype.UUID {
+	if id == nil {
+		return pgtype.UUID{Valid: false}
+	}
+	return pgtype.UUID{Bytes: *id, Valid: true}
+}
+
+func pgToUUIDPtr(id pgtype.UUID) *uuid.UUID {
+	if !id.Valid {
+		return nil
+	}
+	res := uuid.UUID(id.Bytes)
+	return &res
+}
+
+
 func timeToPg(t time.Time) pgtype.Timestamptz {
 	if t.IsZero() {
 		return pgtype.Timestamptz{Valid: false}

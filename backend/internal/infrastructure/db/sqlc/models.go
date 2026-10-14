@@ -8,6 +8,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Automation struct {
+	ID             pgtype.UUID        `json:"id"`
+	WorkspaceID    pgtype.UUID        `json:"workspace_id"`
+	BoardID        pgtype.UUID        `json:"board_id"`
+	Name           string             `json:"name"`
+	TriggerType    string             `json:"trigger_type"`
+	ConditionsJson []byte             `json:"conditions_json"`
+	ActionsJson    []byte             `json:"actions_json"`
+	IsEnabled      bool               `json:"is_enabled"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Board struct {
 	ID        pgtype.UUID        `json:"id"`
 	ProjectID pgtype.UUID        `json:"project_id"`

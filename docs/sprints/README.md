@@ -43,6 +43,7 @@
 | **Sprint 0.3.1** | [sprint-0.3.1.md](sprint-0.3.1.md) | 2026-10-14 | `✅ Done` | Проекты, доски, GTD-колонки, Fractional Indexing DND, Канбан-доска @dnd-kit/core, переключатель видов |
 | **Sprint 0.3.1b** | [sprint-0.3.1b.md](sprint-0.3.1b.md) | 2026-10-14 | `✅ Done` | Адаптация HTTP-сервера под ServerInterface из oapi-codegen, удаление рукописных DTO, RegisterHandlers |
 | **Sprint 0.3.2** | [sprint-0.3.2.md](sprint-0.3.2.md) | 2026-10-14 | `✅ Done` | Bento-панель (TaskInspector с Markdown split-toggle, матричный календарь с контекстным кликом) и вид «Сегодня» |
+| **Sprint 0.3.3** | [sprint-0.3.3.md](sprint-0.3.3.md) | 2026-10-14 | `✅ Done` | Движок событий EventBus, домен automation, 3 пресетных правила с защитой Loop Guard, AutomationsModal и E2E |
 
 ---
 

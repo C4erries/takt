@@ -21,6 +21,7 @@ import { Button } from '@/shared/components/ui';
 
 import { useTodayTasksQuery } from '@/entities/task';
 import { useProjectTasksQuery } from '@/entities/project';
+import { AutomationsModal } from '@/features/automations-toggle';
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
@@ -56,6 +57,7 @@ export const App: React.FC = () => {
   const [showUiCatalog, setShowUiCatalog] = useState<boolean>(false);
   const [catalogTab, setCatalogTab] = useState<'ui-kit' | 'states'>('ui-kit');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isAutomationsModalOpen, setIsAutomationsModalOpen] = useState<boolean>(false);
 
   // Invalidate tasks query when user auth state changes
   useEffect(() => {
@@ -65,7 +67,7 @@ export const App: React.FC = () => {
   // Global hotkey 'c' for Quick Capture
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isQuickCaptureOpen || isAuthModalOpen || showUiCatalog) return;
+      if (isQuickCaptureOpen || isAuthModalOpen || isAutomationsModalOpen || showUiCatalog) return;
 
       const target = e.target as HTMLElement | null;
       const isInput =
@@ -85,7 +87,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isQuickCaptureOpen, isAuthModalOpen, showUiCatalog, setQuickCaptureOpen]);
+  }, [isQuickCaptureOpen, isAuthModalOpen, isAutomationsModalOpen, showUiCatalog, setQuickCaptureOpen]);
 
   let currentNavTasks =
     activeNav === 'today'
@@ -102,7 +104,7 @@ export const App: React.FC = () => {
   const { selectedIndex, setSelectedIndex } = useTaskNavigation({
     tasks: currentNavTasks,
     onToggleTask: (id) => toggleTaskMutation.mutate(id),
-    isEnabled: !isQuickCaptureOpen && !isAuthModalOpen && !showUiCatalog,
+    isEnabled: !isQuickCaptureOpen && !isAuthModalOpen && !isAutomationsModalOpen && !showUiCatalog,
   });
 
   const allAvailableTasks = [...tasks, ...todayTasks, ...projectTasks];
@@ -125,6 +127,7 @@ export const App: React.FC = () => {
         onLogout={logout}
         showUiCatalog={showUiCatalog}
         onToggleUiCatalog={() => setShowUiCatalog((prev) => !prev)}
+        onOpenAutomations={() => setIsAutomationsModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -218,6 +221,12 @@ export const App: React.FC = () => {
         onClose={() => setIsAuthModalOpen(false)}
         onLogin={login}
         onRegister={register}
+      />
+
+      <AutomationsModal
+        isOpen={isAutomationsModalOpen}
+        onClose={() => setIsAutomationsModalOpen(false)}
+        workspaceId={workspace?.id}
       />
     </div>
   );

@@ -2,8 +2,10 @@ package project
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
+	"takt/internal/domain/events"
 	domainProject "takt/internal/domain/project"
 	domainTask "takt/internal/domain/task"
 )
@@ -15,6 +17,11 @@ type Service struct {
 	taskRepo      TaskMoveRepository
 	accessChecker WorkspaceAccessChecker
 	transactor    Transactor
+	eventBus      EventPublisher
+}
+
+func (s *Service) SetEventPublisher(pub EventPublisher) {
+	s.eventBus = pub
 }
 
 func NewService(
@@ -257,7 +264,7 @@ func (s *Service) MoveTask(ctx context.Context, input MoveTaskInput) (*domainTas
 	}
 
 	projID := b.ProjectID
-	return s.taskRepo.MoveTaskToColumnAndPosition(
+	moved, err := s.taskRepo.MoveTaskToColumnAndPosition(
 		ctx,
 		input.TaskID,
 		input.WorkspaceID,
@@ -265,6 +272,23 @@ func (s *Service) MoveTask(ctx context.Context, input MoveTaskInput) (*domainTas
 		&projID,
 		input.Position,
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.eventBus != nil {
+		_ = s.eventBus.Publish(ctx, events.TaskMovedEvent{
+			TaskID:         moved.ID,
+			WorkspaceIDVal: moved.WorkspaceID,
+			ProjectID:      moved.ProjectID,
+			ColumnID:       moved.ColumnID,
+			Position:       float64(moved.Position),
+			OccurredAtVal:  time.Now().UTC(),
+			FromAutomation: events.IsAutomationTriggered(ctx),
+		})
+	}
+
+	return moved, nil
 }
 
 func (s *Service) GetProjectTasks(ctx context.Context, projectID, workspaceID uuid.UUID) ([]*domainTask.Task, error) {

@@ -28,6 +28,11 @@ type InitialTasksCreator interface {
 	CreateInitialInboxTasks(ctx context.Context, workspaceID uuid.UUID) error
 }
 
+// AutomationSeeder abstracts seeding preset automations for new workspaces.
+type AutomationSeeder interface {
+	SeedDefaultAutomations(ctx context.Context, workspaceID uuid.UUID) error
+}
+
 // UserRepository alias to domain repository.
 type UserRepository = domainWorkspace.UserRepository
 

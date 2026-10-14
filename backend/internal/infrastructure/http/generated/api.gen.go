@@ -13,6 +13,30 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AutomationTriggerType.
+const (
+	DueDateReached AutomationTriggerType = "due_date_reached"
+	TaskCompleted  AutomationTriggerType = "task_completed"
+	TaskCreated    AutomationTriggerType = "task_created"
+	TaskUpdated    AutomationTriggerType = "task_updated"
+)
+
+// Valid indicates whether the value is a known member of the AutomationTriggerType enum.
+func (e AutomationTriggerType) Valid() bool {
+	switch e {
+	case DueDateReached:
+		return true
+	case TaskCompleted:
+		return true
+	case TaskCreated:
+		return true
+	case TaskUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ColumnStatusCategory.
 const (
 	ColumnStatusCategoryBacklog    ColumnStatusCategory = "backlog"
@@ -251,6 +275,40 @@ type AuthResponse struct {
 	Workspace Workspace `json:"workspace"`
 }
 
+// Automation defines model for Automation.
+type Automation struct {
+	// ActionsJson Example: {"action":"move_to_done"}
+	ActionsJson map[string]interface{} `json:"actionsJson"`
+	BoardId     *openapi_types.UUID    `json:"boardId,omitempty"`
+
+	// ConditionsJson Example: {}
+	ConditionsJson map[string]interface{} `json:"conditionsJson"`
+
+	// CreatedAt Example: 2026-10-14T12:00:00Z
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Id Example: 123e4567-e89b-12d3-a456-426614174000
+	Id openapi_types.UUID `json:"id"`
+
+	// IsEnabled Example: true
+	IsEnabled bool `json:"isEnabled"`
+
+	// Name Example: Done & Archive
+	Name string `json:"name"`
+
+	// TriggerType Example: task_completed
+	TriggerType AutomationTriggerType `json:"triggerType"`
+
+	// UpdatedAt Example: 2026-10-14T12:00:00Z
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	// WorkspaceId Example: 123e4567-e89b-12d3-a456-426614174001
+	WorkspaceId openapi_types.UUID `json:"workspaceId"`
+}
+
+// AutomationTriggerType Example: task_completed
+type AutomationTriggerType string
+
 // Board defines model for Board.
 type Board struct {
 	// CreatedAt Example: 2026-10-14T12:00:00Z
@@ -477,6 +535,12 @@ type Task struct {
 // TaskPriority Example: none
 type TaskPriority string
 
+// ToggleAutomationRequest defines model for ToggleAutomationRequest.
+type ToggleAutomationRequest struct {
+	// IsEnabled Example: true
+	IsEnabled bool `json:"is_enabled"`
+}
+
 // UpdateColumnRequest defines model for UpdateColumnRequest.
 type UpdateColumnRequest struct {
 	// Name Example: В работе
@@ -624,6 +688,9 @@ type RegisterJSONRequestBody = RegisterRequest
 // CreateInboxTaskJSONRequestBody defines body for CreateInboxTask for application/json ContentType.
 type CreateInboxTaskJSONRequestBody = CreateInboxTaskRequest
 
+// ToggleAutomationJSONRequestBody defines body for ToggleAutomation for application/json ContentType.
+type ToggleAutomationJSONRequestBody = ToggleAutomationRequest
+
 // CreateBoardColumnJSONRequestBody defines body for CreateBoardColumn for application/json ContentType.
 type CreateBoardColumnJSONRequestBody = CreateColumnRequest
 
@@ -680,6 +747,12 @@ type ServerInterface interface {
 	// ToggleTaskCompletion Toggle task completion status
 	// (PATCH /tasks/{id}/toggle)
 	ToggleTaskCompletion(ctx echo.Context, id openapi_types.UUID) error
+	// ListWorkspaceAutomations List all automations in a workspace
+	// (GET /workspaces/{workspace_id}/automations)
+	ListWorkspaceAutomations(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// ToggleAutomation Toggle automation enabled status
+	// (PATCH /workspaces/{workspace_id}/automations/{automation_id}/toggle)
+	ToggleAutomation(ctx echo.Context, workspaceId openapi_types.UUID, automationId openapi_types.UUID) error
 	// ListBoardColumns List columns for a board
 	// (GET /workspaces/{workspace_id}/boards/{board_id}/columns)
 	ListBoardColumns(ctx echo.Context, workspaceId openapi_types.UUID, boardId openapi_types.UUID) error
@@ -842,6 +915,46 @@ func (w *ServerInterfaceWrapper) ToggleTaskCompletion(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.ToggleTaskCompletion(ctx, id)
+	return err
+}
+
+// ListWorkspaceAutomations converts echo context to params.
+func (w *ServerInterfaceWrapper) ListWorkspaceAutomations(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListWorkspaceAutomations(ctx, workspaceId)
+	return err
+}
+
+// ToggleAutomation converts echo context to params.
+func (w *ServerInterfaceWrapper) ToggleAutomation(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "automation_id" -------------
+	var automationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "automation_id", ctx.Param("automation_id"), &automationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter automation_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ToggleAutomation(ctx, workspaceId, automationId)
 	return err
 }
 
@@ -1397,6 +1510,8 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/tasks/inbox", wrapper.CreateInboxTask, options.OperationMiddlewares["createInboxTask"]...)
 	router.DELETE(options.BaseURL+"/tasks/:id", wrapper.DeleteTask, options.OperationMiddlewares["deleteTask"]...)
 	router.PATCH(options.BaseURL+"/tasks/:id/toggle", wrapper.ToggleTaskCompletion, options.OperationMiddlewares["toggleTaskCompletion"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/automations", wrapper.ListWorkspaceAutomations, options.OperationMiddlewares["listWorkspaceAutomations"]...)
+	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/automations/:automation_id/toggle", wrapper.ToggleAutomation, options.OperationMiddlewares["toggleAutomation"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns", wrapper.ListBoardColumns, options.OperationMiddlewares["listBoardColumns"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns", wrapper.CreateBoardColumn, options.OperationMiddlewares["createBoardColumn"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns/:column_id", wrapper.DeleteBoardColumn, options.OperationMiddlewares["deleteBoardColumn"]...)

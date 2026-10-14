@@ -18,8 +18,9 @@ type Repositories struct {
 	TaskRepo      *repository.TaskRepository
 	ProjectRepo   *repository.ProjectRepository
 	BoardRepo     *repository.BoardRepository
-	ColumnRepo    *repository.ColumnRepository
-	TaskMoveRepo  *repository.TaskMoveRepository
+	ColumnRepo     *repository.ColumnRepository
+	TaskMoveRepo   *repository.TaskMoveRepository
+	AutomationRepo *repository.AutomationRepository
 }
 
 // initRepositories initializes database connection pool and repositories.
@@ -36,6 +37,7 @@ func initRepositories(ctx context.Context, cfg *config.Config) (*Repositories, e
 	var boardRepo *repository.BoardRepository
 	var columnRepo *repository.ColumnRepository
 	var taskMoveRepo *repository.TaskMoveRepository
+	var automationRepo *repository.AutomationRepository
 
 	if database != nil && database.Pool != nil {
 		queries := sqlc.New(database.Pool)
@@ -46,16 +48,18 @@ func initRepositories(ctx context.Context, cfg *config.Config) (*Repositories, e
 		boardRepo = repository.NewBoardRepository(queries)
 		columnRepo = repository.NewColumnRepository(queries)
 		taskMoveRepo = repository.NewTaskMoveRepository(queries)
+		automationRepo = repository.NewAutomationRepository(queries)
 	}
 
 	return &Repositories{
-		DB:            database,
-		UserRepo:      userRepo,
-		WorkspaceRepo: workspaceRepo,
-		TaskRepo:      taskRepo,
-		ProjectRepo:   projectRepo,
-		BoardRepo:     boardRepo,
-		ColumnRepo:    columnRepo,
-		TaskMoveRepo:  taskMoveRepo,
+		DB:             database,
+		UserRepo:       userRepo,
+		WorkspaceRepo:  workspaceRepo,
+		TaskRepo:       taskRepo,
+		ProjectRepo:    projectRepo,
+		BoardRepo:      boardRepo,
+		ColumnRepo:     columnRepo,
+		TaskMoveRepo:   taskMoveRepo,
+		AutomationRepo: automationRepo,
 	}, nil
 }

@@ -47,8 +47,9 @@ type Service struct {
 	wsRepo       WorkspaceRepository
 	hasher       PasswordHasher
 	tokenGen     TokenGenerator
-	tasksCreator InitialTasksCreator
-	transactor   Transactor
+	tasksCreator     InitialTasksCreator
+	transactor       Transactor
+	automationSeeder AutomationSeeder
 }
 
 func NewService(
@@ -58,14 +59,20 @@ func NewService(
 	tokenGen TokenGenerator,
 	tasksCreator InitialTasksCreator,
 	transactor Transactor,
+	automationSeeder ...AutomationSeeder,
 ) *Service {
+	var seeder AutomationSeeder
+	if len(automationSeeder) > 0 {
+		seeder = automationSeeder[0]
+	}
 	return &Service{
-		userRepo:     userRepo,
-		wsRepo:       wsRepo,
-		hasher:       hasher,
-		tokenGen:     tokenGen,
-		tasksCreator: tasksCreator,
-		transactor:   transactor,
+		userRepo:         userRepo,
+		wsRepo:           wsRepo,
+		hasher:           hasher,
+		tokenGen:         tokenGen,
+		tasksCreator:     tasksCreator,
+		transactor:       transactor,
+		automationSeeder: seeder,
 	}
 }
 
@@ -123,6 +130,11 @@ func (s *Service) Register(ctx context.Context, input RegisterInput) (*RegisterO
 		}
 		if s.tasksCreator != nil {
 			if err := s.tasksCreator.CreateInitialInboxTasks(txCtx, ws.ID); err != nil {
+				return err
+			}
+		}
+		if s.automationSeeder != nil {
+			if err := s.automationSeeder.SeedDefaultAutomations(txCtx, ws.ID); err != nil {
 				return err
 			}
 		}

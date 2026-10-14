@@ -68,6 +68,10 @@ paths:
     $ref: './paths/projects.yaml#/projectTasks'
   /workspaces/{workspace_id}/tasks/{task_id}/move:
     $ref: './paths/projects.yaml#/moveTask'
+  /workspaces/{workspace_id}/automations:
+    $ref: './paths/automations.yaml#/automations'
+  /workspaces/{workspace_id}/automations/{automation_id}/toggle:
+    $ref: './paths/automations.yaml#/toggle'
 
 components:
   securitySchemes:
@@ -114,3 +118,7 @@ components:
       $ref: './schemas/project.yaml#/UpdateColumnRequest'
     MoveTaskRequest:
       $ref: './schemas/project.yaml#/MoveTaskRequest'
+    Automation:
+      $ref: './schemas/automation.yaml#/Automation'
+    ToggleAutomationRequest:
+      $ref: './schemas/automation.yaml#/ToggleAutomationRequest'

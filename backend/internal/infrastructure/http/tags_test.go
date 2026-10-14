@@ -197,3 +197,4 @@ func TestHandler_RemoveTagFromTask_Success(t *testing.T) {
 	require.NoError(t, handler.RemoveTagFromTask(c, wsID, taskID, tagID))
 	assert.Equal(t, http.StatusNoContent, rec.Code)
 }
+

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"takt/internal/domain/events"
 	domainTask "takt/internal/domain/task"
 )
 
@@ -26,3 +27,9 @@ type TagRepository interface {
 type WorkspaceAccessChecker interface {
 	CheckAccess(ctx context.Context, workspaceID, userID uuid.UUID) error
 }
+
+// EventPublisher publishes domain events.
+type EventPublisher interface {
+	Publish(ctx context.Context, event events.Event) error
+}
+

@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	domainProject "takt/internal/domain/project"
 	domainTask "takt/internal/domain/task"
+	"takt/internal/domain/events"
 )
 
 type Transactor interface {
@@ -63,3 +64,8 @@ type UseCases interface {
 	MoveTask(ctx context.Context, input MoveTaskInput) (*domainTask.Task, error)
 	GetProjectTasks(ctx context.Context, projectID, workspaceID uuid.UUID) ([]*domainTask.Task, error)
 }
+
+type EventPublisher interface {
+	Publish(ctx context.Context, event events.Event) error
+}
+

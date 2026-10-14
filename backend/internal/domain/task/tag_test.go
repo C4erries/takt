@@ -156,3 +156,4 @@ func TestTask_SetFocusOrder(t *testing.T) {
 	err = task.SetFocusOrder(&invalidOrder)
 	require.ErrorIs(t, err, ErrInvalidFocusOrder)
 }
+

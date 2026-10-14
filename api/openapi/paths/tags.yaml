@@ -1,0 +1,87 @@
+tags:
+  get:
+    tags: [Tags]
+    summary: List all tags in a workspace
+    operationId: listWorkspaceTags
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '200':
+        description: List of workspace tags
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '../schemas/tag.yaml#/Tag' }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+  post:
+    tags: [Tags]
+    summary: Create a new tag in a workspace
+    operationId: createWorkspaceTag
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../schemas/tag.yaml#/CreateTagRequest' }
+    responses:
+      '201':
+        description: Tag created successfully
+        content:
+          application/json:
+            schema: { $ref: '../schemas/tag.yaml#/Tag' }
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '409': { description: Tag with this name already exists in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+tagItem:
+  delete:
+    tags: [Tags]
+    summary: Delete a tag
+    operationId: deleteWorkspaceTag
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: tag_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '204': { description: Tag deleted successfully }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Tag not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+taskTagItem:
+  post:
+    tags: [Tags, Tasks]
+    summary: Attach a tag to a task
+    operationId: addTagToTask
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: task_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: tag_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '204': { description: Tag attached to task }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task or tag not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+  delete:
+    tags: [Tags, Tasks]
+    summary: Remove a tag from a task
+    operationId: removeTagFromTask
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: task_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: tag_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '204': { description: Tag removed from task }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task or tag not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }

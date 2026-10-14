@@ -11,11 +11,14 @@ import (
 )
 
 type Querier interface {
+	AddTagToTask(ctx context.Context, arg AddTagToTaskParams) error
 	CheckHealth(ctx context.Context) (int32, error)
+	ClearTaskTags(ctx context.Context, taskID pgtype.UUID) error
 	CountTasksInColumn(ctx context.Context, columnID pgtype.UUID) (int64, error)
 	CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error)
 	CreateColumn(ctx context.Context, arg CreateColumnParams) (Column, error)
 	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
+	CreateTag(ctx context.Context, arg CreateTagParams) (Tag, error)
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error)
@@ -23,6 +26,7 @@ type Querier interface {
 	DeleteBoard(ctx context.Context, id pgtype.UUID) error
 	DeleteColumn(ctx context.Context, id pgtype.UUID) error
 	DeleteProject(ctx context.Context, arg DeleteProjectParams) error
+	DeleteTag(ctx context.Context, arg DeleteTagParams) error
 	DeleteTask(ctx context.Context, arg DeleteTaskParams) error
 	GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, error)
 	GetColumnByID(ctx context.Context, id pgtype.UUID) (Column, error)
@@ -30,7 +34,10 @@ type Querier interface {
 	GetMaxInboxPosition(ctx context.Context, workspaceID pgtype.UUID) (int32, error)
 	GetPersonalWorkspaceByUserID(ctx context.Context, userID pgtype.UUID) (GetPersonalWorkspaceByUserIDRow, error)
 	GetProjectByID(ctx context.Context, arg GetProjectByIDParams) (Project, error)
+	GetTagByID(ctx context.Context, arg GetTagByIDParams) (Tag, error)
 	GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task, error)
+	GetTaskTags(ctx context.Context, taskID pgtype.UUID) ([]Tag, error)
+	GetTodayTasks(ctx context.Context, workspaceID pgtype.UUID) ([]Task, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error)
@@ -41,12 +48,16 @@ type Querier interface {
 	ListProjectsByWorkspace(ctx context.Context, workspaceID pgtype.UUID) ([]Project, error)
 	ListTasksByColumn(ctx context.Context, arg ListTasksByColumnParams) ([]Task, error)
 	ListTasksByProject(ctx context.Context, arg ListTasksByProjectParams) ([]Task, error)
+	ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID) ([]Tag, error)
 	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)
+	RemoveTagFromTask(ctx context.Context, arg RemoveTagFromTaskParams) error
 	ResetProjectTasksToInbox(ctx context.Context, arg ResetProjectTasksToInboxParams) error
+	SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Task, error)
 	ToggleTaskCompletion(ctx context.Context, arg ToggleTaskCompletionParams) (Task, error)
 	UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error)
 	UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Column, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error)
+	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 }
 
 var _ Querier = (*Queries)(nil)

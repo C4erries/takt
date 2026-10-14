@@ -376,6 +376,154 @@ func (_c *MockTaskRepository_GetMaxInboxPosition_Call) RunAndReturn(run func(ctx
 	return _c
 }
 
+// GetTodayTasks provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) GetTodayTasks(ctx context.Context, workspaceID uuid.UUID) ([]*task.Task, error) {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTodayTasks")
+	}
+
+	var r0 []*task.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*task.Task, error)); ok {
+		return returnFunc(ctx, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*task.Task); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_GetTodayTasks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTodayTasks'
+type MockTaskRepository_GetTodayTasks_Call struct {
+	*mock.Call
+}
+
+// GetTodayTasks is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockTaskRepository_Expecter) GetTodayTasks(ctx any, workspaceID any) *MockTaskRepository_GetTodayTasks_Call {
+	return &MockTaskRepository_GetTodayTasks_Call{Call: _e.mock.On("GetTodayTasks", ctx, workspaceID)}
+}
+
+func (_c *MockTaskRepository_GetTodayTasks_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockTaskRepository_GetTodayTasks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_GetTodayTasks_Call) Return(tasks []*task.Task, err error) *MockTaskRepository_GetTodayTasks_Call {
+	_c.Call.Return(tasks, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_GetTodayTasks_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task.Task, error)) *MockTaskRepository_GetTodayTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetFocusOrder provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) SetFocusOrder(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, focusOrder *int) (*task.Task, error) {
+	ret := _mock.Called(ctx, id, workspaceID, focusOrder)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetFocusOrder")
+	}
+
+	var r0 *task.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *int) (*task.Task, error)); ok {
+		return returnFunc(ctx, id, workspaceID, focusOrder)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *int) *task.Task); ok {
+		r0 = returnFunc(ctx, id, workspaceID, focusOrder)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*task.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, *int) error); ok {
+		r1 = returnFunc(ctx, id, workspaceID, focusOrder)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_SetFocusOrder_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetFocusOrder'
+type MockTaskRepository_SetFocusOrder_Call struct {
+	*mock.Call
+}
+
+// SetFocusOrder is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+//   - workspaceID uuid.UUID
+//   - focusOrder *int
+func (_e *MockTaskRepository_Expecter) SetFocusOrder(ctx any, id any, workspaceID any, focusOrder any) *MockTaskRepository_SetFocusOrder_Call {
+	return &MockTaskRepository_SetFocusOrder_Call{Call: _e.mock.On("SetFocusOrder", ctx, id, workspaceID, focusOrder)}
+}
+
+func (_c *MockTaskRepository_SetFocusOrder_Call) Run(run func(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, focusOrder *int)) *MockTaskRepository_SetFocusOrder_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 *int
+		if args[3] != nil {
+			arg3 = args[3].(*int)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_SetFocusOrder_Call) Return(task1 *task.Task, err error) *MockTaskRepository_SetFocusOrder_Call {
+	_c.Call.Return(task1, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_SetFocusOrder_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, focusOrder *int) (*task.Task, error)) *MockTaskRepository_SetFocusOrder_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Toggle provides a mock function for the type MockTaskRepository
 func (_mock *MockTaskRepository) Toggle(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*task.Task, error) {
 	ret := _mock.Called(ctx, id, workspaceID)
@@ -446,6 +594,63 @@ func (_c *MockTaskRepository_Toggle_Call) Return(task1 *task.Task, err error) *M
 }
 
 func (_c *MockTaskRepository_Toggle_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*task.Task, error)) *MockTaskRepository_Toggle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) Update(ctx context.Context, t *task.Task) error {
+	ret := _mock.Called(ctx, t)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *task.Task) error); ok {
+		r0 = returnFunc(ctx, t)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTaskRepository_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockTaskRepository_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - t *task.Task
+func (_e *MockTaskRepository_Expecter) Update(ctx any, t any) *MockTaskRepository_Update_Call {
+	return &MockTaskRepository_Update_Call{Call: _e.mock.On("Update", ctx, t)}
+}
+
+func (_c *MockTaskRepository_Update_Call) Run(run func(ctx context.Context, t *task.Task)) *MockTaskRepository_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *task.Task
+		if args[1] != nil {
+			arg1 = args[1].(*task.Task)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_Update_Call) Return(err error) *MockTaskRepository_Update_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTaskRepository_Update_Call) RunAndReturn(run func(ctx context.Context, t *task.Task) error) *MockTaskRepository_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -15,6 +15,8 @@ export interface TaskNavigationState {
   setSelectedProjectId: (id: string | null) => void;
   viewMode: 'kanban' | 'list';
   setViewMode: (mode: 'kanban' | 'list') => void;
+  selectedDateFilter: string | null;
+  setSelectedDateFilter: (date: string | null) => void;
 }
 
 export const useTaskStore = create<TaskNavigationState>((set) => ({
@@ -30,4 +32,6 @@ export const useTaskStore = create<TaskNavigationState>((set) => ({
   setSelectedProjectId: (selectedProjectId) => set({ selectedProjectId }),
   viewMode: 'kanban',
   setViewMode: (viewMode) => set({ viewMode }),
+  selectedDateFilter: null,
+  setSelectedDateFilter: (selectedDateFilter) => set({ selectedDateFilter }),
 }));

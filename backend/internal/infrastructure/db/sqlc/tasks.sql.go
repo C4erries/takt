@@ -183,6 +183,85 @@ func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task,
 	return i, err
 }
 
+const getTodayTasks = `-- name: GetTodayTasks :many
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at FROM tasks
+WHERE workspace_id = $1
+  AND is_completed = FALSE
+  AND (due_date <= CURRENT_DATE OR focus_order IS NOT NULL)
+ORDER BY focus_order ASC NULLS LAST, due_date ASC, priority DESC
+`
+
+func (q *Queries) GetTodayTasks(ctx context.Context, workspaceID pgtype.UUID) ([]Task, error) {
+	rows, err := q.db.Query(ctx, getTodayTasks, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Task{}
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.ProjectID,
+			&i.ColumnID,
+			&i.Title,
+			&i.DescriptionMarkdown,
+			&i.IsCompleted,
+			&i.CompletedAt,
+			&i.DueDate,
+			&i.Priority,
+			&i.FocusOrder,
+			&i.Position,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setTaskFocus = `-- name: SetTaskFocus :one
+UPDATE tasks
+SET focus_order = $3,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+`
+
+type SetTaskFocusParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	FocusOrder  pgtype.Int4 `json:"focus_order"`
+}
+
+func (q *Queries) SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Task, error) {
+	row := q.db.QueryRow(ctx, setTaskFocus, arg.ID, arg.WorkspaceID, arg.FocusOrder)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.ColumnID,
+		&i.Title,
+		&i.DescriptionMarkdown,
+		&i.IsCompleted,
+		&i.CompletedAt,
+		&i.DueDate,
+		&i.Priority,
+		&i.FocusOrder,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const toggleTaskCompletion = `-- name: ToggleTaskCompletion :one
 UPDATE tasks
 SET is_completed = NOT is_completed,
@@ -199,6 +278,64 @@ type ToggleTaskCompletionParams struct {
 
 func (q *Queries) ToggleTaskCompletion(ctx context.Context, arg ToggleTaskCompletionParams) (Task, error) {
 	row := q.db.QueryRow(ctx, toggleTaskCompletion, arg.ID, arg.WorkspaceID)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.ColumnID,
+		&i.Title,
+		&i.DescriptionMarkdown,
+		&i.IsCompleted,
+		&i.CompletedAt,
+		&i.DueDate,
+		&i.Priority,
+		&i.FocusOrder,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateTask = `-- name: UpdateTask :one
+UPDATE tasks
+SET title = $3,
+    description_markdown = $4,
+    due_date = $5,
+    priority = $6,
+    focus_order = $7,
+    project_id = $8,
+    column_id = $9,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+`
+
+type UpdateTaskParams struct {
+	ID                  pgtype.UUID `json:"id"`
+	WorkspaceID         pgtype.UUID `json:"workspace_id"`
+	Title               string      `json:"title"`
+	DescriptionMarkdown string      `json:"description_markdown"`
+	DueDate             pgtype.Date `json:"due_date"`
+	Priority            string      `json:"priority"`
+	FocusOrder          pgtype.Int4 `json:"focus_order"`
+	ProjectID           pgtype.UUID `json:"project_id"`
+	ColumnID            pgtype.UUID `json:"column_id"`
+}
+
+func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
+	row := q.db.QueryRow(ctx, updateTask,
+		arg.ID,
+		arg.WorkspaceID,
+		arg.Title,
+		arg.DescriptionMarkdown,
+		arg.DueDate,
+		arg.Priority,
+		arg.FocusOrder,
+		arg.ProjectID,
+		arg.ColumnID,
+	)
 	var i Task
 	err := row.Scan(
 		&i.ID,

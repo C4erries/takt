@@ -7,7 +7,9 @@ import {
   useDeleteTaskMutation,
   useTaskStore,
 } from '@/features/task-navigation';
+import { useTodayTasksQuery } from '@/entities/task';
 import { InboxView } from './InboxView';
+import { TodayView } from './TodayView';
 import { ProjectView } from './ProjectView';
 
 export interface MainSheetProps {
@@ -38,6 +40,7 @@ export const MainSheet: React.FC<MainSheetProps> = ({
   workspaceId,
 }) => {
   const query = useInboxTasks();
+  const todayQuery = useTodayTasksQuery(workspaceId);
   const createTaskMutation = useCreateTaskMutation();
   const toggleTaskMutation = useToggleTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
@@ -62,8 +65,9 @@ export const MainSheet: React.FC<MainSheetProps> = ({
   const handleSelectTask =
     onSelectTask ??
     ((index: number) => {
-      if (currentTasks[index]) {
-        setSelectedTaskId(currentTasks[index].id);
+      const targetList = activeNav === 'today' ? (todayQuery.data ?? []) : currentTasks;
+      if (targetList[index]) {
+        setSelectedTaskId(targetList[index].id);
       }
     });
 
@@ -96,6 +100,19 @@ export const MainSheet: React.FC<MainSheetProps> = ({
           workspaceId={workspaceId}
           selectedTaskId={selectedTaskId}
           onSelectTask={(id) => setSelectedTaskId(id)}
+        />
+      ) : activeNav === 'today' ? (
+        <TodayView
+          tasks={todayQuery.data ?? []}
+          isLoading={todayQuery.isLoading}
+          error={todayQuery.error ? todayQuery.error.message : null}
+          onRetry={() => todayQuery.refetch()}
+          selectedIndex={currentSelectedIndex}
+          onSelectTask={handleSelectTask}
+          onToggleTask={handleToggleTask}
+          onDeleteTask={handleDeleteTask}
+          onCreateTodayTask={handleCreateTask}
+          onOpenQuickCapture={handleOpenQuickCapture}
         />
       ) : (
         <InboxView

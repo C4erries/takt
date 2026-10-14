@@ -14,6 +14,7 @@ import { Button, Badge, Input } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
 import { useTaskStore, useInboxTasks } from '@/features/task-navigation';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
+import { useTodayTasksQuery } from '@/entities/task';
 
 export interface SidebarProps {
   user: User | null;
@@ -47,11 +48,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setSelectedProjectId,
   } = useTaskStore();
   const { data: inboxTasks } = useInboxTasks();
+  const { data: todayTasks = [] } = useTodayTasksQuery(workspace?.id);
   const { data: projects = [] } = useProjectsQuery(workspace?.id);
   const createProjectMutation = useCreateProjectMutation(workspace?.id);
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+
+  const todayCount = todayTasks.filter((t) => !t.isCompleted).length;
 
   const currentInboxCount =
     inboxCount !== undefined
@@ -165,7 +169,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Zap className="w-4 h-4 stroke-[1.8] text-muted" />
               <span>Сегодня</span>
             </span>
-            <span className="text-[10px] font-mono text-muted">Sprint 0.3</span>
+            {todayCount > 0 && (
+              <Badge variant="persimmon" size="sm" className="font-mono text-[11px] px-1.5 py-0">
+                {todayCount}
+              </Badge>
+            )}
           </button>
         </div>
 

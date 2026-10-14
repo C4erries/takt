@@ -15,6 +15,19 @@ export interface Workspace {
   createdAt: string;
 }
 
+export interface Tag {
+  id: string;
+  workspaceId: string;
+  name: string;
+  colorHex: string;
+  createdAt: string;
+}
+
+export interface CreateTagRequest {
+  name: string;
+  colorHex?: string;
+}
+
 export interface Task {
   id: string;
   workspaceId: string;
@@ -28,8 +41,23 @@ export interface Task {
   priority: Priority;
   focusOrder?: number | null;
   position: number;
+  tags?: Tag[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UpdateTaskRequest {
+  title?: string;
+  descriptionMarkdown?: string;
+  dueDate?: string | null;
+  priority?: Priority;
+  focusOrder?: number | null;
+  projectId?: string | null;
+  columnId?: string | null;
+}
+
+export interface SetFocusRequest {
+  focusOrder?: number | null;
 }
 
 export interface AuthResponse {
@@ -58,7 +86,7 @@ export interface CreateInboxTaskRequest {
   title: string;
   descriptionMarkdown?: string;
   priority?: Priority;
-  dueDate?: string;
+  dueDate?: string | null;
 }
 
 export interface ApiError {

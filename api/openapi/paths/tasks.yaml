@@ -129,3 +129,165 @@ item:
           application/json:
             schema:
               $ref: '../schemas/error.yaml'
+
+today:
+  get:
+    tags:
+      - Tasks
+    summary: Get today's focused and due tasks
+    description: Returns tasks where due_date <= today or focus_order is set, ordered by focus and due date.
+    operationId: getTodayTasks
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: List of today's tasks
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../schemas/task.yaml#/Task'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+workspaceTaskItem:
+  patch:
+    tags:
+      - Tasks
+    summary: Update a task
+    description: Updates details, status, dates, priority or organization of a task.
+    operationId: updateTask
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/task.yaml#/UpdateTaskRequest'
+    responses:
+      '200':
+        description: Task updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/task.yaml#/Task'
+      '400':
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Task not found in workspace
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+focus:
+  post:
+    tags:
+      - Tasks
+    summary: Set or clear task focus order
+    description: Assigns or clears the daily focus order for a task.
+    operationId: setTaskFocus
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/task.yaml#/SetFocusRequest'
+    responses:
+      '200':
+        description: Task focus order updated
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/task.yaml#/Task'
+      '400':
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Task not found in workspace
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+

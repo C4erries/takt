@@ -92,7 +92,7 @@ func TestService_CreateInboxTask(t *testing.T) {
 			repo := mocks.NewMockTaskRepository(t)
 			tc.setupMock(repo)
 
-			svc := taskapp.NewService(repo, nil)
+			svc := taskapp.NewService(repo, nil, nil)
 			task, err := svc.CreateInboxTask(context.Background(), tc.input)
 
 			if tc.wantErr != nil {
@@ -164,7 +164,7 @@ func TestService_ToggleTask(t *testing.T) {
 			repo := mocks.NewMockTaskRepository(t)
 			tc.setupMock(repo)
 
-			svc := taskapp.NewService(repo, nil)
+			svc := taskapp.NewService(repo, nil, nil)
 			task, err := svc.ToggleTask(context.Background(), tc.taskID, tc.workspaceID)
 
 			if tc.wantErr != nil {
@@ -227,7 +227,7 @@ func TestService_DeleteTask(t *testing.T) {
 			repo := mocks.NewMockTaskRepository(t)
 			tc.setupMock(repo)
 
-			svc := taskapp.NewService(repo, nil)
+			svc := taskapp.NewService(repo, nil, nil)
 			err := svc.DeleteTask(context.Background(), tc.taskID, tc.workspaceID)
 
 			if tc.wantErr != nil {
@@ -280,7 +280,7 @@ func TestService_CreateInitialInboxTasks(t *testing.T) {
 			repo := mocks.NewMockTaskRepository(t)
 			tc.setupMock(repo)
 
-			svc := taskapp.NewService(repo, nil)
+			svc := taskapp.NewService(repo, nil, nil)
 			err := svc.CreateInitialInboxTasks(context.Background(), tc.workspaceID)
 
 			if tc.wantErr != nil {
@@ -335,7 +335,7 @@ func TestService_GetInboxTasks(t *testing.T) {
 			repo := mocks.NewMockTaskRepository(t)
 			tc.setupMock(repo)
 
-			svc := taskapp.NewService(repo, nil)
+			svc := taskapp.NewService(repo, nil, nil)
 			tasks, err := svc.GetInboxTasks(context.Background(), tc.workspaceID)
 
 			if tc.wantErr != nil {

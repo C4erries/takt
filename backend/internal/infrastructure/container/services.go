@@ -23,7 +23,7 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 
 	var taskService *taskApp.Service
 	if repos.TaskRepo != nil {
-		taskService = taskApp.NewService(repos.TaskRepo, nil)
+		taskService = taskApp.NewService(repos.TaskRepo, repos.TaskRepo, nil)
 	}
 
 	var workspaceService *workspaceApp.Service

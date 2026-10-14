@@ -22,6 +22,8 @@ tags:
     description: Quick capture, tasks management and focus
   - name: Automations
     description: Background workflows and trigger rules
+  - name: Tags
+    description: Workspace context tags
 
 paths:
   /health:
@@ -40,6 +42,18 @@ paths:
     $ref: './paths/tasks.yaml#/toggle'
   /tasks/{id}:
     $ref: './paths/tasks.yaml#/item'
+  /workspaces/{workspace_id}/tasks/today:
+    $ref: './paths/tasks.yaml#/today'
+  /workspaces/{workspace_id}/tasks/{task_id}:
+    $ref: './paths/tasks.yaml#/workspaceTaskItem'
+  /workspaces/{workspace_id}/tasks/{task_id}/focus:
+    $ref: './paths/tasks.yaml#/focus'
+  /workspaces/{workspace_id}/tags:
+    $ref: './paths/tags.yaml#/tags'
+  /workspaces/{workspace_id}/tags/{tag_id}:
+    $ref: './paths/tags.yaml#/tagItem'
+  /workspaces/{workspace_id}/tasks/{task_id}/tags/{tag_id}:
+    $ref: './paths/tags.yaml#/taskTagItem'
   /workspaces/{workspace_id}/projects:
     $ref: './paths/projects.yaml#/projects'
   /workspaces/{workspace_id}/projects/{project_id}:
@@ -76,6 +90,14 @@ components:
       $ref: './schemas/workspace.yaml'
     Task:
       $ref: './schemas/task.yaml#/Task'
+    Tag:
+      $ref: './schemas/tag.yaml#/Tag'
+    CreateTagRequest:
+      $ref: './schemas/tag.yaml#/CreateTagRequest'
+    UpdateTaskRequest:
+      $ref: './schemas/task.yaml#/UpdateTaskRequest'
+    SetFocusRequest:
+      $ref: './schemas/task.yaml#/SetFocusRequest'
     Project:
       $ref: './schemas/project.yaml#/Project'
     Board:

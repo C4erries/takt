@@ -4,51 +4,61 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.3.1b (Технический: адаптация HTTP-сервера под ServerInterface из oapi-codegen) ✅ ЗАВЕРШЕН (Готов к архивации)
+## Текущий спринт: Спринт 0.3.2 (Фаза 2 / Этап 0.3: Bento-панель инспектора, матричный календарь и фокус «Сегодня») ✅ ЗАВЕРШЕН (Готов к архивации)
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Режим «Штаб»)
 
-* **Бизнес-цель**: Привести HTTP-слой бэкенда (`internal/infrastructure/http/`) в 100% соответствие с обновленной конвенцией Contract-First из коммита `2497366` (`docs/conventions/backend.md`).
-* **Зафиксированные архитектурные микро-решения**:
-  1. **Имплементация `generated.ServerInterface`**:
-     - Главный HTTP-хендлер/фасад (`Handler` в `internal/infrastructure/http/`) реализует интерфейс `generated.ServerInterface` из `internal/infrastructure/http/generated/api.gen.go`.
-     - На уровне компилятора объявлена строгая статическая проверка:
-       ```go
-       var _ generated.ServerInterface = (*Handler)(nil)
-       ```
-  2. **Табу на рукописные DTO**:
-     - Удалены все рукописные структуры запросов и ответов (`ProjectResponse`, `CreateProjectHTTPRequest`, `TaskResponse`, `RegisterRequest` и т.д.) из файлов хендлеров `auth_handler.go`, `tasks_handler.go`, `project_handler.go`.
-     - Все методы принимают и возвращают сгенерированные типы из пакета `generated.*`.
-  3. **Стандартная регистрация роутов через oapi-codegen**:
-     - В `internal/infrastructure/container/router.go` ручная регистрация эндпоинтов заменена на `generated.RegisterHandlers(apiGroup, handler)`.
-     - JWT Auth Middleware монтируется через `AuthMiddlewareWithSkipper` для безопасного пропуска открытых роутов (`/auth/*`, `/health`).
-  4. **Сохранение чистоты слоев**:
-     - Пакет `generated` изолирован в `internal/infrastructure/http/generated/` и не протекает в `domain/` или `application/`.
+* **Бизнес-цель**: Реализовать правую Bento-панель (детальный инспектор задачи с Markdown-заметками, тегами контекста и свойствами + матричный календарь дедлайнов с точками плотности) и специализированный вид «Сегодня / Focus of the Day».
+* **Зафиксированные продуктовые и архитектурные микро-решения**:
+  1. **Модель тегов контекста (Workspace Tags)**:
+     - Таблицы `tags` (id, workspace_id, name, color_hex, created_at) и связующая `task_tags` (task_id, tag_id).
+     - Единый справочник тегов воркспейса с капсульными бейджами в палитре японской канцелярии (`@дом`, `@работа`, `20 мин`, `focus`).
+     - Быстрое назначение и удаление тегов прямо из инспектора задачи.
+  2. **Гибридный GTD-отбор в фокус «Сегодня» (`Today`)**:
+     - В вид «Сегодня» автоматически попадают задачи, удовлетворяющие условию: `due_date <= CURRENT_DATE` (включая просроченные с акцентным бейджем) ИЛИ `focus_order IS NOT NULL` (задачи, явно перенесенные пользователем в фокус дня).
+     - Сортировка: `focus_order ASC NULLS LAST, due_date ASC, priority DESC`.
+     - Кнопка/действие «В фокус дня» / «Убрать из фокуса» (`focus_order`).
+  3. **Интерактивный Матричный Календарь (Bento Calendar)**:
+     - Сетка месяца с 1px тонкими разделителями Tatami (`border-subtle`).
+     - Индикаторы дедлайнов (точки плотности задач под числами).
+     - **Контекстно-зависимый клик**: если открыт инспектор задачи — клик по ячейке даты мгновенно назначает/меняет `due_date` этой задачи; если инспектор закрыт — фильтрует задачи в центральном листе по выбранной дате.
+  4. **Editorial Split-Toggle Markdown Inspector**:
+     - В режиме покоя: изящный типографичный рендер Markdown-заметки (шрифты Newsreader / Geist Sans).
+     - По клику: бесшовный инлайн textarea-редактор с мгновенным autosave (дебаунс 400мс) и поддержкой клавиши `Escape` для завершения редактирования.
+     - Мгновенные мутации при выборе приоритета (`none`, `low`, `medium`, `high`, `urgent`), проекта и колонки.
+  5. **Двухфазная поставка Contract-First (oapi-codegen ServerInterface)**:
+     - Шаг 1: Миграция `000004_tags_and_focus.up.sql`, sqlc-запросы, расширение OpenAPI-спецификации (`schemas/tag.yaml`, эндпоинты в `paths/tasks.yaml` и `paths/tags.yaml`), `make generate` (`ServerInterface`).
+     - Шаг 2: Use Cases (`application/task` и `application/tag`), репозитории, HTTP-хендлеры, связывание в `container/` и тесты.
+     - Параллельный фронтенд: `TaskInspector`, `MiniCalendar`, вид `TodayView` с J/K навигацией.
 
 ---
 
-## 📋 Таблица задач спринта 0.3.1b
+## 📋 Таблица задач спринта 0.3.2
 
 | # | Задача | Статус | Приоритет | Ответственный | Заметки и контракты |
 |---|--------|--------|-----------|---------------|---------------------|
-| 1 | Рефакторинг `internal/infrastructure/http/` под реализацию `generated.ServerInterface` | ✅ Done | Критический | `backend_developer` | Замена рукописных DTO на `generated.*`, имплементация всех методов интерфейса |
-| 2 | Перевод регистрации роутов в `container/router.go` на `generated.RegisterHandlers` | ✅ Done | Высокий | `backend_developer` | Подключение Auth Middleware и Echo группы |
-| 3 | Обновление HTTP unit-тестов под вызовы `ServerInterface` | ✅ Done | Высокий | `backend_developer` | `auth_test.go`, `tasks_test.go`, `project_test.go` |
-| 4 | Приемочный контроль и верификация конвейера | ✅ Done | Критический | `lead_architect` | `make generate && make check-arch && make test && npm run build` (0 ошибок) |
+| 1 | **[Backend Step 1]**: Миграция 0004 (tags, task_tags), sqlc-запросы, OpenAPI контракты и кодогенерация | ✅ Done | Критический | `backend_developer` | `tags`, `task_tags`, эндпоинты Today & Tags, `make generate` |
+| 2 | **[Gatekeeper Checkpoint 1]**: Проверка контрактов и кодогенерации | ✅ Done | Критический | `lead_architect` | `make check-arch && make generate && make test` (0 ошибок) |
+| 3 | **[Backend Step 2]**: Use-Cases тегов и задач, HTTP-хендлеры (ServerInterface), репозитории и тесты | ✅ Done | Высокий | `backend_developer` | `application/task`, `application/tag`, `infrastructure/http`, `infrastructure/repository` |
+| 4 | **[Frontend]**: Правая Bento-панель (TaskInspector, MiniCalendar) и вид «Сегодня» (TodayView) | ✅ Done | Высокий | `frontend_developer` | `TaskInspector.tsx`, `MiniCalendar.tsx`, `TodayView.tsx`, TanStack Query |
+| 5 | **[QA & Verification]**: E2E тесты инспектора, календаря, тегов и фокуса дня на Pytest | ✅ Done | Критический | `qa_engineer` | `tests/e2e/test_projects_and_bento.py`, `make check-arch`, `make test`, `make test-e2e` (17/17 PASS) |
 
 ---
 
 ## 🎯 Definition of Done (DoD)
 
-- [x] В `backend/internal/infrastructure/http/` реализован интерфейс `generated.ServerInterface` со статической проверкой компилятора `var _ generated.ServerInterface = (*Handler)(nil)`.
-- [x] Полностью отсутствуют рукописные DTO запросов/ответов в хендлерах; используются исключительно структуры из `internal/infrastructure/http/generated`.
-- [x] Роутинг в `internal/infrastructure/container/router.go` привязан через `generated.RegisterHandlers`.
-- [x] `make generate` успешно пересобирает спецификацию OpenAPI и код Echo сервера.
-- [x] `make check-arch` — 0 ошибок по всем 5 проверкам.
+- [x] Создана миграция `000004_tags_and_focus.up.sql` с таблицами `tags`, `task_tags` и индексами.
+- [x] Описаны контракты OpenAPI для тегов (`/tags`), обновления задачи (`PATCH /tasks/{id}`), выборки `Today` (`GET /tasks/today`) и добавления в фокус (`POST /tasks/{id}/focus`).
+- [x] HTTP-хендлеры строго реализуют сгенерированный `generated.ServerInterface` без рукописных DTO.
+- [x] Разработан `TaskInspector` с Editorial Markdown split-toggle, выбором дедлайна, приоритета, проекта/колонки и тегами.
+- [x] Разработан `MiniCalendar` с точками плотности задач и контекстным кликом (установка дедлайна или фильтрация).
+- [x] Реализован вид «Сегодня / Focus of the Day» с гибридным отбором (`due_date <= today` или `focus_order IS NOT NULL`).
+- [x] `make check-arch` — 0 ошибок (все 5 проверок пройдены).
 - [x] `make test` — 100% PASS с флагом `-race`.
 - [x] `cd frontend && npm run build` — 0 ошибок сборки.
+- [x] Сквозные тесты Pytest `make test-e2e` покрывают жизненный цикл тегов, инспектора и фокуса «Сегодня» (17/17 PASS).
 
 ---
 
@@ -56,4 +66,4 @@
 
 | Дата | Что изменилось |
 |------|---------------|
-| 2026-10-14 | **Спринт 0.3.1b завершен**: HTTP-сервер успешно адаптирован под `generated.ServerInterface`, все рукописные DTO устранены, роутер привязан через `generated.RegisterHandlers`. Полный конвейер верификации пройден со 100% успехом. |
+| 2026-10-14 | **Спринт 0.3.2 завершен**: Реализована правая Bento-панель (`TaskInspector` с Markdown split-toggle и тегами, матричный календарь `MiniCalendar` с плотностью дедлайнов и контекстным кликом) и специализированный вид «Сегодня» (`TodayView` с гибридным GTD-отбором). Написаны E2E-тесты на Pytest (17/17 PASS). Полная верификация пройдена на 100%. |

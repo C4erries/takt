@@ -19,6 +19,9 @@ import { UiCatalog } from './components/UiCatalog';
 import { StatesShowcase } from './components/StatesShowcase';
 import { Button } from '@/shared/components/ui';
 
+import { useTodayTasksQuery } from '@/entities/task';
+import { useProjectTasksQuery } from '@/entities/project';
+
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
   const { user, workspace, login, register, logout } = useAuth();
@@ -29,6 +32,8 @@ export const App: React.FC = () => {
     setQuickCaptureOpen,
     activeNav,
     setActiveNav,
+    selectedProjectId,
+    selectedDateFilter,
   } = useTaskStore();
 
   const {
@@ -37,6 +42,12 @@ export const App: React.FC = () => {
     error: tasksError,
     refetch: refetchTasks,
   } = useInboxTasks();
+
+  const { data: todayTasks = [] } = useTodayTasksQuery(workspace?.id);
+  const { data: projectTasks = [] } = useProjectTasksQuery(
+    workspace?.id,
+    selectedProjectId ?? undefined
+  );
 
   const createTaskMutation = useCreateTaskMutation();
   const toggleTaskMutation = useToggleTaskMutation();
@@ -76,15 +87,29 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isQuickCaptureOpen, isAuthModalOpen, showUiCatalog, setQuickCaptureOpen]);
 
+  let currentNavTasks =
+    activeNav === 'today'
+      ? todayTasks
+      : selectedProjectId
+      ? projectTasks
+      : tasks;
+
+  if (selectedDateFilter) {
+    currentNavTasks = currentNavTasks.filter((t) => t.dueDate === selectedDateFilter);
+  }
+
   // J/K Task Navigation
   const { selectedIndex, setSelectedIndex } = useTaskNavigation({
-    tasks,
+    tasks: currentNavTasks,
     onToggleTask: (id) => toggleTaskMutation.mutate(id),
     isEnabled: !isQuickCaptureOpen && !isAuthModalOpen && !showUiCatalog,
   });
 
+  const allAvailableTasks = [...tasks, ...todayTasks, ...projectTasks];
   const selectedTask =
-    tasks.find((t) => t.id === selectedTaskId) ?? tasks[selectedIndex] ?? null;
+    (selectedTaskId ? allAvailableTasks.find((t) => t.id === selectedTaskId) : null) ??
+    currentNavTasks[selectedIndex] ??
+    null;
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex">
@@ -170,10 +195,11 @@ export const App: React.FC = () => {
           <div className="hidden lg:flex flex-col gap-3 py-3 h-full justify-start overflow-hidden">
             <TaskInspector
               task={selectedTask}
+              workspaceId={workspace?.id}
               onToggleTask={(id) => toggleTaskMutation.mutate(id)}
               onDeleteTask={(id) => deleteTaskMutation.mutate(id)}
             />
-            <MiniCalendar />
+            <MiniCalendar workspaceId={workspace?.id} />
           </div>
         </main>
       )}

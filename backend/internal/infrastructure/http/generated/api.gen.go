@@ -139,6 +139,33 @@ func (e UpdateColumnRequestStatusCategory) Valid() bool {
 	}
 }
 
+// Defines values for UpdateTaskRequestPriority.
+const (
+	UpdateTaskRequestPriorityHigh   UpdateTaskRequestPriority = "high"
+	UpdateTaskRequestPriorityLow    UpdateTaskRequestPriority = "low"
+	UpdateTaskRequestPriorityMedium UpdateTaskRequestPriority = "medium"
+	UpdateTaskRequestPriorityNone   UpdateTaskRequestPriority = "none"
+	UpdateTaskRequestPriorityUrgent UpdateTaskRequestPriority = "urgent"
+)
+
+// Valid indicates whether the value is a known member of the UpdateTaskRequestPriority enum.
+func (e UpdateTaskRequestPriority) Valid() bool {
+	switch e {
+	case UpdateTaskRequestPriorityHigh:
+		return true
+	case UpdateTaskRequestPriorityLow:
+		return true
+	case UpdateTaskRequestPriorityMedium:
+		return true
+	case UpdateTaskRequestPriorityNone:
+		return true
+	case UpdateTaskRequestPriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthDatabaseStatus.
 const (
 	Connected    HealthDatabaseStatus = "connected"
@@ -314,6 +341,15 @@ type CreateProjectRequest struct {
 	Name string `json:"name"`
 }
 
+// CreateTagRequest defines model for CreateTagRequest.
+type CreateTagRequest struct {
+	// ColorHex Example: matcha
+	ColorHex *string `json:"colorHex,omitempty"`
+
+	// Name Example: focus
+	Name string `json:"name"`
+}
+
 // LoginRequest defines model for LoginRequest.
 type LoginRequest struct {
 	// Email Example: user@takt.dev
@@ -377,10 +413,34 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
+// SetFocusRequest defines model for SetFocusRequest.
+type SetFocusRequest struct {
+	// FocusOrder Example: 1
+	FocusOrder *int `json:"focusOrder,omitempty"`
+}
+
+// Tag defines model for Tag.
+type Tag struct {
+	// ColorHex Example: matcha
+	ColorHex string `json:"colorHex"`
+
+	// CreatedAt Example: 2026-10-14T12:00:00Z
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Id Example: t0000000-0000-0000-0000-000000000001
+	Id openapi_types.UUID `json:"id"`
+
+	// Name Example: focus
+	Name string `json:"name"`
+
+	// WorkspaceId Example: 123e4567-e89b-12d3-a456-426614174001
+	WorkspaceId openapi_types.UUID `json:"workspaceId"`
+}
+
 // Task defines model for Task.
 type Task struct {
 	ColumnId    *openapi_types.UUID `json:"columnId,omitempty"`
-	CompletedAt *time.Time          `json:"completedAt,omitempty"`
+	CompletedAt *time.Time          `json:"completedAt"`
 
 	// CreatedAt Example: 2026-10-14T12:00:00Z
 	CreatedAt time.Time `json:"createdAt"`
@@ -402,6 +462,7 @@ type Task struct {
 	// Priority Example: none
 	Priority  TaskPriority        `json:"priority"`
 	ProjectId *openapi_types.UUID `json:"projectId,omitempty"`
+	Tags      *[]Tag              `json:"tags,omitempty"`
 
 	// Title Example: Нажми J и K для клавиатурного перемещения по строкам
 	Title string `json:"title"`
@@ -442,6 +503,33 @@ type UpdateProjectRequest struct {
 	// Name Example: Обновленный проект
 	Name *string `json:"name,omitempty"`
 }
+
+// UpdateTaskRequest defines model for UpdateTaskRequest.
+type UpdateTaskRequest struct {
+	// ColumnId Example: c0000000-0000-0000-0000-000000000001
+	ColumnId *openapi_types.UUID `json:"columnId,omitempty"`
+
+	// DescriptionMarkdown Example: Детальное описание задачи в Markdown
+	DescriptionMarkdown *string `json:"descriptionMarkdown,omitempty"`
+
+	// DueDate Example: 2026-10-15
+	DueDate *openapi_types.Date `json:"dueDate,omitempty"`
+
+	// FocusOrder Example: 1
+	FocusOrder *int `json:"focusOrder,omitempty"`
+
+	// Priority Example: high
+	Priority *UpdateTaskRequestPriority `json:"priority,omitempty"`
+
+	// ProjectId Example: a0000000-0000-0000-0000-000000000001
+	ProjectId *openapi_types.UUID `json:"projectId,omitempty"`
+
+	// Title Example: Обновленный заголовок
+	Title *string `json:"title,omitempty"`
+}
+
+// UpdateTaskRequestPriority Example: high
+type UpdateTaskRequestPriority string
 
 // User defines model for User.
 type User struct {
@@ -551,6 +639,15 @@ type UpdateProjectJSONRequestBody = UpdateProjectRequest
 // CreateProjectBoardJSONRequestBody defines body for CreateProjectBoard for application/json ContentType.
 type CreateProjectBoardJSONRequestBody CreateProjectBoardJSONBody
 
+// CreateWorkspaceTagJSONRequestBody defines body for CreateWorkspaceTag for application/json ContentType.
+type CreateWorkspaceTagJSONRequestBody = CreateTagRequest
+
+// UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
+type UpdateTaskJSONRequestBody = UpdateTaskRequest
+
+// SetTaskFocusJSONRequestBody defines body for SetTaskFocus for application/json ContentType.
+type SetTaskFocusJSONRequestBody = SetFocusRequest
+
 // MoveTaskToColumnJSONRequestBody defines body for MoveTaskToColumn for application/json ContentType.
 type MoveTaskToColumnJSONRequestBody = MoveTaskRequest
 
@@ -619,9 +716,33 @@ type ServerInterface interface {
 	// ListProjectTasks List all tasks for a project
 	// (GET /workspaces/{workspace_id}/projects/{project_id}/tasks)
 	ListProjectTasks(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID) error
+	// ListWorkspaceTags List all tags in a workspace
+	// (GET /workspaces/{workspace_id}/tags)
+	ListWorkspaceTags(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// CreateWorkspaceTag Create a new tag in a workspace
+	// (POST /workspaces/{workspace_id}/tags)
+	CreateWorkspaceTag(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// DeleteWorkspaceTag Delete a tag
+	// (DELETE /workspaces/{workspace_id}/tags/{tag_id})
+	DeleteWorkspaceTag(ctx echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error
+	// GetTodayTasks Get today's focused and due tasks
+	// (GET /workspaces/{workspace_id}/tasks/today)
+	GetTodayTasks(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// UpdateTask Update a task
+	// (PATCH /workspaces/{workspace_id}/tasks/{task_id})
+	UpdateTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
+	// SetTaskFocus Set or clear task focus order
+	// (POST /workspaces/{workspace_id}/tasks/{task_id}/focus)
+	SetTaskFocus(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
 	// MoveTaskToColumn Move task to column and position
 	// (POST /workspaces/{workspace_id}/tasks/{task_id}/move)
 	MoveTaskToColumn(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
+	// RemoveTagFromTask Remove a tag from a task
+	// (DELETE /workspaces/{workspace_id}/tasks/{task_id}/tags/{tag_id})
+	RemoveTagFromTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID, tagId openapi_types.UUID) error
+	// AddTagToTask Attach a tag to a task
+	// (POST /workspaces/{workspace_id}/tasks/{task_id}/tags/{tag_id})
+	AddTagToTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID, tagId openapi_types.UUID) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -1012,6 +1133,126 @@ func (w *ServerInterfaceWrapper) ListProjectTasks(ctx echo.Context) error {
 	return err
 }
 
+// ListWorkspaceTags converts echo context to params.
+func (w *ServerInterfaceWrapper) ListWorkspaceTags(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListWorkspaceTags(ctx, workspaceId)
+	return err
+}
+
+// CreateWorkspaceTag converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateWorkspaceTag(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateWorkspaceTag(ctx, workspaceId)
+	return err
+}
+
+// DeleteWorkspaceTag converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteWorkspaceTag(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "tag_id" -------------
+	var tagId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tag_id", ctx.Param("tag_id"), &tagId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter tag_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteWorkspaceTag(ctx, workspaceId, tagId)
+	return err
+}
+
+// GetTodayTasks converts echo context to params.
+func (w *ServerInterfaceWrapper) GetTodayTasks(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetTodayTasks(ctx, workspaceId)
+	return err
+}
+
+// UpdateTask converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateTask(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateTask(ctx, workspaceId, taskId)
+	return err
+}
+
+// SetTaskFocus converts echo context to params.
+func (w *ServerInterfaceWrapper) SetTaskFocus(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SetTaskFocus(ctx, workspaceId, taskId)
+	return err
+}
+
 // MoveTaskToColumn converts echo context to params.
 func (w *ServerInterfaceWrapper) MoveTaskToColumn(ctx echo.Context) error {
 	var err error
@@ -1033,6 +1274,70 @@ func (w *ServerInterfaceWrapper) MoveTaskToColumn(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.MoveTaskToColumn(ctx, workspaceId, taskId)
+	return err
+}
+
+// RemoveTagFromTask converts echo context to params.
+func (w *ServerInterfaceWrapper) RemoveTagFromTask(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// ------------- Path parameter "tag_id" -------------
+	var tagId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tag_id", ctx.Param("tag_id"), &tagId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter tag_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.RemoveTagFromTask(ctx, workspaceId, taskId, tagId)
+	return err
+}
+
+// AddTagToTask converts echo context to params.
+func (w *ServerInterfaceWrapper) AddTagToTask(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// ------------- Path parameter "tag_id" -------------
+	var tagId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tag_id", ctx.Param("tag_id"), &tagId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter tag_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.AddTagToTask(ctx, workspaceId, taskId, tagId)
 	return err
 }
 
@@ -1104,6 +1409,14 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards", wrapper.ListProjectBoards, options.OperationMiddlewares["listProjectBoards"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards", wrapper.CreateProjectBoard, options.OperationMiddlewares["createProjectBoard"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/tasks", wrapper.ListProjectTasks, options.OperationMiddlewares["listProjectTasks"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.ListWorkspaceTags, options.OperationMiddlewares["listWorkspaceTags"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.CreateWorkspaceTag, options.OperationMiddlewares["createWorkspaceTag"]...)
+	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.DeleteWorkspaceTag, options.OperationMiddlewares["deleteWorkspaceTag"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/today", wrapper.GetTodayTasks, options.OperationMiddlewares["getTodayTasks"]...)
+	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id", wrapper.UpdateTask, options.OperationMiddlewares["updateTask"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/focus", wrapper.SetTaskFocus, options.OperationMiddlewares["setTaskFocus"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/move", wrapper.MoveTaskToColumn, options.OperationMiddlewares["moveTaskToColumn"]...)
+	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/tags/:tag_id", wrapper.RemoveTagFromTask, options.OperationMiddlewares["removeTagFromTask"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/tags/:tag_id", wrapper.AddTagToTask, options.OperationMiddlewares["addTagToTask"]...)
 
 }

@@ -49,6 +49,75 @@ func (_m *MockUseCases) EXPECT() *MockUseCases_Expecter {
 	return &MockUseCases_Expecter{mock: &_m.Mock}
 }
 
+// AddTagToTask provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) AddTagToTask(ctx context.Context, taskID uuid.UUID, tagID uuid.UUID, workspaceID uuid.UUID) error {
+	ret := _mock.Called(ctx, taskID, tagID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddTagToTask")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, taskID, tagID, workspaceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockUseCases_AddTagToTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddTagToTask'
+type MockUseCases_AddTagToTask_Call struct {
+	*mock.Call
+}
+
+// AddTagToTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - tagID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) AddTagToTask(ctx any, taskID any, tagID any, workspaceID any) *MockUseCases_AddTagToTask_Call {
+	return &MockUseCases_AddTagToTask_Call{Call: _e.mock.On("AddTagToTask", ctx, taskID, tagID, workspaceID)}
+}
+
+func (_c *MockUseCases_AddTagToTask_Call) Run(run func(ctx context.Context, taskID uuid.UUID, tagID uuid.UUID, workspaceID uuid.UUID)) *MockUseCases_AddTagToTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_AddTagToTask_Call) Return(err error) *MockUseCases_AddTagToTask_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockUseCases_AddTagToTask_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, tagID uuid.UUID, workspaceID uuid.UUID) error) *MockUseCases_AddTagToTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateInboxTask provides a mock function for the type MockUseCases
 func (_mock *MockUseCases) CreateInboxTask(ctx context.Context, input task.CreateInboxTaskInput) (*task0.Task, error) {
 	ret := _mock.Called(ctx, input)
@@ -170,6 +239,137 @@ func (_c *MockUseCases_CreateInitialInboxTasks_Call) Return(err error) *MockUseC
 }
 
 func (_c *MockUseCases_CreateInitialInboxTasks_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) error) *MockUseCases_CreateInitialInboxTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateTag provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) CreateTag(ctx context.Context, input task.CreateTagInput) (*task0.Tag, error) {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateTag")
+	}
+
+	var r0 *task0.Tag
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, task.CreateTagInput) (*task0.Tag, error)); ok {
+		return returnFunc(ctx, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, task.CreateTagInput) *task0.Tag); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*task0.Tag)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, task.CreateTagInput) error); ok {
+		r1 = returnFunc(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_CreateTag_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateTag'
+type MockUseCases_CreateTag_Call struct {
+	*mock.Call
+}
+
+// CreateTag is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input task.CreateTagInput
+func (_e *MockUseCases_Expecter) CreateTag(ctx any, input any) *MockUseCases_CreateTag_Call {
+	return &MockUseCases_CreateTag_Call{Call: _e.mock.On("CreateTag", ctx, input)}
+}
+
+func (_c *MockUseCases_CreateTag_Call) Run(run func(ctx context.Context, input task.CreateTagInput)) *MockUseCases_CreateTag_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 task.CreateTagInput
+		if args[1] != nil {
+			arg1 = args[1].(task.CreateTagInput)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_CreateTag_Call) Return(tag *task0.Tag, err error) *MockUseCases_CreateTag_Call {
+	_c.Call.Return(tag, err)
+	return _c
+}
+
+func (_c *MockUseCases_CreateTag_Call) RunAndReturn(run func(ctx context.Context, input task.CreateTagInput) (*task0.Tag, error)) *MockUseCases_CreateTag_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteTag provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) DeleteTag(ctx context.Context, tagID uuid.UUID, workspaceID uuid.UUID) error {
+	ret := _mock.Called(ctx, tagID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteTag")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, tagID, workspaceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockUseCases_DeleteTag_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteTag'
+type MockUseCases_DeleteTag_Call struct {
+	*mock.Call
+}
+
+// DeleteTag is a helper method to define mock.On call
+//   - ctx context.Context
+//   - tagID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) DeleteTag(ctx any, tagID any, workspaceID any) *MockUseCases_DeleteTag_Call {
+	return &MockUseCases_DeleteTag_Call{Call: _e.mock.On("DeleteTag", ctx, tagID, workspaceID)}
+}
+
+func (_c *MockUseCases_DeleteTag_Call) Run(run func(ctx context.Context, tagID uuid.UUID, workspaceID uuid.UUID)) *MockUseCases_DeleteTag_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_DeleteTag_Call) Return(err error) *MockUseCases_DeleteTag_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockUseCases_DeleteTag_Call) RunAndReturn(run func(ctx context.Context, tagID uuid.UUID, workspaceID uuid.UUID) error) *MockUseCases_DeleteTag_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -305,6 +505,279 @@ func (_c *MockUseCases_GetInboxTasks_Call) RunAndReturn(run func(ctx context.Con
 	return _c
 }
 
+// GetTodayTasks provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) GetTodayTasks(ctx context.Context, workspaceID uuid.UUID) ([]*task0.Task, error) {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTodayTasks")
+	}
+
+	var r0 []*task0.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*task0.Task, error)); ok {
+		return returnFunc(ctx, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*task0.Task); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task0.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_GetTodayTasks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTodayTasks'
+type MockUseCases_GetTodayTasks_Call struct {
+	*mock.Call
+}
+
+// GetTodayTasks is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) GetTodayTasks(ctx any, workspaceID any) *MockUseCases_GetTodayTasks_Call {
+	return &MockUseCases_GetTodayTasks_Call{Call: _e.mock.On("GetTodayTasks", ctx, workspaceID)}
+}
+
+func (_c *MockUseCases_GetTodayTasks_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockUseCases_GetTodayTasks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_GetTodayTasks_Call) Return(tasks []*task0.Task, err error) *MockUseCases_GetTodayTasks_Call {
+	_c.Call.Return(tasks, err)
+	return _c
+}
+
+func (_c *MockUseCases_GetTodayTasks_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task0.Task, error)) *MockUseCases_GetTodayTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListWorkspaceTags provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*task0.Tag, error) {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListWorkspaceTags")
+	}
+
+	var r0 []*task0.Tag
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*task0.Tag, error)); ok {
+		return returnFunc(ctx, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*task0.Tag); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task0.Tag)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_ListWorkspaceTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListWorkspaceTags'
+type MockUseCases_ListWorkspaceTags_Call struct {
+	*mock.Call
+}
+
+// ListWorkspaceTags is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) ListWorkspaceTags(ctx any, workspaceID any) *MockUseCases_ListWorkspaceTags_Call {
+	return &MockUseCases_ListWorkspaceTags_Call{Call: _e.mock.On("ListWorkspaceTags", ctx, workspaceID)}
+}
+
+func (_c *MockUseCases_ListWorkspaceTags_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockUseCases_ListWorkspaceTags_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_ListWorkspaceTags_Call) Return(tags []*task0.Tag, err error) *MockUseCases_ListWorkspaceTags_Call {
+	_c.Call.Return(tags, err)
+	return _c
+}
+
+func (_c *MockUseCases_ListWorkspaceTags_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task0.Tag, error)) *MockUseCases_ListWorkspaceTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RemoveTagFromTask provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) RemoveTagFromTask(ctx context.Context, taskID uuid.UUID, tagID uuid.UUID, workspaceID uuid.UUID) error {
+	ret := _mock.Called(ctx, taskID, tagID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveTagFromTask")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, taskID, tagID, workspaceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockUseCases_RemoveTagFromTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveTagFromTask'
+type MockUseCases_RemoveTagFromTask_Call struct {
+	*mock.Call
+}
+
+// RemoveTagFromTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - tagID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) RemoveTagFromTask(ctx any, taskID any, tagID any, workspaceID any) *MockUseCases_RemoveTagFromTask_Call {
+	return &MockUseCases_RemoveTagFromTask_Call{Call: _e.mock.On("RemoveTagFromTask", ctx, taskID, tagID, workspaceID)}
+}
+
+func (_c *MockUseCases_RemoveTagFromTask_Call) Run(run func(ctx context.Context, taskID uuid.UUID, tagID uuid.UUID, workspaceID uuid.UUID)) *MockUseCases_RemoveTagFromTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_RemoveTagFromTask_Call) Return(err error) *MockUseCases_RemoveTagFromTask_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockUseCases_RemoveTagFromTask_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, tagID uuid.UUID, workspaceID uuid.UUID) error) *MockUseCases_RemoveTagFromTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetTaskFocus provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) SetTaskFocus(ctx context.Context, input task.SetFocusInput) (*task0.Task, error) {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetTaskFocus")
+	}
+
+	var r0 *task0.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, task.SetFocusInput) (*task0.Task, error)); ok {
+		return returnFunc(ctx, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, task.SetFocusInput) *task0.Task); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*task0.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, task.SetFocusInput) error); ok {
+		r1 = returnFunc(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_SetTaskFocus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetTaskFocus'
+type MockUseCases_SetTaskFocus_Call struct {
+	*mock.Call
+}
+
+// SetTaskFocus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input task.SetFocusInput
+func (_e *MockUseCases_Expecter) SetTaskFocus(ctx any, input any) *MockUseCases_SetTaskFocus_Call {
+	return &MockUseCases_SetTaskFocus_Call{Call: _e.mock.On("SetTaskFocus", ctx, input)}
+}
+
+func (_c *MockUseCases_SetTaskFocus_Call) Run(run func(ctx context.Context, input task.SetFocusInput)) *MockUseCases_SetTaskFocus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 task.SetFocusInput
+		if args[1] != nil {
+			arg1 = args[1].(task.SetFocusInput)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_SetTaskFocus_Call) Return(task1 *task0.Task, err error) *MockUseCases_SetTaskFocus_Call {
+	_c.Call.Return(task1, err)
+	return _c
+}
+
+func (_c *MockUseCases_SetTaskFocus_Call) RunAndReturn(run func(ctx context.Context, input task.SetFocusInput) (*task0.Task, error)) *MockUseCases_SetTaskFocus_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ToggleTask provides a mock function for the type MockUseCases
 func (_mock *MockUseCases) ToggleTask(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*task0.Task, error) {
 	ret := _mock.Called(ctx, id, workspaceID)
@@ -375,6 +848,74 @@ func (_c *MockUseCases_ToggleTask_Call) Return(task1 *task0.Task, err error) *Mo
 }
 
 func (_c *MockUseCases_ToggleTask_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*task0.Task, error)) *MockUseCases_ToggleTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateTask provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) UpdateTask(ctx context.Context, input task.UpdateTaskInput) (*task0.Task, error) {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTask")
+	}
+
+	var r0 *task0.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, task.UpdateTaskInput) (*task0.Task, error)); ok {
+		return returnFunc(ctx, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, task.UpdateTaskInput) *task0.Task); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*task0.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, task.UpdateTaskInput) error); ok {
+		r1 = returnFunc(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_UpdateTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateTask'
+type MockUseCases_UpdateTask_Call struct {
+	*mock.Call
+}
+
+// UpdateTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input task.UpdateTaskInput
+func (_e *MockUseCases_Expecter) UpdateTask(ctx any, input any) *MockUseCases_UpdateTask_Call {
+	return &MockUseCases_UpdateTask_Call{Call: _e.mock.On("UpdateTask", ctx, input)}
+}
+
+func (_c *MockUseCases_UpdateTask_Call) Run(run func(ctx context.Context, input task.UpdateTaskInput)) *MockUseCases_UpdateTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 task.UpdateTaskInput
+		if args[1] != nil {
+			arg1 = args[1].(task.UpdateTaskInput)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_UpdateTask_Call) Return(task1 *task0.Task, err error) *MockUseCases_UpdateTask_Call {
+	_c.Call.Return(task1, err)
+	return _c
+}
+
+func (_c *MockUseCases_UpdateTask_Call) RunAndReturn(run func(ctx context.Context, input task.UpdateTaskInput) (*task0.Task, error)) *MockUseCases_UpdateTask_Call {
 	_c.Call.Return(run)
 	return _c
 }

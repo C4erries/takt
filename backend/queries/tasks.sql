@@ -45,3 +45,31 @@ FROM tasks
 WHERE workspace_id = $1
   AND project_id IS NULL
   AND column_id IS NULL;
+
+-- name: UpdateTask :one
+UPDATE tasks
+SET title = $3,
+    description_markdown = $4,
+    due_date = $5,
+    priority = $6,
+    focus_order = $7,
+    project_id = $8,
+    column_id = $9,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING *;
+
+-- name: GetTodayTasks :many
+SELECT * FROM tasks
+WHERE workspace_id = $1
+  AND is_completed = FALSE
+  AND (due_date <= CURRENT_DATE OR focus_order IS NOT NULL)
+ORDER BY focus_order ASC NULLS LAST, due_date ASC, priority DESC;
+
+-- name: SetTaskFocus :one
+UPDATE tasks
+SET focus_order = $3,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING *;
+

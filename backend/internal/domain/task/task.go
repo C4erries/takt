@@ -39,6 +39,7 @@ type Task struct {
 	Priority            Priority
 	FocusOrder          *int
 	Position            int
+	Tags                []*Tag
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }
@@ -77,6 +78,7 @@ func NewInboxTask(
 		Priority:            priority,
 		FocusOrder:          nil,
 		Position:            position,
+		Tags:                []*Tag{},
 		CreatedAt:           now,
 		UpdatedAt:           now,
 	}, nil
@@ -91,4 +93,41 @@ func (t *Task) Toggle() {
 	} else {
 		t.CompletedAt = nil
 	}
+}
+
+// AddTag attaches a tag to the task if not already present.
+func (t *Task) AddTag(tag *Tag) error {
+	if tag == nil {
+		return ErrTagNotFound
+	}
+	for _, existing := range t.Tags {
+		if existing.ID == tag.ID {
+			return ErrTagAlreadyAttached
+		}
+	}
+	t.Tags = append(t.Tags, tag)
+	t.UpdatedAt = time.Now().UTC()
+	return nil
+}
+
+// RemoveTag detaches a tag from the task by its ID. Returns true if removed.
+func (t *Task) RemoveTag(tagID uuid.UUID) bool {
+	for i, existing := range t.Tags {
+		if existing.ID == tagID {
+			t.Tags = append(t.Tags[:i], t.Tags[i+1:]...)
+			t.UpdatedAt = time.Now().UTC()
+			return true
+		}
+	}
+	return false
+}
+
+// SetFocusOrder updates or clears the daily focus order.
+func (t *Task) SetFocusOrder(order *int) error {
+	if order != nil && *order < 0 {
+		return ErrInvalidFocusOrder
+	}
+	t.FocusOrder = order
+	t.UpdatedAt = time.Now().UTC()
+	return nil
 }

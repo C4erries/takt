@@ -10,6 +10,7 @@ Task:
     - position
     - createdAt
     - updatedAt
+    - completedAt
   properties:
     id:
       type: string
@@ -60,6 +61,10 @@ Task:
       type: number
       format: double
       example: 1000.0
+    tags:
+      type: array
+      items:
+        $ref: './tag.yaml#/Tag'
     createdAt:
       type: string
       format: date-time
@@ -93,3 +98,47 @@ CreateInboxTaskRequest:
       format: date
       nullable: true
       example: "2026-10-15"
+
+UpdateTaskRequest:
+  type: object
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 500
+      example: "Обновленный заголовок"
+    descriptionMarkdown:
+      type: string
+      example: "Детальное описание задачи в Markdown"
+    dueDate:
+      type: string
+      format: date
+      nullable: true
+      example: "2026-10-15"
+    priority:
+      type: string
+      enum: [none, low, medium, high, urgent]
+      example: "high"
+    focusOrder:
+      type: integer
+      nullable: true
+      example: 1
+    projectId:
+      type: string
+      format: uuid
+      nullable: true
+      example: "a0000000-0000-0000-0000-000000000001"
+    columnId:
+      type: string
+      format: uuid
+      nullable: true
+      example: "c0000000-0000-0000-0000-000000000001"
+
+SetFocusRequest:
+  type: object
+  properties:
+    focusOrder:
+      type: integer
+      nullable: true
+      example: 1
+

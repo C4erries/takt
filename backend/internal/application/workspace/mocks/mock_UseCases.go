@@ -7,6 +7,7 @@ package mocks
 import (
 	"context"
 	"takt/internal/application/workspace"
+	workspace0 "takt/internal/domain/workspace"
 
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
@@ -46,6 +47,296 @@ type MockUseCases_Expecter struct {
 
 func (_m *MockUseCases) EXPECT() *MockUseCases_Expecter {
 	return &MockUseCases_Expecter{mock: &_m.Mock}
+}
+
+// AcceptInvite provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) AcceptInvite(ctx context.Context, userID uuid.UUID, token string) (*workspace.SwitchWorkspaceOutput, error) {
+	ret := _mock.Called(ctx, userID, token)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AcceptInvite")
+	}
+
+	var r0 *workspace.SwitchWorkspaceOutput
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*workspace.SwitchWorkspaceOutput, error)); ok {
+		return returnFunc(ctx, userID, token)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *workspace.SwitchWorkspaceOutput); ok {
+		r0 = returnFunc(ctx, userID, token)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace.SwitchWorkspaceOutput)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = returnFunc(ctx, userID, token)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_AcceptInvite_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AcceptInvite'
+type MockUseCases_AcceptInvite_Call struct {
+	*mock.Call
+}
+
+// AcceptInvite is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - token string
+func (_e *MockUseCases_Expecter) AcceptInvite(ctx any, userID any, token any) *MockUseCases_AcceptInvite_Call {
+	return &MockUseCases_AcceptInvite_Call{Call: _e.mock.On("AcceptInvite", ctx, userID, token)}
+}
+
+func (_c *MockUseCases_AcceptInvite_Call) Run(run func(ctx context.Context, userID uuid.UUID, token string)) *MockUseCases_AcceptInvite_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_AcceptInvite_Call) Return(switchWorkspaceOutput *workspace.SwitchWorkspaceOutput, err error) *MockUseCases_AcceptInvite_Call {
+	_c.Call.Return(switchWorkspaceOutput, err)
+	return _c
+}
+
+func (_c *MockUseCases_AcceptInvite_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, token string) (*workspace.SwitchWorkspaceOutput, error)) *MockUseCases_AcceptInvite_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateInvite provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) CreateInvite(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID) (*workspace0.WorkspaceInvite, error) {
+	ret := _mock.Called(ctx, actorID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateInvite")
+	}
+
+	var r0 *workspace0.WorkspaceInvite
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (*workspace0.WorkspaceInvite, error)); ok {
+		return returnFunc(ctx, actorID, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) *workspace0.WorkspaceInvite); ok {
+		r0 = returnFunc(ctx, actorID, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace0.WorkspaceInvite)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, actorID, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_CreateInvite_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateInvite'
+type MockUseCases_CreateInvite_Call struct {
+	*mock.Call
+}
+
+// CreateInvite is a helper method to define mock.On call
+//   - ctx context.Context
+//   - actorID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) CreateInvite(ctx any, actorID any, workspaceID any) *MockUseCases_CreateInvite_Call {
+	return &MockUseCases_CreateInvite_Call{Call: _e.mock.On("CreateInvite", ctx, actorID, workspaceID)}
+}
+
+func (_c *MockUseCases_CreateInvite_Call) Run(run func(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID)) *MockUseCases_CreateInvite_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_CreateInvite_Call) Return(workspaceInvite *workspace0.WorkspaceInvite, err error) *MockUseCases_CreateInvite_Call {
+	_c.Call.Return(workspaceInvite, err)
+	return _c
+}
+
+func (_c *MockUseCases_CreateInvite_Call) RunAndReturn(run func(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID) (*workspace0.WorkspaceInvite, error)) *MockUseCases_CreateInvite_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CreateWorkspace provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) CreateWorkspace(ctx context.Context, userID uuid.UUID, name string) (*workspace0.UserWorkspace, error) {
+	ret := _mock.Called(ctx, userID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateWorkspace")
+	}
+
+	var r0 *workspace0.UserWorkspace
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) (*workspace0.UserWorkspace, error)); ok {
+		return returnFunc(ctx, userID, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string) *workspace0.UserWorkspace); ok {
+		r0 = returnFunc(ctx, userID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace0.UserWorkspace)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string) error); ok {
+		r1 = returnFunc(ctx, userID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_CreateWorkspace_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateWorkspace'
+type MockUseCases_CreateWorkspace_Call struct {
+	*mock.Call
+}
+
+// CreateWorkspace is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - name string
+func (_e *MockUseCases_Expecter) CreateWorkspace(ctx any, userID any, name any) *MockUseCases_CreateWorkspace_Call {
+	return &MockUseCases_CreateWorkspace_Call{Call: _e.mock.On("CreateWorkspace", ctx, userID, name)}
+}
+
+func (_c *MockUseCases_CreateWorkspace_Call) Run(run func(ctx context.Context, userID uuid.UUID, name string)) *MockUseCases_CreateWorkspace_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_CreateWorkspace_Call) Return(userWorkspace *workspace0.UserWorkspace, err error) *MockUseCases_CreateWorkspace_Call {
+	_c.Call.Return(userWorkspace, err)
+	return _c
+}
+
+func (_c *MockUseCases_CreateWorkspace_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, name string) (*workspace0.UserWorkspace, error)) *MockUseCases_CreateWorkspace_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetInvitePreview provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) GetInvitePreview(ctx context.Context, token string) (*workspace.InvitePreviewInfo, error) {
+	ret := _mock.Called(ctx, token)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetInvitePreview")
+	}
+
+	var r0 *workspace.InvitePreviewInfo
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*workspace.InvitePreviewInfo, error)); ok {
+		return returnFunc(ctx, token)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *workspace.InvitePreviewInfo); ok {
+		r0 = returnFunc(ctx, token)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace.InvitePreviewInfo)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, token)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_GetInvitePreview_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetInvitePreview'
+type MockUseCases_GetInvitePreview_Call struct {
+	*mock.Call
+}
+
+// GetInvitePreview is a helper method to define mock.On call
+//   - ctx context.Context
+//   - token string
+func (_e *MockUseCases_Expecter) GetInvitePreview(ctx any, token any) *MockUseCases_GetInvitePreview_Call {
+	return &MockUseCases_GetInvitePreview_Call{Call: _e.mock.On("GetInvitePreview", ctx, token)}
+}
+
+func (_c *MockUseCases_GetInvitePreview_Call) Run(run func(ctx context.Context, token string)) *MockUseCases_GetInvitePreview_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_GetInvitePreview_Call) Return(invitePreviewInfo *workspace.InvitePreviewInfo, err error) *MockUseCases_GetInvitePreview_Call {
+	_c.Call.Return(invitePreviewInfo, err)
+	return _c
+}
+
+func (_c *MockUseCases_GetInvitePreview_Call) RunAndReturn(run func(ctx context.Context, token string) (*workspace.InvitePreviewInfo, error)) *MockUseCases_GetInvitePreview_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // GetMe provides a mock function for the type MockUseCases
@@ -118,6 +409,148 @@ func (_c *MockUseCases_GetMe_Call) Return(getProfileOutput *workspace.GetProfile
 }
 
 func (_c *MockUseCases_GetMe_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (*workspace.GetProfileOutput, error)) *MockUseCases_GetMe_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListMembers provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) ListMembers(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) ([]*workspace.WorkspaceMemberInfo, error) {
+	ret := _mock.Called(ctx, userID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListMembers")
+	}
+
+	var r0 []*workspace.WorkspaceMemberInfo
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) ([]*workspace.WorkspaceMemberInfo, error)); ok {
+		return returnFunc(ctx, userID, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) []*workspace.WorkspaceMemberInfo); ok {
+		r0 = returnFunc(ctx, userID, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*workspace.WorkspaceMemberInfo)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, userID, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_ListMembers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListMembers'
+type MockUseCases_ListMembers_Call struct {
+	*mock.Call
+}
+
+// ListMembers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) ListMembers(ctx any, userID any, workspaceID any) *MockUseCases_ListMembers_Call {
+	return &MockUseCases_ListMembers_Call{Call: _e.mock.On("ListMembers", ctx, userID, workspaceID)}
+}
+
+func (_c *MockUseCases_ListMembers_Call) Run(run func(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID)) *MockUseCases_ListMembers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_ListMembers_Call) Return(workspaceMemberInfos []*workspace.WorkspaceMemberInfo, err error) *MockUseCases_ListMembers_Call {
+	_c.Call.Return(workspaceMemberInfos, err)
+	return _c
+}
+
+func (_c *MockUseCases_ListMembers_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) ([]*workspace.WorkspaceMemberInfo, error)) *MockUseCases_ListMembers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListWorkspaces provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) ListWorkspaces(ctx context.Context, userID uuid.UUID) ([]*workspace0.UserWorkspace, error) {
+	ret := _mock.Called(ctx, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListWorkspaces")
+	}
+
+	var r0 []*workspace0.UserWorkspace
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*workspace0.UserWorkspace, error)); ok {
+		return returnFunc(ctx, userID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*workspace0.UserWorkspace); ok {
+		r0 = returnFunc(ctx, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*workspace0.UserWorkspace)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_ListWorkspaces_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListWorkspaces'
+type MockUseCases_ListWorkspaces_Call struct {
+	*mock.Call
+}
+
+// ListWorkspaces is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+func (_e *MockUseCases_Expecter) ListWorkspaces(ctx any, userID any) *MockUseCases_ListWorkspaces_Call {
+	return &MockUseCases_ListWorkspaces_Call{Call: _e.mock.On("ListWorkspaces", ctx, userID)}
+}
+
+func (_c *MockUseCases_ListWorkspaces_Call) Run(run func(ctx context.Context, userID uuid.UUID)) *MockUseCases_ListWorkspaces_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_ListWorkspaces_Call) Return(userWorkspaces []*workspace0.UserWorkspace, err error) *MockUseCases_ListWorkspaces_Call {
+	_c.Call.Return(userWorkspaces, err)
+	return _c
+}
+
+func (_c *MockUseCases_ListWorkspaces_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) ([]*workspace0.UserWorkspace, error)) *MockUseCases_ListWorkspaces_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -254,6 +687,229 @@ func (_c *MockUseCases_Register_Call) Return(registerOutput *workspace.RegisterO
 }
 
 func (_c *MockUseCases_Register_Call) RunAndReturn(run func(ctx context.Context, input workspace.RegisterInput) (*workspace.RegisterOutput, error)) *MockUseCases_Register_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RemoveMember provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) RemoveMember(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, targetUserID uuid.UUID) error {
+	ret := _mock.Called(ctx, actorID, workspaceID, targetUserID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveMember")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, actorID, workspaceID, targetUserID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockUseCases_RemoveMember_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveMember'
+type MockUseCases_RemoveMember_Call struct {
+	*mock.Call
+}
+
+// RemoveMember is a helper method to define mock.On call
+//   - ctx context.Context
+//   - actorID uuid.UUID
+//   - workspaceID uuid.UUID
+//   - targetUserID uuid.UUID
+func (_e *MockUseCases_Expecter) RemoveMember(ctx any, actorID any, workspaceID any, targetUserID any) *MockUseCases_RemoveMember_Call {
+	return &MockUseCases_RemoveMember_Call{Call: _e.mock.On("RemoveMember", ctx, actorID, workspaceID, targetUserID)}
+}
+
+func (_c *MockUseCases_RemoveMember_Call) Run(run func(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, targetUserID uuid.UUID)) *MockUseCases_RemoveMember_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_RemoveMember_Call) Return(err error) *MockUseCases_RemoveMember_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockUseCases_RemoveMember_Call) RunAndReturn(run func(ctx context.Context, actorID uuid.UUID, workspaceID uuid.UUID, targetUserID uuid.UUID) error) *MockUseCases_RemoveMember_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SwitchWorkspace provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) SwitchWorkspace(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (*workspace.SwitchWorkspaceOutput, error) {
+	ret := _mock.Called(ctx, userID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SwitchWorkspace")
+	}
+
+	var r0 *workspace.SwitchWorkspaceOutput
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (*workspace.SwitchWorkspaceOutput, error)); ok {
+		return returnFunc(ctx, userID, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) *workspace.SwitchWorkspaceOutput); ok {
+		r0 = returnFunc(ctx, userID, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace.SwitchWorkspaceOutput)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, userID, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_SwitchWorkspace_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SwitchWorkspace'
+type MockUseCases_SwitchWorkspace_Call struct {
+	*mock.Call
+}
+
+// SwitchWorkspace is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) SwitchWorkspace(ctx any, userID any, workspaceID any) *MockUseCases_SwitchWorkspace_Call {
+	return &MockUseCases_SwitchWorkspace_Call{Call: _e.mock.On("SwitchWorkspace", ctx, userID, workspaceID)}
+}
+
+func (_c *MockUseCases_SwitchWorkspace_Call) Run(run func(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID)) *MockUseCases_SwitchWorkspace_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_SwitchWorkspace_Call) Return(switchWorkspaceOutput *workspace.SwitchWorkspaceOutput, err error) *MockUseCases_SwitchWorkspace_Call {
+	_c.Call.Return(switchWorkspaceOutput, err)
+	return _c
+}
+
+func (_c *MockUseCases_SwitchWorkspace_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID) (*workspace.SwitchWorkspaceOutput, error)) *MockUseCases_SwitchWorkspace_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateWorkspace provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) UpdateWorkspace(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, name string) (*workspace0.UserWorkspace, error) {
+	ret := _mock.Called(ctx, userID, workspaceID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateWorkspace")
+	}
+
+	var r0 *workspace0.UserWorkspace
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, string) (*workspace0.UserWorkspace, error)); ok {
+		return returnFunc(ctx, userID, workspaceID, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, string) *workspace0.UserWorkspace); ok {
+		r0 = returnFunc(ctx, userID, workspaceID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace0.UserWorkspace)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, string) error); ok {
+		r1 = returnFunc(ctx, userID, workspaceID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_UpdateWorkspace_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateWorkspace'
+type MockUseCases_UpdateWorkspace_Call struct {
+	*mock.Call
+}
+
+// UpdateWorkspace is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - workspaceID uuid.UUID
+//   - name string
+func (_e *MockUseCases_Expecter) UpdateWorkspace(ctx any, userID any, workspaceID any, name any) *MockUseCases_UpdateWorkspace_Call {
+	return &MockUseCases_UpdateWorkspace_Call{Call: _e.mock.On("UpdateWorkspace", ctx, userID, workspaceID, name)}
+}
+
+func (_c *MockUseCases_UpdateWorkspace_Call) Run(run func(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, name string)) *MockUseCases_UpdateWorkspace_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_UpdateWorkspace_Call) Return(userWorkspace *workspace0.UserWorkspace, err error) *MockUseCases_UpdateWorkspace_Call {
+	_c.Call.Return(userWorkspace, err)
+	return _c
+}
+
+func (_c *MockUseCases_UpdateWorkspace_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, name string) (*workspace0.UserWorkspace, error)) *MockUseCases_UpdateWorkspace_Call {
 	_c.Call.Return(run)
 	return _c
 }

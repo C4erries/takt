@@ -100,6 +100,15 @@ type Workspace struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type WorkspaceInvite struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	InvitedByID pgtype.UUID        `json:"invited_by_id"`
+	Token       string             `json:"token"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type WorkspaceMember struct {
 	ID          pgtype.UUID        `json:"id"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`

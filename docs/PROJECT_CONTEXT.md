@@ -37,6 +37,7 @@
 | **Инфраструктура** | **Docker Compose**, **Nginx** (reverse proxy), **Makefile** | Локальный и продакшн паритет; Nginx маршрутизирует `/api/*` в Go и отдает фронтенд; `make check-arch` линтит архитектуру. |
 | **Тестирование & Python** | **uv** + **pytest** + **httpx** (`tests/`) | Ультрабыстрый запуск (`uv run pytest`), изоляция виртуального окружения, E2E проверка пользовательских сценариев через HTTP API. |
 | **Go Tooling** | `golang-migrate`, `mockery v2/v3`, `oapi-codegen` | Установка инструментов строго через `go install` в `$HOME/go/bin`. |
+| **Объектное хранилище (Фаза 3)** | **S3-совместимое хранилище** (MinIO в Docker Compose, AWS S3 / Cloudflare R2 / Ceph в prod) | Хранение изображений, вложений к задачам, аватарок; адаптер `internal/infrastructure/storage/s3` на базе `aws-sdk-go-v2` с presigned URLs. |
 
 ---
 
@@ -54,6 +55,7 @@ erDiagram
     COLUMN ||--o{ TASK : organizes
     TASK ||--o{ TASK_TAG : tagged
     TAG ||--o{ TASK_TAG : classifies
+    TASK ||--o{ ATTACHMENT : contains
 
     USER {
         uuid id PK
@@ -144,6 +146,17 @@ erDiagram
         boolean is_enabled
         timestamp created_at
     }
+
+    ATTACHMENT {
+        uuid id PK
+        uuid workspace_id FK
+        uuid task_id FK
+        string filename
+        string content_type
+        int byte_size
+        string s3_key
+        timestamp created_at
+    }
 ```
 
 ### Назначение ключевых сущностей:
@@ -228,6 +241,8 @@ erDiagram
 | **Features: Quick Capture** | `src/features/quick-capture` | Всплывающее поле быстрого ввода задачи в Inbox. |
 | **Features: Task Focus** | `src/features/task-focus` | Управление фокусом задачи, J/K переключение со snappy-анимацией. |
 | **Features: Automations Toggle**| `src/features/automations-toggle`| Панель тумблеров включения/выключения готовых правил на доске. |
+| **Features: Workspace Switcher**| `src/features/workspace-switcher`| Выпадающее меню переключения воркспейсов и модал создания. |
+| **Features: Workspace Members** | `src/features/workspace-members` | Управление участниками, генерация инвайт-ссылок и принятие. |
 | **Widgets: Sidebar** | `src/widgets/sidebar` | Левая навигация (Inbox, Today, Someday, Projects). |
 | **Widgets: Main Sheet** | `src/widgets/main-sheet` | Центральный бумажный лист (разлинованный список задач или Канбан-доска). |
 | **Widgets: Inspector** | `src/widgets/task-inspector` | Правая верхняя карточка деталей выбранной задачи. |
@@ -255,9 +270,9 @@ takt/
 ├── backend/                           # Go-сервис (Clean Architecture / DDD)
 │   ├── cmd/server/main.go             # Тонкая точка входа (< 50 строк)
 │   ├── internal/                      # СТРОГО 3 корневых подпакета:
-│   │   ├── domain/                    # workspace, project, task, automation, events
-│   │   ├── application/               # use-cases + ports.go
-│   │   └── infrastructure/            # container (DI), config, http, db, eventbus, repository
+│   │   ├── domain/                    # workspace, project, task, automation, events, attachment (Фаза 3)
+│   │   ├── application/               # use-cases + ports.go (вкл. ObjectStorage порт)
+│   │   └── infrastructure/            # container (DI), config, http, db, eventbus, repository, storage/s3 (Фаза 3)
 │   ├── migrations/                    # SQL-миграции (golang-migrate)
 │   ├── queries/                       # *.sql файлы запросов для sqlc
 │   ├── sqlc.yaml

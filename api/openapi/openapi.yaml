@@ -68,6 +68,22 @@ paths:
     $ref: './paths/projects.yaml#/projectTasks'
   /workspaces/{workspace_id}/tasks/{task_id}/move:
     $ref: './paths/projects.yaml#/moveTask'
+  /workspaces:
+    $ref: './paths/workspaces.yaml#/workspaces'
+  /workspaces/{workspace_id}:
+    $ref: './paths/workspaces.yaml#/workspaceItem'
+  /workspaces/{workspace_id}/switch:
+    $ref: './paths/workspaces.yaml#/switchWorkspace'
+  /workspaces/{workspace_id}/members:
+    $ref: './paths/workspaces.yaml#/workspaceMembers'
+  /workspaces/{workspace_id}/members/{user_id}:
+    $ref: './paths/workspaces.yaml#/workspaceMemberItem'
+  /workspaces/{workspace_id}/invites:
+    $ref: './paths/workspaces.yaml#/workspaceInvites'
+  /invites/{token}:
+    $ref: './paths/workspaces.yaml#/invitePreview'
+  /invites/{token}/accept:
+    $ref: './paths/workspaces.yaml#/acceptInvite'
   /workspaces/{workspace_id}/automations:
     $ref: './paths/automations.yaml#/automations'
   /workspaces/{workspace_id}/automations/{automation_id}/toggle:
@@ -91,7 +107,19 @@ components:
     User:
       $ref: './schemas/user.yaml#/User'
     Workspace:
-      $ref: './schemas/workspace.yaml'
+      $ref: './schemas/workspace.yaml#/Workspace'
+    CreateWorkspaceRequest:
+      $ref: './schemas/workspace.yaml#/CreateWorkspaceRequest'
+    UpdateWorkspaceRequest:
+      $ref: './schemas/workspace.yaml#/UpdateWorkspaceRequest'
+    WorkspaceMember:
+      $ref: './schemas/workspace.yaml#/WorkspaceMember'
+    WorkspaceInvite:
+      $ref: './schemas/workspace.yaml#/WorkspaceInvite'
+    InvitePreview:
+      $ref: './schemas/workspace.yaml#/InvitePreview'
+    WorkspaceSwitchResponse:
+      $ref: './schemas/workspace.yaml#/WorkspaceSwitchResponse'
     Task:
       $ref: './schemas/task.yaml#/Task'
     Tag:

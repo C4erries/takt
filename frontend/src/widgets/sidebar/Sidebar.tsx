@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button, Badge, Input } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
+import { WorkspaceSwitcher } from '@/features/workspace-switcher';
 import { useTaskStore, useInboxTasks } from '@/features/task-navigation';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
 import { useTodayTasksQuery } from '@/entities/task';
@@ -29,6 +30,7 @@ export interface SidebarProps {
   showUiCatalog: boolean;
   onToggleUiCatalog: () => void;
   onOpenAutomations?: () => void;
+  onWorkspaceChange?: (workspace: Workspace) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -43,6 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   showUiCatalog,
   onToggleUiCatalog,
   onOpenAutomations,
+  onWorkspaceChange,
 }) => {
   const {
     setQuickCaptureOpen,
@@ -92,22 +95,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside className="w-60 shrink-0 h-full flex flex-col justify-between py-6 px-4 select-none">
       {/* Top section: Workspace, Quick Action, Navigation */}
       <div className="space-y-6 overflow-y-auto pr-0.5">
-        {/* Workspace Brand */}
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-accent-solid text-surface flex items-center justify-center font-serif text-base font-semibold shadow-washi-sm">
-              T
-            </div>
-            <div className="flex flex-col">
-              <span className="font-serif text-lg font-normal tracking-tight text-primary leading-tight">
-                {workspace?.name || 'Личное'}
-              </span>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted">
-                {workspace?.type === 'personal' ? 'Personal GTD' : 'Workspace'}
-              </span>
-            </div>
-          </div>
-        </div>
+        {/* Workspace Switcher */}
+        <WorkspaceSwitcher
+          currentWorkspace={workspace}
+          currentUser={user}
+          onWorkspaceChange={onWorkspaceChange}
+        />
 
         {/* Quick Capture Button */}
         <Button

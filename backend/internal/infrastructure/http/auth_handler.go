@@ -26,8 +26,8 @@ func mapWorkspaceToGenerated(w *domainWorkspace.UserWorkspace) generated.Workspa
 	return generated.Workspace{
 		Id:        w.ID,
 		Name:      w.Name,
-		Type:      generated.WorkspaceType(w.Type),
 		Role:      generated.WorkspaceRole(w.Role),
+		OwnerId:   w.OwnerID,
 		CreatedAt: w.CreatedAt,
 	}
 }

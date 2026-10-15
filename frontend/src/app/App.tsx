@@ -22,10 +22,11 @@ import { Button } from '@/shared/components/ui';
 import { useTodayTasksQuery } from '@/entities/task';
 import { useProjectTasksQuery } from '@/entities/project';
 import { AutomationsModal } from '@/features/automations-toggle';
+import { AcceptInviteModal } from '@/features/workspace-members';
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
-  const { user, workspace, login, register, logout } = useAuth();
+  const { user, workspace, setWorkspace, login, register, logout, refresh } = useAuth();
 
   const {
     selectedTaskId,
@@ -128,6 +129,7 @@ export const App: React.FC = () => {
         showUiCatalog={showUiCatalog}
         onToggleUiCatalog={() => setShowUiCatalog((prev) => !prev)}
         onOpenAutomations={() => setIsAutomationsModalOpen(true)}
+        onWorkspaceChange={setWorkspace}
       />
 
       {/* Main Content Area */}
@@ -227,6 +229,10 @@ export const App: React.FC = () => {
         isOpen={isAutomationsModalOpen}
         onClose={() => setIsAutomationsModalOpen(false)}
         workspaceId={workspace?.id}
+      />
+
+      <AcceptInviteModal
+        onAccepted={() => refresh()}
       />
     </div>
   );

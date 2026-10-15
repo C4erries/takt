@@ -190,6 +190,42 @@ func (e UpdateTaskRequestPriority) Valid() bool {
 	}
 }
 
+// Defines values for WorkspaceRole.
+const (
+	WorkspaceRoleMember WorkspaceRole = "member"
+	WorkspaceRoleOwner  WorkspaceRole = "owner"
+)
+
+// Valid indicates whether the value is a known member of the WorkspaceRole enum.
+func (e WorkspaceRole) Valid() bool {
+	switch e {
+	case WorkspaceRoleMember:
+		return true
+	case WorkspaceRoleOwner:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkspaceMemberRole.
+const (
+	WorkspaceMemberRoleMember WorkspaceMemberRole = "member"
+	WorkspaceMemberRoleOwner  WorkspaceMemberRole = "owner"
+)
+
+// Valid indicates whether the value is a known member of the WorkspaceMemberRole enum.
+func (e WorkspaceMemberRole) Valid() bool {
+	switch e {
+	case WorkspaceMemberRoleMember:
+		return true
+	case WorkspaceMemberRoleOwner:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthDatabaseStatus.
 const (
 	Connected    HealthDatabaseStatus = "connected"
@@ -223,42 +259,6 @@ func (e HealthStatus) Valid() bool {
 	case HealthStatusError:
 		return true
 	case HealthStatusOk:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WorkspaceRole.
-const (
-	Member WorkspaceRole = "member"
-	Owner  WorkspaceRole = "owner"
-)
-
-// Valid indicates whether the value is a known member of the WorkspaceRole enum.
-func (e WorkspaceRole) Valid() bool {
-	switch e {
-	case Member:
-		return true
-	case Owner:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WorkspaceType.
-const (
-	Personal WorkspaceType = "personal"
-	Shared   WorkspaceType = "shared"
-)
-
-// Valid indicates whether the value is a known member of the WorkspaceType enum.
-func (e WorkspaceType) Valid() bool {
-	switch e {
-	case Personal:
-		return true
-	case Shared:
 		return true
 	default:
 		return false
@@ -406,6 +406,27 @@ type CreateTagRequest struct {
 
 	// Name Example: focus
 	Name string `json:"name"`
+}
+
+// CreateWorkspaceRequest defines model for CreateWorkspaceRequest.
+type CreateWorkspaceRequest struct {
+	// Name Example: Работа
+	Name string `json:"name"`
+}
+
+// InvitePreview defines model for InvitePreview.
+type InvitePreview struct {
+	// ExpiresAt Example: 2026-10-21T12:00:00Z
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// InvitedByName Example: Павел
+	InvitedByName string `json:"invited_by_name"`
+
+	// Token Example: a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01
+	Token string `json:"token"`
+
+	// WorkspaceName Example: Стартап Takt
+	WorkspaceName string `json:"workspace_name"`
 }
 
 // LoginRequest defines model for LoginRequest.
@@ -595,6 +616,12 @@ type UpdateTaskRequest struct {
 // UpdateTaskRequestPriority Example: high
 type UpdateTaskRequestPriority string
 
+// UpdateWorkspaceRequest defines model for UpdateWorkspaceRequest.
+type UpdateWorkspaceRequest struct {
+	// Name Example: Основной воркспейс
+	Name string `json:"name"`
+}
+
 // User defines model for User.
 type User struct {
 	// CreatedAt Example: 2026-10-14T12:00:00Z
@@ -608,6 +635,81 @@ type User struct {
 
 	// Id Example: 123e4567-e89b-12d3-a456-426614174000
 	Id openapi_types.UUID `json:"id"`
+}
+
+// Workspace defines model for Workspace.
+type Workspace struct {
+	// CreatedAt Example: 2026-10-14T12:00:00Z
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id Example: 123e4567-e89b-12d3-a456-426614174000
+	Id openapi_types.UUID `json:"id"`
+
+	// Name Example: Личное
+	Name string `json:"name"`
+
+	// OwnerId Example: 123e4567-e89b-12d3-a456-426614174001
+	OwnerId openapi_types.UUID `json:"owner_id"`
+
+	// Role Example: owner
+	Role WorkspaceRole `json:"role"`
+}
+
+// WorkspaceRole Example: owner
+type WorkspaceRole string
+
+// WorkspaceInvite defines model for WorkspaceInvite.
+type WorkspaceInvite struct {
+	// CreatedAt Example: 2026-10-14T12:00:00Z
+	CreatedAt time.Time `json:"created_at"`
+
+	// ExpiresAt Example: 2026-10-21T12:00:00Z
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id Example: 123e4567-e89b-12d3-a456-426614174000
+	Id openapi_types.UUID `json:"id"`
+
+	// InviteUrl Example: /invite/a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01
+	InviteUrl string `json:"invite_url"`
+
+	// Token Example: a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01
+	Token string `json:"token"`
+
+	// WorkspaceId Example: 123e4567-e89b-12d3-a456-426614174001
+	WorkspaceId openapi_types.UUID `json:"workspace_id"`
+}
+
+// WorkspaceMember defines model for WorkspaceMember.
+type WorkspaceMember struct {
+	// CreatedAt Example: 2026-10-14T12:00:00Z
+	CreatedAt time.Time `json:"created_at"`
+
+	// DisplayName Example: Алексей
+	DisplayName string `json:"display_name"`
+
+	// Email Example: colleague@takt.dev
+	Email openapi_types.Email `json:"email"`
+
+	// Id Example: 123e4567-e89b-12d3-a456-426614174000
+	Id openapi_types.UUID `json:"id"`
+
+	// Role Example: member
+	Role WorkspaceMemberRole `json:"role"`
+
+	// UserId Example: 123e4567-e89b-12d3-a456-426614174001
+	UserId openapi_types.UUID `json:"user_id"`
+}
+
+// WorkspaceMemberRole Example: member
+type WorkspaceMemberRole string
+
+// WorkspaceSwitchResponse defines model for WorkspaceSwitchResponse.
+type WorkspaceSwitchResponse struct {
+	// Token New JWT session token
+	//
+	// Example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+	Token     string    `json:"token"`
+	Workspace Workspace `json:"workspace"`
 }
 
 // Error defines model for error.
@@ -649,30 +751,6 @@ type HealthDatabaseStatus string
 // HealthStatus Example: ok
 type HealthStatus string
 
-// Workspace defines model for workspace.
-type Workspace struct {
-	// CreatedAt Example: 2026-10-14T12:00:00Z
-	CreatedAt time.Time `json:"createdAt"`
-
-	// Id Example: 123e4567-e89b-12d3-a456-426614174000
-	Id openapi_types.UUID `json:"id"`
-
-	// Name Example: Личное
-	Name string `json:"name"`
-
-	// Role Example: owner
-	Role WorkspaceRole `json:"role"`
-
-	// Type Example: personal
-	Type WorkspaceType `json:"type"`
-}
-
-// WorkspaceRole Example: owner
-type WorkspaceRole string
-
-// WorkspaceType Example: personal
-type WorkspaceType string
-
 // CreateProjectBoardJSONBody defines parameters for CreateProjectBoard.
 type CreateProjectBoardJSONBody struct {
 	// Name Example: Вторая доска
@@ -687,6 +765,12 @@ type RegisterJSONRequestBody = RegisterRequest
 
 // CreateInboxTaskJSONRequestBody defines body for CreateInboxTask for application/json ContentType.
 type CreateInboxTaskJSONRequestBody = CreateInboxTaskRequest
+
+// CreateWorkspaceJSONRequestBody defines body for CreateWorkspace for application/json ContentType.
+type CreateWorkspaceJSONRequestBody = CreateWorkspaceRequest
+
+// UpdateWorkspaceJSONRequestBody defines body for UpdateWorkspace for application/json ContentType.
+type UpdateWorkspaceJSONRequestBody = UpdateWorkspaceRequest
 
 // ToggleAutomationJSONRequestBody defines body for ToggleAutomation for application/json ContentType.
 type ToggleAutomationJSONRequestBody = ToggleAutomationRequest
@@ -735,6 +819,12 @@ type ServerInterface interface {
 	// GetHealth Service Health Check
 	// (GET /health)
 	GetHealth(ctx echo.Context) error
+	// GetInvitePreview Preview workspace invite
+	// (GET /invites/{token})
+	GetInvitePreview(ctx echo.Context, token string) error
+	// AcceptInvite Accept workspace invite
+	// (POST /invites/{token}/accept)
+	AcceptInvite(ctx echo.Context, token string) error
 	// GetInboxTasks List all Inbox tasks
 	// (GET /tasks/inbox)
 	GetInboxTasks(ctx echo.Context) error
@@ -747,6 +837,15 @@ type ServerInterface interface {
 	// ToggleTaskCompletion Toggle task completion status
 	// (PATCH /tasks/{id}/toggle)
 	ToggleTaskCompletion(ctx echo.Context, id openapi_types.UUID) error
+	// ListWorkspaces List current user workspaces
+	// (GET /workspaces)
+	ListWorkspaces(ctx echo.Context) error
+	// CreateWorkspace Create a new workspace
+	// (POST /workspaces)
+	CreateWorkspace(ctx echo.Context) error
+	// UpdateWorkspace Rename workspace
+	// (PATCH /workspaces/{workspace_id})
+	UpdateWorkspace(ctx echo.Context, workspaceId openapi_types.UUID) error
 	// ListWorkspaceAutomations List all automations in a workspace
 	// (GET /workspaces/{workspace_id}/automations)
 	ListWorkspaceAutomations(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -765,6 +864,15 @@ type ServerInterface interface {
 	// UpdateBoardColumn Update a column
 	// (PATCH /workspaces/{workspace_id}/boards/{board_id}/columns/{column_id})
 	UpdateBoardColumn(ctx echo.Context, workspaceId openapi_types.UUID, boardId openapi_types.UUID, columnId openapi_types.UUID) error
+	// CreateWorkspaceInvite Generate or get active invite link
+	// (POST /workspaces/{workspace_id}/invites)
+	CreateWorkspaceInvite(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// ListWorkspaceMembers List workspace members
+	// (GET /workspaces/{workspace_id}/members)
+	ListWorkspaceMembers(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// RemoveWorkspaceMember Remove member or leave workspace
+	// (DELETE /workspaces/{workspace_id}/members/{user_id})
+	RemoveWorkspaceMember(ctx echo.Context, workspaceId openapi_types.UUID, userId openapi_types.UUID) error
 	// ListProjects List all projects in a workspace
 	// (GET /workspaces/{workspace_id}/projects)
 	ListProjects(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -789,6 +897,9 @@ type ServerInterface interface {
 	// ListProjectTasks List all tasks for a project
 	// (GET /workspaces/{workspace_id}/projects/{project_id}/tasks)
 	ListProjectTasks(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID) error
+	// SwitchWorkspace Switch active workspace
+	// (POST /workspaces/{workspace_id}/switch)
+	SwitchWorkspace(ctx echo.Context, workspaceId openapi_types.UUID) error
 	// ListWorkspaceTags List all tags in a workspace
 	// (GET /workspaces/{workspace_id}/tags)
 	ListWorkspaceTags(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -868,6 +979,38 @@ func (w *ServerInterfaceWrapper) GetHealth(ctx echo.Context) error {
 	return err
 }
 
+// GetInvitePreview converts echo context to params.
+func (w *ServerInterfaceWrapper) GetInvitePreview(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "token" -------------
+	var token string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "token", ctx.Param("token"), &token, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter token: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetInvitePreview(ctx, token)
+	return err
+}
+
+// AcceptInvite converts echo context to params.
+func (w *ServerInterfaceWrapper) AcceptInvite(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "token" -------------
+	var token string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "token", ctx.Param("token"), &token, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter token: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.AcceptInvite(ctx, token)
+	return err
+}
+
 // GetInboxTasks converts echo context to params.
 func (w *ServerInterfaceWrapper) GetInboxTasks(ctx echo.Context) error {
 	var err error
@@ -915,6 +1058,40 @@ func (w *ServerInterfaceWrapper) ToggleTaskCompletion(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.ToggleTaskCompletion(ctx, id)
+	return err
+}
+
+// ListWorkspaces converts echo context to params.
+func (w *ServerInterfaceWrapper) ListWorkspaces(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListWorkspaces(ctx)
+	return err
+}
+
+// CreateWorkspace converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateWorkspace(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateWorkspace(ctx)
+	return err
+}
+
+// UpdateWorkspace converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateWorkspace(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateWorkspace(ctx, workspaceId)
 	return err
 }
 
@@ -1067,6 +1244,62 @@ func (w *ServerInterfaceWrapper) UpdateBoardColumn(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.UpdateBoardColumn(ctx, workspaceId, boardId, columnId)
+	return err
+}
+
+// CreateWorkspaceInvite converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateWorkspaceInvite(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateWorkspaceInvite(ctx, workspaceId)
+	return err
+}
+
+// ListWorkspaceMembers converts echo context to params.
+func (w *ServerInterfaceWrapper) ListWorkspaceMembers(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListWorkspaceMembers(ctx, workspaceId)
+	return err
+}
+
+// RemoveWorkspaceMember converts echo context to params.
+func (w *ServerInterfaceWrapper) RemoveWorkspaceMember(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "user_id" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", ctx.Param("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter user_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.RemoveWorkspaceMember(ctx, workspaceId, userId)
 	return err
 }
 
@@ -1243,6 +1476,22 @@ func (w *ServerInterfaceWrapper) ListProjectTasks(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.ListProjectTasks(ctx, workspaceId, projectId)
+	return err
+}
+
+// SwitchWorkspace converts echo context to params.
+func (w *ServerInterfaceWrapper) SwitchWorkspace(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SwitchWorkspace(ctx, workspaceId)
 	return err
 }
 
@@ -1506,16 +1755,24 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/auth/me", wrapper.GetMe, options.OperationMiddlewares["getMe"]...)
 	router.POST(options.BaseURL+"/auth/register", wrapper.Register, options.OperationMiddlewares["register"]...)
 	router.GET(options.BaseURL+"/health", wrapper.GetHealth, options.OperationMiddlewares["getHealth"]...)
+	router.GET(options.BaseURL+"/invites/:token", wrapper.GetInvitePreview, options.OperationMiddlewares["getInvitePreview"]...)
+	router.POST(options.BaseURL+"/invites/:token/accept", wrapper.AcceptInvite, options.OperationMiddlewares["acceptInvite"]...)
 	router.GET(options.BaseURL+"/tasks/inbox", wrapper.GetInboxTasks, options.OperationMiddlewares["getInboxTasks"]...)
 	router.POST(options.BaseURL+"/tasks/inbox", wrapper.CreateInboxTask, options.OperationMiddlewares["createInboxTask"]...)
 	router.DELETE(options.BaseURL+"/tasks/:id", wrapper.DeleteTask, options.OperationMiddlewares["deleteTask"]...)
 	router.PATCH(options.BaseURL+"/tasks/:id/toggle", wrapper.ToggleTaskCompletion, options.OperationMiddlewares["toggleTaskCompletion"]...)
+	router.GET(options.BaseURL+"/workspaces", wrapper.ListWorkspaces, options.OperationMiddlewares["listWorkspaces"]...)
+	router.POST(options.BaseURL+"/workspaces", wrapper.CreateWorkspace, options.OperationMiddlewares["createWorkspace"]...)
+	router.PATCH(options.BaseURL+"/workspaces/:workspace_id", wrapper.UpdateWorkspace, options.OperationMiddlewares["updateWorkspace"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/automations", wrapper.ListWorkspaceAutomations, options.OperationMiddlewares["listWorkspaceAutomations"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/automations/:automation_id/toggle", wrapper.ToggleAutomation, options.OperationMiddlewares["toggleAutomation"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns", wrapper.ListBoardColumns, options.OperationMiddlewares["listBoardColumns"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns", wrapper.CreateBoardColumn, options.OperationMiddlewares["createBoardColumn"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns/:column_id", wrapper.DeleteBoardColumn, options.OperationMiddlewares["deleteBoardColumn"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns/:column_id", wrapper.UpdateBoardColumn, options.OperationMiddlewares["updateBoardColumn"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/invites", wrapper.CreateWorkspaceInvite, options.OperationMiddlewares["createWorkspaceInvite"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/members", wrapper.ListWorkspaceMembers, options.OperationMiddlewares["listWorkspaceMembers"]...)
+	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/members/:user_id", wrapper.RemoveWorkspaceMember, options.OperationMiddlewares["removeWorkspaceMember"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects", wrapper.ListProjects, options.OperationMiddlewares["listProjects"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/projects", wrapper.CreateProject, options.OperationMiddlewares["createProject"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id", wrapper.DeleteProject, options.OperationMiddlewares["deleteProject"]...)
@@ -1524,6 +1781,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards", wrapper.ListProjectBoards, options.OperationMiddlewares["listProjectBoards"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards", wrapper.CreateProjectBoard, options.OperationMiddlewares["createProjectBoard"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/tasks", wrapper.ListProjectTasks, options.OperationMiddlewares["listProjectTasks"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/switch", wrapper.SwitchWorkspace, options.OperationMiddlewares["switchWorkspace"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.ListWorkspaceTags, options.OperationMiddlewares["listWorkspaceTags"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.CreateWorkspaceTag, options.OperationMiddlewares["createWorkspaceTag"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.DeleteWorkspaceTag, options.OperationMiddlewares["deleteWorkspaceTag"]...)

@@ -71,6 +71,22 @@ func NewPersonalWorkspace(ownerID uuid.UUID, name string) (*Workspace, error) {
 	}, nil
 }
 
+// NewWorkspace constructs a unified workspace.
+func NewWorkspace(ownerID uuid.UUID, name string) (*Workspace, error) {
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" || len(trimmedName) > 255 {
+		return nil, ErrInvalidWorkspaceName
+	}
+
+	return &Workspace{
+		ID:        uuid.New(),
+		OwnerID:   ownerID,
+		Name:      trimmedName,
+		Type:      TypePersonal,
+		CreatedAt: time.Now().UTC(),
+	}, nil
+}
+
 type WorkspaceMember struct {
 	ID          uuid.UUID
 	WorkspaceID uuid.UUID
@@ -91,8 +107,43 @@ func NewWorkspaceMember(workspaceID, userID uuid.UUID, role MemberRole) (*Worksp
 
 type UserWorkspace struct {
 	ID        uuid.UUID
+	OwnerID   uuid.UUID
 	Name      string
 	Type      WorkspaceType
 	Role      MemberRole
 	CreatedAt time.Time
+}
+
+type WorkspaceInvite struct {
+	ID          uuid.UUID
+	WorkspaceID uuid.UUID
+	InvitedByID uuid.UUID
+	Token       string
+	ExpiresAt   *time.Time
+	CreatedAt   time.Time
+}
+
+// NewWorkspaceInvite creates a new workspace invite entity.
+func NewWorkspaceInvite(workspaceID, invitedByID uuid.UUID, token string, expiresAt *time.Time) (*WorkspaceInvite, error) {
+	trimmedToken := strings.TrimSpace(token)
+	if trimmedToken == "" {
+		return nil, ErrInvalidInviteToken
+	}
+
+	return &WorkspaceInvite{
+		ID:          uuid.New(),
+		WorkspaceID: workspaceID,
+		InvitedByID: invitedByID,
+		Token:       trimmedToken,
+		ExpiresAt:   expiresAt,
+		CreatedAt:   time.Now().UTC(),
+	}, nil
+}
+
+// IsExpired checks whether the invite has expired.
+func (i *WorkspaceInvite) IsExpired() bool {
+	if i.ExpiresAt == nil {
+		return false
+	}
+	return time.Now().UTC().After(*i.ExpiresAt)
 }

@@ -71,7 +71,7 @@ AuthResponse:
     user:
       $ref: '#/User'
     workspace:
-      $ref: './workspace.yaml'
+      $ref: './workspace.yaml#/Workspace'
 
 MeResponse:
   type: object
@@ -82,4 +82,4 @@ MeResponse:
     user:
       $ref: '#/User'
     workspace:
-      $ref: './workspace.yaml'
+      $ref: './workspace.yaml#/Workspace'

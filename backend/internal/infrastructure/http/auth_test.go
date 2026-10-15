@@ -43,6 +43,42 @@ func (m *mockWorkspaceService) GetMe(ctx context.Context, userID, workspaceID uu
 	return nil, nil
 }
 
+func (m *mockWorkspaceService) ListWorkspaces(ctx context.Context, userID uuid.UUID) ([]*domainWorkspace.UserWorkspace, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) CreateWorkspace(ctx context.Context, userID uuid.UUID, name string) (*domainWorkspace.UserWorkspace, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) UpdateWorkspace(ctx context.Context, userID, workspaceID uuid.UUID, name string) (*domainWorkspace.UserWorkspace, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) SwitchWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) (*workspaceApp.SwitchWorkspaceOutput, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) ListMembers(ctx context.Context, userID, workspaceID uuid.UUID) ([]*workspaceApp.WorkspaceMemberInfo, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) RemoveMember(ctx context.Context, actorID, workspaceID, targetUserID uuid.UUID) error {
+	return nil
+}
+
+func (m *mockWorkspaceService) CreateInvite(ctx context.Context, actorID, workspaceID uuid.UUID) (*domainWorkspace.WorkspaceInvite, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) GetInvitePreview(ctx context.Context, token string) (*workspaceApp.InvitePreviewInfo, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) AcceptInvite(ctx context.Context, userID uuid.UUID, token string) (*workspaceApp.SwitchWorkspaceOutput, error) {
+	return nil, nil
+}
+
 func TestJWTManager_GenerateAndParse(t *testing.T) {
 	jwtManager := NewJWTManager("super-secret-key-12345678901234567")
 	userID := uuid.New()

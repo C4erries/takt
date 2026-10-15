@@ -52,7 +52,6 @@ def test_registration_success(api_client: httpx.Client) -> None:
 
     workspace = payload["workspace"]
     assert workspace["name"] == "Личное"
-    assert workspace["type"] == "personal"
     assert workspace["role"] == "owner"
     assert "id" in workspace
 

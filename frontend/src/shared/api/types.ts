@@ -10,9 +10,12 @@ export interface User {
 export interface Workspace {
   id: string;
   name: string;
-  type: 'personal' | 'shared';
+  type?: 'personal' | 'shared';
   role: 'owner' | 'member';
-  createdAt: string;
+  ownerId?: string;
+  owner_id?: string;
+  createdAt?: string;
+  created_at?: string;
 }
 
 export interface Tag {

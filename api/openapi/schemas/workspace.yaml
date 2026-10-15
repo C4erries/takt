@@ -1,27 +1,152 @@
-type: object
-required:
-  - id
-  - name
-  - type
-  - role
-  - createdAt
-properties:
-  id:
-    type: string
-    format: uuid
-    example: "123e4567-e89b-12d3-a456-426614174000"
-  name:
-    type: string
-    example: "Личное"
-  type:
-    type: string
-    enum: [personal, shared]
-    example: "personal"
-  role:
-    type: string
-    enum: [owner, member]
-    example: "owner"
-  createdAt:
-    type: string
-    format: date-time
-    example: "2026-10-14T12:00:00Z"
+Workspace:
+  type: object
+  required:
+    - id
+    - name
+    - role
+    - owner_id
+    - created_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    name:
+      type: string
+      example: "Личное"
+    role:
+      type: string
+      enum: [owner, member]
+      example: "owner"
+    owner_id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174001"
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+CreateWorkspaceRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: "Работа"
+
+UpdateWorkspaceRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: "Основной воркспейс"
+
+WorkspaceMember:
+  type: object
+  required:
+    - id
+    - user_id
+    - email
+    - display_name
+    - role
+    - created_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    user_id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174001"
+    email:
+      type: string
+      format: email
+      example: "colleague@takt.dev"
+    display_name:
+      type: string
+      example: "Алексей"
+    role:
+      type: string
+      enum: [owner, member]
+      example: "member"
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+WorkspaceInvite:
+  type: object
+  required:
+    - id
+    - workspace_id
+    - token
+    - invite_url
+    - created_at
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    workspace_id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174001"
+    token:
+      type: string
+      example: "a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01"
+    invite_url:
+      type: string
+      example: "/invite/a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01"
+    expires_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: "2026-10-21T12:00:00Z"
+    created_at:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+
+InvitePreview:
+  type: object
+  required:
+    - token
+    - workspace_name
+    - invited_by_name
+  properties:
+    token:
+      type: string
+      example: "a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01"
+    workspace_name:
+      type: string
+      example: "Стартап Takt"
+    invited_by_name:
+      type: string
+      example: "Павел"
+    expires_at:
+      type: string
+      format: date-time
+      nullable: true
+      example: "2026-10-21T12:00:00Z"
+
+WorkspaceSwitchResponse:
+  type: object
+  required:
+    - token
+    - workspace
+  properties:
+    token:
+      type: string
+      description: New JWT session token
+      example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    workspace:
+      $ref: '#/Workspace'

@@ -1,0 +1,358 @@
+workspaces:
+  get:
+    tags:
+      - Workspaces
+    summary: List current user workspaces
+    operationId: listWorkspaces
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    responses:
+      '200':
+        description: List of workspaces
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../schemas/workspace.yaml#/Workspace'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+  post:
+    tags:
+      - Workspaces
+    summary: Create a new workspace
+    operationId: createWorkspace
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/workspace.yaml#/CreateWorkspaceRequest'
+    responses:
+      '201':
+        description: Workspace created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workspace.yaml#/Workspace'
+      '400':
+        description: Validation error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+workspaceItem:
+  patch:
+    tags:
+      - Workspaces
+    summary: Rename workspace
+    operationId: updateWorkspace
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/workspace.yaml#/UpdateWorkspaceRequest'
+    responses:
+      '200':
+        description: Workspace updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workspace.yaml#/Workspace'
+      '400':
+        description: Validation error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden (only owner can rename workspace)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Workspace not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+switchWorkspace:
+  post:
+    tags:
+      - Workspaces
+    summary: Switch active workspace
+    operationId: switchWorkspace
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Switched workspace successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workspace.yaml#/WorkspaceSwitchResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden (user not member of workspace)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Workspace not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+workspaceMembers:
+  get:
+    tags:
+      - Workspaces
+    summary: List workspace members
+    operationId: listWorkspaceMembers
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: List of members
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../schemas/workspace.yaml#/WorkspaceMember'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+workspaceMemberItem:
+  delete:
+    tags:
+      - Workspaces
+    summary: Remove member or leave workspace
+    operationId: removeWorkspaceMember
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Member removed successfully
+      '400':
+        description: Cannot remove owner or invalid operation
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Member or workspace not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+workspaceInvites:
+  post:
+    tags:
+      - Workspaces
+    summary: Generate or get active invite link
+    operationId: createWorkspaceInvite
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '201':
+        description: Invite created or existing active invite returned
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workspace.yaml#/WorkspaceInvite'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden (only owner can generate invites)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+invitePreview:
+  get:
+    tags:
+      - Workspaces
+    summary: Preview workspace invite
+    operationId: getInvitePreview
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Invite preview data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workspace.yaml#/InvitePreview'
+      '404':
+        description: Invite not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '410':
+        description: Invite expired
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+acceptInvite:
+  post:
+    tags:
+      - Workspaces
+    summary: Accept workspace invite
+    operationId: acceptInvite
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Invite accepted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workspace.yaml#/WorkspaceSwitchResponse'
+      '400':
+        description: Bad request (already a member or invalid token)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Invite not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '410':
+        description: Invite expired
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+

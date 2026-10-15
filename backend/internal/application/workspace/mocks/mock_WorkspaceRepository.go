@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"context"
+	workspace0 "takt/internal/application/workspace"
 	"takt/internal/domain/workspace"
 
 	"github.com/google/uuid"
@@ -105,6 +106,63 @@ func (_c *MockWorkspaceRepository_Create_Call) RunAndReturn(run func(ctx context
 	return _c
 }
 
+// CreateInvite provides a mock function for the type MockWorkspaceRepository
+func (_mock *MockWorkspaceRepository) CreateInvite(ctx context.Context, invite *workspace.WorkspaceInvite) error {
+	ret := _mock.Called(ctx, invite)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateInvite")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *workspace.WorkspaceInvite) error); ok {
+		r0 = returnFunc(ctx, invite)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockWorkspaceRepository_CreateInvite_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateInvite'
+type MockWorkspaceRepository_CreateInvite_Call struct {
+	*mock.Call
+}
+
+// CreateInvite is a helper method to define mock.On call
+//   - ctx context.Context
+//   - invite *workspace.WorkspaceInvite
+func (_e *MockWorkspaceRepository_Expecter) CreateInvite(ctx any, invite any) *MockWorkspaceRepository_CreateInvite_Call {
+	return &MockWorkspaceRepository_CreateInvite_Call{Call: _e.mock.On("CreateInvite", ctx, invite)}
+}
+
+func (_c *MockWorkspaceRepository_CreateInvite_Call) Run(run func(ctx context.Context, invite *workspace.WorkspaceInvite)) *MockWorkspaceRepository_CreateInvite_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *workspace.WorkspaceInvite
+		if args[1] != nil {
+			arg1 = args[1].(*workspace.WorkspaceInvite)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_CreateInvite_Call) Return(err error) *MockWorkspaceRepository_CreateInvite_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_CreateInvite_Call) RunAndReturn(run func(ctx context.Context, invite *workspace.WorkspaceInvite) error) *MockWorkspaceRepository_CreateInvite_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateMember provides a mock function for the type MockWorkspaceRepository
 func (_mock *MockWorkspaceRepository) CreateMember(ctx context.Context, member *workspace.WorkspaceMember) error {
 	ret := _mock.Called(ctx, member)
@@ -158,6 +216,251 @@ func (_c *MockWorkspaceRepository_CreateMember_Call) Return(err error) *MockWork
 }
 
 func (_c *MockWorkspaceRepository_CreateMember_Call) RunAndReturn(run func(ctx context.Context, member *workspace.WorkspaceMember) error) *MockWorkspaceRepository_CreateMember_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteInvite provides a mock function for the type MockWorkspaceRepository
+func (_mock *MockWorkspaceRepository) DeleteInvite(ctx context.Context, id uuid.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteInvite")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockWorkspaceRepository_DeleteInvite_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteInvite'
+type MockWorkspaceRepository_DeleteInvite_Call struct {
+	*mock.Call
+}
+
+// DeleteInvite is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *MockWorkspaceRepository_Expecter) DeleteInvite(ctx any, id any) *MockWorkspaceRepository_DeleteInvite_Call {
+	return &MockWorkspaceRepository_DeleteInvite_Call{Call: _e.mock.On("DeleteInvite", ctx, id)}
+}
+
+func (_c *MockWorkspaceRepository_DeleteInvite_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockWorkspaceRepository_DeleteInvite_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_DeleteInvite_Call) Return(err error) *MockWorkspaceRepository_DeleteInvite_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_DeleteInvite_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) error) *MockWorkspaceRepository_DeleteInvite_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteInviteByToken provides a mock function for the type MockWorkspaceRepository
+func (_mock *MockWorkspaceRepository) DeleteInviteByToken(ctx context.Context, token string) error {
+	ret := _mock.Called(ctx, token)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteInviteByToken")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, token)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockWorkspaceRepository_DeleteInviteByToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteInviteByToken'
+type MockWorkspaceRepository_DeleteInviteByToken_Call struct {
+	*mock.Call
+}
+
+// DeleteInviteByToken is a helper method to define mock.On call
+//   - ctx context.Context
+//   - token string
+func (_e *MockWorkspaceRepository_Expecter) DeleteInviteByToken(ctx any, token any) *MockWorkspaceRepository_DeleteInviteByToken_Call {
+	return &MockWorkspaceRepository_DeleteInviteByToken_Call{Call: _e.mock.On("DeleteInviteByToken", ctx, token)}
+}
+
+func (_c *MockWorkspaceRepository_DeleteInviteByToken_Call) Run(run func(ctx context.Context, token string)) *MockWorkspaceRepository_DeleteInviteByToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_DeleteInviteByToken_Call) Return(err error) *MockWorkspaceRepository_DeleteInviteByToken_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_DeleteInviteByToken_Call) RunAndReturn(run func(ctx context.Context, token string) error) *MockWorkspaceRepository_DeleteInviteByToken_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteMember provides a mock function for the type MockWorkspaceRepository
+func (_mock *MockWorkspaceRepository) DeleteMember(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) error {
+	ret := _mock.Called(ctx, workspaceID, userID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteMember")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, workspaceID, userID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockWorkspaceRepository_DeleteMember_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteMember'
+type MockWorkspaceRepository_DeleteMember_Call struct {
+	*mock.Call
+}
+
+// DeleteMember is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+//   - userID uuid.UUID
+func (_e *MockWorkspaceRepository_Expecter) DeleteMember(ctx any, workspaceID any, userID any) *MockWorkspaceRepository_DeleteMember_Call {
+	return &MockWorkspaceRepository_DeleteMember_Call{Call: _e.mock.On("DeleteMember", ctx, workspaceID, userID)}
+}
+
+func (_c *MockWorkspaceRepository_DeleteMember_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID)) *MockWorkspaceRepository_DeleteMember_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_DeleteMember_Call) Return(err error) *MockWorkspaceRepository_DeleteMember_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_DeleteMember_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) error) *MockWorkspaceRepository_DeleteMember_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetActiveInvite provides a mock function for the type MockWorkspaceRepository
+func (_mock *MockWorkspaceRepository) GetActiveInvite(ctx context.Context, workspaceID uuid.UUID) (*workspace.WorkspaceInvite, error) {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetActiveInvite")
+	}
+
+	var r0 *workspace.WorkspaceInvite
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*workspace.WorkspaceInvite, error)); ok {
+		return returnFunc(ctx, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) *workspace.WorkspaceInvite); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace.WorkspaceInvite)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockWorkspaceRepository_GetActiveInvite_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetActiveInvite'
+type MockWorkspaceRepository_GetActiveInvite_Call struct {
+	*mock.Call
+}
+
+// GetActiveInvite is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockWorkspaceRepository_Expecter) GetActiveInvite(ctx any, workspaceID any) *MockWorkspaceRepository_GetActiveInvite_Call {
+	return &MockWorkspaceRepository_GetActiveInvite_Call{Call: _e.mock.On("GetActiveInvite", ctx, workspaceID)}
+}
+
+func (_c *MockWorkspaceRepository_GetActiveInvite_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockWorkspaceRepository_GetActiveInvite_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_GetActiveInvite_Call) Return(workspaceInvite *workspace.WorkspaceInvite, err error) *MockWorkspaceRepository_GetActiveInvite_Call {
+	_c.Call.Return(workspaceInvite, err)
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_GetActiveInvite_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) (*workspace.WorkspaceInvite, error)) *MockWorkspaceRepository_GetActiveInvite_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -226,6 +529,82 @@ func (_c *MockWorkspaceRepository_GetByID_Call) Return(workspace1 *workspace.Wor
 }
 
 func (_c *MockWorkspaceRepository_GetByID_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) (*workspace.Workspace, error)) *MockWorkspaceRepository_GetByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetInviteByToken provides a mock function for the type MockWorkspaceRepository
+func (_mock *MockWorkspaceRepository) GetInviteByToken(ctx context.Context, token string) (*workspace.WorkspaceInvite, *workspace0.InvitePreviewInfo, error) {
+	ret := _mock.Called(ctx, token)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetInviteByToken")
+	}
+
+	var r0 *workspace.WorkspaceInvite
+	var r1 *workspace0.InvitePreviewInfo
+	var r2 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*workspace.WorkspaceInvite, *workspace0.InvitePreviewInfo, error)); ok {
+		return returnFunc(ctx, token)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *workspace.WorkspaceInvite); ok {
+		r0 = returnFunc(ctx, token)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace.WorkspaceInvite)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) *workspace0.InvitePreviewInfo); ok {
+		r1 = returnFunc(ctx, token)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).(*workspace0.InvitePreviewInfo)
+		}
+	}
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string) error); ok {
+		r2 = returnFunc(ctx, token)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+// MockWorkspaceRepository_GetInviteByToken_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetInviteByToken'
+type MockWorkspaceRepository_GetInviteByToken_Call struct {
+	*mock.Call
+}
+
+// GetInviteByToken is a helper method to define mock.On call
+//   - ctx context.Context
+//   - token string
+func (_e *MockWorkspaceRepository_Expecter) GetInviteByToken(ctx any, token any) *MockWorkspaceRepository_GetInviteByToken_Call {
+	return &MockWorkspaceRepository_GetInviteByToken_Call{Call: _e.mock.On("GetInviteByToken", ctx, token)}
+}
+
+func (_c *MockWorkspaceRepository_GetInviteByToken_Call) Run(run func(ctx context.Context, token string)) *MockWorkspaceRepository_GetInviteByToken_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_GetInviteByToken_Call) Return(workspaceInvite *workspace.WorkspaceInvite, invitePreviewInfo *workspace0.InvitePreviewInfo, err error) *MockWorkspaceRepository_GetInviteByToken_Call {
+	_c.Call.Return(workspaceInvite, invitePreviewInfo, err)
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_GetInviteByToken_Call) RunAndReturn(run func(ctx context.Context, token string) (*workspace.WorkspaceInvite, *workspace0.InvitePreviewInfo, error)) *MockWorkspaceRepository_GetInviteByToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -436,6 +815,154 @@ func (_c *MockWorkspaceRepository_GetWorkspacesByUserID_Call) Return(userWorkspa
 }
 
 func (_c *MockWorkspaceRepository_GetWorkspacesByUserID_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID) ([]*workspace.UserWorkspace, error)) *MockWorkspaceRepository_GetWorkspacesByUserID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListMembers provides a mock function for the type MockWorkspaceRepository
+func (_mock *MockWorkspaceRepository) ListMembers(ctx context.Context, workspaceID uuid.UUID) ([]*workspace0.WorkspaceMemberInfo, error) {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListMembers")
+	}
+
+	var r0 []*workspace0.WorkspaceMemberInfo
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*workspace0.WorkspaceMemberInfo, error)); ok {
+		return returnFunc(ctx, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*workspace0.WorkspaceMemberInfo); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*workspace0.WorkspaceMemberInfo)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockWorkspaceRepository_ListMembers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListMembers'
+type MockWorkspaceRepository_ListMembers_Call struct {
+	*mock.Call
+}
+
+// ListMembers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockWorkspaceRepository_Expecter) ListMembers(ctx any, workspaceID any) *MockWorkspaceRepository_ListMembers_Call {
+	return &MockWorkspaceRepository_ListMembers_Call{Call: _e.mock.On("ListMembers", ctx, workspaceID)}
+}
+
+func (_c *MockWorkspaceRepository_ListMembers_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockWorkspaceRepository_ListMembers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_ListMembers_Call) Return(workspaceMemberInfos []*workspace0.WorkspaceMemberInfo, err error) *MockWorkspaceRepository_ListMembers_Call {
+	_c.Call.Return(workspaceMemberInfos, err)
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_ListMembers_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*workspace0.WorkspaceMemberInfo, error)) *MockWorkspaceRepository_ListMembers_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateName provides a mock function for the type MockWorkspaceRepository
+func (_mock *MockWorkspaceRepository) UpdateName(ctx context.Context, id uuid.UUID, ownerID uuid.UUID, name string) (*workspace.Workspace, error) {
+	ret := _mock.Called(ctx, id, ownerID, name)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateName")
+	}
+
+	var r0 *workspace.Workspace
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, string) (*workspace.Workspace, error)); ok {
+		return returnFunc(ctx, id, ownerID, name)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, string) *workspace.Workspace); ok {
+		r0 = returnFunc(ctx, id, ownerID, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace.Workspace)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, string) error); ok {
+		r1 = returnFunc(ctx, id, ownerID, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockWorkspaceRepository_UpdateName_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateName'
+type MockWorkspaceRepository_UpdateName_Call struct {
+	*mock.Call
+}
+
+// UpdateName is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+//   - ownerID uuid.UUID
+//   - name string
+func (_e *MockWorkspaceRepository_Expecter) UpdateName(ctx any, id any, ownerID any, name any) *MockWorkspaceRepository_UpdateName_Call {
+	return &MockWorkspaceRepository_UpdateName_Call{Call: _e.mock.On("UpdateName", ctx, id, ownerID, name)}
+}
+
+func (_c *MockWorkspaceRepository_UpdateName_Call) Run(run func(ctx context.Context, id uuid.UUID, ownerID uuid.UUID, name string)) *MockWorkspaceRepository_UpdateName_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_UpdateName_Call) Return(workspace1 *workspace.Workspace, err error) *MockWorkspaceRepository_UpdateName_Call {
+	_c.Call.Return(workspace1, err)
+	return _c
+}
+
+func (_c *MockWorkspaceRepository_UpdateName_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, ownerID uuid.UUID, name string) (*workspace.Workspace, error)) *MockWorkspaceRepository_UpdateName_Call {
 	_c.Call.Return(run)
 	return _c
 }

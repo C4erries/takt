@@ -1,62 +1,123 @@
 package workspace
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewUser_Valid(t *testing.T) {
 	u, err := NewUser("Test@Example.com", "hashed_secret", "Pavel")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if u.Email != "test@example.com" {
-		t.Errorf("expected lowercase email test@example.com, got %s", u.Email)
-	}
-	if u.DisplayName != "Pavel" {
-		t.Errorf("expected displayName Pavel, got %s", u.DisplayName)
-	}
-	if u.ID == uuid.Nil {
-		t.Errorf("expected non-nil UUID")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "test@example.com", u.Email)
+	assert.Equal(t, "Pavel", u.DisplayName)
+	assert.NotEqual(t, uuid.Nil, u.ID)
+	assert.False(t, u.CreatedAt.IsZero())
 }
 
 func TestNewUser_InvalidEmail(t *testing.T) {
-	_, err := NewUser("invalid-email", "hashed_secret", "Pavel")
-	if err != ErrInvalidEmail {
-		t.Errorf("expected ErrInvalidEmail, got %v", err)
+	tests := []struct {
+		name  string
+		email string
+	}{
+		{name: "empty email", email: ""},
+		{name: "missing at sign", email: "invalid-email"},
+		{name: "only spaces", email: "   "},
 	}
 
-	_, err = NewUser("", "hashed_secret", "Pavel")
-	if err != ErrInvalidEmail {
-		t.Errorf("expected ErrInvalidEmail, got %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewUser(tt.email, "hashed_secret", "Pavel")
+			assert.ErrorIs(t, err, ErrInvalidEmail)
+		})
 	}
 }
 
 func TestNewUser_InvalidDisplayName(t *testing.T) {
-	_, err := NewUser("user@example.com", "hashed_secret", "   ")
-	if err != ErrInvalidDisplayName {
-		t.Errorf("expected ErrInvalidDisplayName, got %v", err)
+	tests := []struct {
+		name string
+		nameVal string
+	}{
+		{name: "empty name", nameVal: ""},
+		{name: "spaces only", nameVal: "   "},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewUser("user@example.com", "hashed_secret", tt.nameVal)
+			assert.ErrorIs(t, err, ErrInvalidDisplayName)
+		})
 	}
 }
 
 func TestNewPersonalWorkspace(t *testing.T) {
 	ownerID := uuid.New()
 	ws, err := NewPersonalWorkspace(ownerID, "")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Личное", ws.Name)
+	assert.Equal(t, TypePersonal, ws.Type)
+	assert.Equal(t, ownerID, ws.OwnerID)
+	assert.NotEqual(t, uuid.Nil, ws.ID)
+}
+
+func TestNewWorkspace(t *testing.T) {
+	ownerID := uuid.New()
+
+	tests := []struct {
+		name        string
+		wsName      string
+		wantErr     error
+		expectedName string
+	}{
+		{
+			name:         "valid workspace name",
+			wsName:       "Команда Продукта",
+			wantErr:      nil,
+			expectedName: "Команда Продукта",
+		},
+		{
+			name:         "trimmed whitespace",
+			wsName:       "   Takt Dev   ",
+			wantErr:      nil,
+			expectedName: "Takt Dev",
+		},
+		{
+			name:    "empty workspace name",
+			wsName:  "",
+			wantErr: ErrInvalidWorkspaceName,
+		},
+		{
+			name:    "whitespace only",
+			wsName:  "    ",
+			wantErr: ErrInvalidWorkspaceName,
+		},
+		{
+			name:    "name exceeding 255 chars",
+			wsName:  strings.Repeat("a", 256),
+			wantErr: ErrInvalidWorkspaceName,
+		},
 	}
 
-	if ws.Name != "Личное" {
-		t.Errorf("expected default name 'Личное', got %s", ws.Name)
-	}
-	if ws.Type != TypePersonal {
-		t.Errorf("expected type personal, got %s", ws.Type)
-	}
-	if ws.OwnerID != ownerID {
-		t.Errorf("expected ownerID %v, got %v", ownerID, ws.OwnerID)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ws, err := NewWorkspace(ownerID, tt.wsName)
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Nil(t, ws)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, ws)
+				assert.Equal(t, tt.expectedName, ws.Name)
+				assert.Equal(t, ownerID, ws.OwnerID)
+				assert.NotEqual(t, uuid.Nil, ws.ID)
+				assert.False(t, ws.CreatedAt.IsZero())
+			}
+		})
 	}
 }
 
@@ -64,11 +125,103 @@ func TestNewWorkspaceMember(t *testing.T) {
 	wsID := uuid.New()
 	userID := uuid.New()
 	member, err := NewWorkspaceMember(wsID, userID, RoleOwner)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	require.NoError(t, err)
+
+	assert.Equal(t, wsID, member.WorkspaceID)
+	assert.Equal(t, userID, member.UserID)
+	assert.Equal(t, RoleOwner, member.Role)
+	assert.NotEqual(t, uuid.Nil, member.ID)
+}
+
+func TestNewWorkspaceInvite(t *testing.T) {
+	wsID := uuid.New()
+	invitedByID := uuid.New()
+	future := time.Now().UTC().Add(7 * 24 * time.Hour)
+
+	tests := []struct {
+		name      string
+		token     string
+		expiresAt *time.Time
+		wantErr   error
+	}{
+		{
+			name:      "valid invite with expiration",
+			token:     "valid-secret-token-12345678",
+			expiresAt: &future,
+			wantErr:   nil,
+		},
+		{
+			name:      "valid invite without expiration",
+			token:     "permanent-token-abcdef",
+			expiresAt: nil,
+			wantErr:   nil,
+		},
+		{
+			name:      "empty token error",
+			token:     "",
+			expiresAt: nil,
+			wantErr:   ErrInvalidInviteToken,
+		},
+		{
+			name:      "whitespace only token error",
+			token:     "   ",
+			expiresAt: nil,
+			wantErr:   ErrInvalidInviteToken,
+		},
 	}
 
-	if member.WorkspaceID != wsID || member.UserID != userID || member.Role != RoleOwner {
-		t.Errorf("member fields do not match expected values")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			invite, err := NewWorkspaceInvite(wsID, invitedByID, tt.token, tt.expiresAt)
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Nil(t, invite)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, invite)
+				assert.Equal(t, wsID, invite.WorkspaceID)
+				assert.Equal(t, invitedByID, invite.InvitedByID)
+				assert.Equal(t, strings.TrimSpace(tt.token), invite.Token)
+				assert.Equal(t, tt.expiresAt, invite.ExpiresAt)
+				assert.NotEqual(t, uuid.Nil, invite.ID)
+			}
+		})
+	}
+}
+
+func TestWorkspaceInvite_IsExpired(t *testing.T) {
+	now := time.Now().UTC()
+	past := now.Add(-1 * time.Hour)
+	future := now.Add(1 * time.Hour)
+
+	tests := []struct {
+		name      string
+		expiresAt *time.Time
+		want      bool
+	}{
+		{
+			name:      "nil expiration never expires",
+			expiresAt: nil,
+			want:      false,
+		},
+		{
+			name:      "future expiration is not expired",
+			expiresAt: &future,
+			want:      false,
+		},
+		{
+			name:      "past expiration is expired",
+			expiresAt: &past,
+			want:      true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			invite := &WorkspaceInvite{
+				ExpiresAt: tt.expiresAt,
+			}
+			assert.Equal(t, tt.want, invite.IsExpired())
+		})
 	}
 }

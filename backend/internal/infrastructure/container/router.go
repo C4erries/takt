@@ -31,7 +31,8 @@ func setupRouter(e *echo.Echo, h *httpDelivery.Handler) {
 			strings.HasSuffix(reqPath, "/auth/login") ||
 			strings.HasSuffix(reqPath, "/auth/register") ||
 			strings.HasSuffix(reqPath, "/auth/logout") ||
-			strings.HasSuffix(reqPath, "/health")
+			strings.HasSuffix(reqPath, "/health") ||
+			(c.Request().Method == "GET" && (strings.Contains(p, "/invites/") || strings.Contains(reqPath, "/invites/")))
 	}))
 
 	generated.RegisterHandlers(v1, h)

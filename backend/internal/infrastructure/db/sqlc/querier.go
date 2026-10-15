@@ -23,12 +23,17 @@ type Querier interface {
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error)
+	CreateWorkspaceInvite(ctx context.Context, arg CreateWorkspaceInviteParams) (WorkspaceInvite, error)
 	CreateWorkspaceMember(ctx context.Context, arg CreateWorkspaceMemberParams) (WorkspaceMember, error)
 	DeleteBoard(ctx context.Context, id pgtype.UUID) error
 	DeleteColumn(ctx context.Context, id pgtype.UUID) error
 	DeleteProject(ctx context.Context, arg DeleteProjectParams) error
 	DeleteTag(ctx context.Context, arg DeleteTagParams) error
 	DeleteTask(ctx context.Context, arg DeleteTaskParams) error
+	DeleteWorkspaceInvite(ctx context.Context, id pgtype.UUID) error
+	DeleteWorkspaceInviteByToken(ctx context.Context, token string) error
+	DeleteWorkspaceMember(ctx context.Context, arg DeleteWorkspaceMemberParams) error
+	GetActiveWorkspaceInvite(ctx context.Context, workspaceID pgtype.UUID) (WorkspaceInvite, error)
 	GetAutomationByID(ctx context.Context, arg GetAutomationByIDParams) (Automation, error)
 	GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, error)
 	GetColumnByID(ctx context.Context, id pgtype.UUID) (Column, error)
@@ -43,6 +48,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspace, error)
+	GetWorkspaceInviteByToken(ctx context.Context, token string) (GetWorkspaceInviteByTokenRow, error)
 	GetWorkspaceMember(ctx context.Context, arg GetWorkspaceMemberParams) (WorkspaceMember, error)
 	GetWorkspacesByUserID(ctx context.Context, userID pgtype.UUID) ([]GetWorkspacesByUserIDRow, error)
 	ListBoardsByProject(ctx context.Context, projectID pgtype.UUID) ([]Board, error)
@@ -52,6 +58,7 @@ type Querier interface {
 	ListTasksByColumn(ctx context.Context, arg ListTasksByColumnParams) ([]Task, error)
 	ListTasksByProject(ctx context.Context, arg ListTasksByProjectParams) ([]Task, error)
 	ListWorkspaceAutomations(ctx context.Context, workspaceID pgtype.UUID) ([]Automation, error)
+	ListWorkspaceMembers(ctx context.Context, workspaceID pgtype.UUID) ([]ListWorkspaceMembersRow, error)
 	ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID) ([]Tag, error)
 	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)
 	RemoveTagFromTask(ctx context.Context, arg RemoveTagFromTaskParams) error
@@ -63,6 +70,7 @@ type Querier interface {
 	UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Column, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
+	UpdateWorkspaceName(ctx context.Context, arg UpdateWorkspaceNameParams) (Workspace, error)
 }
 
 var _ Querier = (*Queries)(nil)

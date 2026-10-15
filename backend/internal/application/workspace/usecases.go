@@ -40,6 +40,15 @@ type UseCases interface {
 	Register(ctx context.Context, input RegisterInput) (*RegisterOutput, error)
 	Login(ctx context.Context, input LoginInput) (*LoginOutput, error)
 	GetMe(ctx context.Context, userID, workspaceID uuid.UUID) (*GetProfileOutput, error)
+	ListWorkspaces(ctx context.Context, userID uuid.UUID) ([]*domainWorkspace.UserWorkspace, error)
+	CreateWorkspace(ctx context.Context, userID uuid.UUID, name string) (*domainWorkspace.UserWorkspace, error)
+	UpdateWorkspace(ctx context.Context, userID, workspaceID uuid.UUID, name string) (*domainWorkspace.UserWorkspace, error)
+	SwitchWorkspace(ctx context.Context, userID, workspaceID uuid.UUID) (*SwitchWorkspaceOutput, error)
+	ListMembers(ctx context.Context, userID, workspaceID uuid.UUID) ([]*WorkspaceMemberInfo, error)
+	RemoveMember(ctx context.Context, actorID, workspaceID, targetUserID uuid.UUID) error
+	CreateInvite(ctx context.Context, actorID, workspaceID uuid.UUID) (*domainWorkspace.WorkspaceInvite, error)
+	GetInvitePreview(ctx context.Context, token string) (*InvitePreviewInfo, error)
+	AcceptInvite(ctx context.Context, userID uuid.UUID, token string) (*SwitchWorkspaceOutput, error)
 }
 
 type Service struct {

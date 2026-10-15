@@ -51,6 +51,10 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		handler.SetAttachmentService(services.AttachmentService, cfg.MaxAttachmentSizeBytes)
 	}
 
+	if services.SearchService != nil {
+		handler.SetSearchService(services.SearchService)
+	}
+
 	e := echo.New()
 	e.HideBanner = true
 	setupRouter(e, handler)

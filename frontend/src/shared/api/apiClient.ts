@@ -6,6 +6,7 @@ import {
   RegisterRequest,
   Task,
   Attachment,
+  SearchResponse,
   ApiError,
 } from './types';
 
@@ -161,4 +162,16 @@ export const attachmentsApi = {
 export const uploadTaskAttachment = attachmentsApi.uploadTaskAttachment;
 export const listTaskAttachments = attachmentsApi.listTaskAttachments;
 export const deleteAttachment = attachmentsApi.deleteAttachment;
+
+export const searchApi = {
+  async searchWorkspace(workspaceId: string, q: string): Promise<SearchResponse> {
+    const encoded = encodeURIComponent(q);
+    return request<SearchResponse>(`/workspaces/${workspaceId}/search?q=${encoded}`, {
+      method: 'GET',
+    });
+  },
+};
+
+export const searchWorkspace = searchApi.searchWorkspace;
+
 

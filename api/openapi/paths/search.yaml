@@ -1,0 +1,60 @@
+search:
+  get:
+    tags:
+      - Search
+    summary: Search tasks and projects in a workspace
+    description: Returns tasks and projects matching the query string in title/name or description.
+    operationId: searchWorkspace
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+    responses:
+      '200':
+        description: Search results
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/search.yaml#/SearchResponse'
+      '400':
+        description: Invalid request parameters
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Workspace not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'

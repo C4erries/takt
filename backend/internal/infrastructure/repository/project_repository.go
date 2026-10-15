@@ -69,6 +69,25 @@ func (r *ProjectRepository) ListByWorkspace(ctx context.Context, workspaceID uui
 	return res, nil
 }
 
+// SearchProjects finds projects matching the query in name or description.
+func (r *ProjectRepository) SearchProjects(ctx context.Context, workspaceID uuid.UUID, query string, limit int32) ([]*domainProject.Project, error) {
+	q := getQuerier(ctx, r.queries)
+	rows, err := q.SearchProjectsInWorkspace(ctx, sqlc.SearchProjectsInWorkspaceParams{
+		WorkspaceID: uuidToPg(workspaceID),
+		Query:       query,
+		LimitCount:  limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*domainProject.Project, 0, len(rows))
+	for _, row := range rows {
+		res = append(res, mapProjectRowToDomain(row))
+	}
+	return res, nil
+}
+
 func (r *ProjectRepository) Update(ctx context.Context, p *domainProject.Project) error {
 	q := getQuerier(ctx, r.queries)
 	row, err := q.UpdateProject(ctx, sqlc.UpdateProjectParams{
@@ -343,35 +362,25 @@ func (r *TaskMoveRepository) ListTasksByColumn(ctx context.Context, columnID, wo
 // mappers
 func mapProjectRowToDomain(row sqlc.Project) *domainProject.Project {
 	return &domainProject.Project{
-		ID:          pgToUUID(row.ID),
-		WorkspaceID: pgToUUID(row.WorkspaceID),
-		Name:        row.Name,
-		Description: row.Description,
-		Color:       row.Color,
-		CreatedAt:   pgToTime(row.CreatedAt),
-		UpdatedAt:   pgToTime(row.UpdatedAt),
+		ID: pgToUUID(row.ID), WorkspaceID: pgToUUID(row.WorkspaceID),
+		Name: row.Name, Description: row.Description, Color: row.Color,
+		CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
 	}
 }
 
 func mapBoardRowToDomain(row sqlc.Board) *domainProject.Board {
 	return &domainProject.Board{
-		ID:        pgToUUID(row.ID),
-		ProjectID: pgToUUID(row.ProjectID),
-		Name:      row.Name,
-		CreatedAt: pgToTime(row.CreatedAt),
-		UpdatedAt: pgToTime(row.UpdatedAt),
+		ID: pgToUUID(row.ID), ProjectID: pgToUUID(row.ProjectID),
+		Name: row.Name, CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
 	}
 }
 
 func mapColumnRowToDomain(row sqlc.Column) *domainProject.Column {
 	return &domainProject.Column{
-		ID:             pgToUUID(row.ID),
-		BoardID:        pgToUUID(row.BoardID),
-		Name:           row.Name,
-		Position:       row.Position,
+		ID: pgToUUID(row.ID), BoardID: pgToUUID(row.BoardID),
+		Name: row.Name, Position: row.Position,
 		StatusCategory: domainProject.StatusCategory(row.StatusCategory),
-		CreatedAt:      pgToTime(row.CreatedAt),
-		UpdatedAt:      pgToTime(row.UpdatedAt),
+		CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
 	}
 }
 

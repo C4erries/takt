@@ -6,6 +6,7 @@ import (
 	attachmentApp "takt/internal/application/attachment"
 	automationApp "takt/internal/application/automation"
 	projectApp "takt/internal/application/project"
+	searchApp "takt/internal/application/search"
 	taskApp "takt/internal/application/task"
 	workspaceApp "takt/internal/application/workspace"
 	"takt/internal/infrastructure/config"
@@ -21,6 +22,7 @@ type Services struct {
 	ProjectService    projectApp.UseCases
 	AutomationService automationApp.UseCases
 	AttachmentService attachmentApp.UseCases
+	SearchService     searchApp.UseCases
 	EventBus          *eventbus.InMemoryEventBus
 	JWTManager        *httpDelivery.JWTManager
 }
@@ -97,12 +99,22 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 		)
 	}
 
+	var searchService *searchApp.Service
+	if repos.TaskRepo != nil && repos.ProjectRepo != nil && repos.WorkspaceRepo != nil {
+		searchService = searchApp.NewService(
+			repos.TaskRepo,
+			repos.ProjectRepo,
+			repos.WorkspaceRepo,
+		)
+	}
+
 	return &Services{
 		WorkspaceService:  workspaceService,
 		TaskService:       taskService,
 		ProjectService:    projectService,
 		AutomationService: automationService,
 		AttachmentService: attachmentService,
+		SearchService:     searchService,
 		EventBus:          eventBus,
 		JWTManager:        jwtManager,
 	}

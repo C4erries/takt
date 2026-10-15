@@ -10,6 +10,7 @@ import {
   Layers,
   X,
   Sparkles,
+  Search,
 } from 'lucide-react';
 import { Button, Badge, Input } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
@@ -25,6 +26,7 @@ export interface SidebarProps {
   activeNav?: string;
   onNavChange?: (nav: string) => void;
   onOpenQuickCapture?: () => void;
+  onOpenCommandPalette?: () => void;
   onOpenAuth: () => void;
   onLogout: () => void;
   showUiCatalog: boolean;
@@ -40,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeNav,
   onNavChange,
   onOpenQuickCapture,
+  onOpenCommandPalette,
   onOpenAuth,
   onLogout,
   showUiCatalog,
@@ -101,6 +104,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
           currentUser={user}
           onWorkspaceChange={onWorkspaceChange}
         />
+
+        {/* Search / Command Palette Button */}
+        <button
+          type="button"
+          onClick={onOpenCommandPalette}
+          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs bg-surface/70 hover:bg-surface border border-subtle shadow-washi-sm text-muted hover:text-primary transition-all group"
+          title="Поиск задач, проектов и команд (⌘K / Ctrl+K)"
+        >
+          <span className="flex items-center gap-2">
+            <Search className="w-3.5 h-3.5 text-muted group-hover:text-primary transition-colors" />
+            <span>Поиск / Команды</span>
+          </span>
+          <kbd className="font-mono text-[10px] text-muted bg-canvas px-1.5 py-0.5 rounded border border-subtle">
+            ⌘K
+          </kbd>
+        </button>
 
         {/* Quick Capture Button */}
         <Button

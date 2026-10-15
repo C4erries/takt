@@ -68,6 +68,8 @@ type Querier interface {
 	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)
 	RemoveTagFromTask(ctx context.Context, arg RemoveTagFromTaskParams) error
 	ResetProjectTasksToInbox(ctx context.Context, arg ResetProjectTasksToInboxParams) error
+	SearchProjectsInWorkspace(ctx context.Context, arg SearchProjectsInWorkspaceParams) ([]Project, error)
+	SearchTasksInWorkspace(ctx context.Context, arg SearchTasksInWorkspaceParams) ([]Task, error)
 	SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Task, error)
 	ToggleAutomation(ctx context.Context, arg ToggleAutomationParams) (Automation, error)
 	ToggleTaskCompletion(ctx context.Context, arg ToggleTaskCompletionParams) (Task, error)

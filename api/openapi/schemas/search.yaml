@@ -1,0 +1,14 @@
+SearchResponse:
+  type: object
+  required:
+    - tasks
+    - projects
+  properties:
+    tasks:
+      type: array
+      items:
+        $ref: './task.yaml#/Task'
+    projects:
+      type: array
+      items:
+        $ref: './project.yaml#/Project'

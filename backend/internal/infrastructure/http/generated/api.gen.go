@@ -519,6 +519,12 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
+// SearchResponse defines model for SearchResponse.
+type SearchResponse struct {
+	Projects []Project `json:"projects"`
+	Tasks    []Task    `json:"tasks"`
+}
+
 // SetFocusRequest defines model for SetFocusRequest.
 type SetFocusRequest struct {
 	// FocusOrder Example: 1
@@ -789,6 +795,11 @@ type CreateProjectBoardJSONBody struct {
 	Name string `json:"name"`
 }
 
+// SearchWorkspaceParams defines parameters for SearchWorkspace.
+type SearchWorkspaceParams struct {
+	Q string `form:"q" json:"q"`
+}
+
 // UploadTaskAttachmentMultipartBody defines parameters for UploadTaskAttachment.
 type UploadTaskAttachmentMultipartBody struct {
 	File openapi_types.File `json:"file"`
@@ -943,6 +954,9 @@ type ServerInterface interface {
 	// ListProjectTasks List all tasks for a project
 	// (GET /workspaces/{workspace_id}/projects/{project_id}/tasks)
 	ListProjectTasks(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID) error
+	// SearchWorkspace Search tasks and projects in a workspace
+	// (GET /workspaces/{workspace_id}/search)
+	SearchWorkspace(ctx echo.Context, workspaceId openapi_types.UUID, params SearchWorkspaceParams) error
 	// SwitchWorkspace Switch active workspace
 	// (POST /workspaces/{workspace_id}/switch)
 	SwitchWorkspace(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -1588,6 +1602,31 @@ func (w *ServerInterfaceWrapper) ListProjectTasks(ctx echo.Context) error {
 	return err
 }
 
+// SearchWorkspace converts echo context to params.
+func (w *ServerInterfaceWrapper) SearchWorkspace(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchWorkspaceParams
+	// ------------- Required query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "q", ctx.QueryParams(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter q: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SearchWorkspace(ctx, workspaceId, params)
+	return err
+}
+
 // SwitchWorkspace converts echo context to params.
 func (w *ServerInterfaceWrapper) SwitchWorkspace(ctx echo.Context) error {
 	var err error
@@ -1940,6 +1979,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards", wrapper.ListProjectBoards, options.OperationMiddlewares["listProjectBoards"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards", wrapper.CreateProjectBoard, options.OperationMiddlewares["createProjectBoard"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/tasks", wrapper.ListProjectTasks, options.OperationMiddlewares["listProjectTasks"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/search", wrapper.SearchWorkspace, options.OperationMiddlewares["searchWorkspace"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/switch", wrapper.SwitchWorkspace, options.OperationMiddlewares["switchWorkspace"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.ListWorkspaceTags, options.OperationMiddlewares["listWorkspaceTags"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.CreateWorkspaceTag, options.OperationMiddlewares["createWorkspaceTag"]...)

@@ -13,6 +13,7 @@ import (
 	attachmentApp "takt/internal/application/attachment"
 	automationApp "takt/internal/application/automation"
 	projectApp "takt/internal/application/project"
+	searchApp "takt/internal/application/search"
 	taskApp "takt/internal/application/task"
 	workspaceApp "takt/internal/application/workspace"
 	domainWorkspace "takt/internal/domain/workspace"
@@ -38,6 +39,7 @@ type Handler struct {
 	projectService    projectApp.UseCases
 	automationService automationApp.UseCases
 	attachmentService attachmentApp.UseCases
+	searchService     searchApp.UseCases
 	maxAttachmentSize int64
 	jwtManager        *JWTManager
 }
@@ -76,6 +78,11 @@ func (h *Handler) SetAttachmentService(svc attachmentApp.UseCases, maxSizeBytes 
 	if maxSizeBytes > 0 {
 		h.maxAttachmentSize = maxSizeBytes
 	}
+}
+
+// SetSearchService configures the search application service.
+func (h *Handler) SetSearchService(svc searchApp.UseCases) {
+	h.searchService = svc
 }
 
 // JWTManager returns configured JWT manager.
@@ -280,5 +287,58 @@ func (h *Handler) GetMe(c echo.Context) error {
 	return c.JSON(http.StatusOK, generated.MeResponse{
 		User:      mapUserToGenerated(out.User),
 		Workspace: mapWorkspaceToGenerated(out.Workspace),
+	})
+}
+
+// SearchWorkspace handles GET /workspaces/{workspace_id}/search.
+func (h *Handler) SearchWorkspace(c echo.Context, workspaceId openapi_types.UUID, params generated.SearchWorkspaceParams) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, generated.Error{
+			Code:    "UNAUTHORIZED",
+			Message: err.Error(),
+		})
+	}
+
+	if h.searchService == nil {
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Search service is unavailable",
+		})
+	}
+
+	res, err := h.searchService.Search(c.Request().Context(), workspaceId, userID, params.Q)
+	if err != nil {
+		if errors.Is(err, domainWorkspace.ErrAccessDenied) {
+			return c.JSON(http.StatusForbidden, generated.Error{
+				Code:    "FORBIDDEN",
+				Message: "Access to workspace denied",
+			})
+		}
+		if errors.Is(err, domainWorkspace.ErrWorkspaceNotFound) {
+			return c.JSON(http.StatusNotFound, generated.Error{
+				Code:    "NOT_FOUND",
+				Message: "Workspace not found",
+			})
+		}
+		return c.JSON(http.StatusInternalServerError, generated.Error{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to execute search",
+		})
+	}
+
+	respTasks := make([]generated.Task, 0, len(res.Tasks))
+	for _, t := range res.Tasks {
+		respTasks = append(respTasks, mapDomainTaskToGenerated(t))
+	}
+
+	respProjects := make([]generated.Project, 0, len(res.Projects))
+	for _, p := range res.Projects {
+		respProjects = append(respProjects, mapDomainProjectToGenerated(p))
+	}
+
+	return c.JSON(http.StatusOK, generated.SearchResponse{
+		Tasks:    respTasks,
+		Projects: respProjects,
 	})
 }

@@ -223,6 +223,7 @@ erDiagram
 | **App: Project** | `internal/application/project` | Сценарии управления проектами, досками и колонками + `ports.go`. |
 | **App: Task** | `internal/application/task` | Сценарии создания задач (Inbox capture), перемещения, отметки Done + `ports.go`. |
 | **App: Attachment** | `internal/application/attachment` | Сценарии загрузки, получения контента, списка и удаления вложений + `ports.go`. |
+| **App: Search** | `internal/application/search` | Сценарии полнотекстового сквозного поиска по задачам и проектам + `ports.go`. |
 | **App: Automation** | `internal/application/automation` | Подписка на события домена, вычисление условий и исполнение действий + `ports.go`. |
 | **Infra: Container (DI)** | `internal/infrastructure/container` | Сборка сервисов, репозиториев и роутинга Echo (`repos.go`, `services.go`, `router.go`, `container.go`). `main.go < 50 строк`. |
 | **Infra: Config** | `internal/infrastructure/config` | Загрузка и валидация переменных окружения из .env (`config.go`). |

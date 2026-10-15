@@ -46,6 +46,7 @@
 | **Sprint 0.3.3** | [sprint-0.3.3.md](sprint-0.3.3.md) | 2026-10-14 | `✅ Done` | Движок событий EventBus, домен automation, 3 пресетных правила с защитой Loop Guard, AutomationsModal и E2E |
 | **Sprint 0.4.1** | [sprint-0.4.1.md](sprint-0.4.1.md) | 2026-10-15 | `✅ Done` | Единые воркспейсы (Unified Workspaces), RBAC (Owner/Member), токен-инвайты, переключение /switch, E2E |
 | **Sprint 0.4.2** | [sprint-0.4.2.md](sprint-0.4.2.md) | 2026-10-15 | `✅ Done` | Собственное S3-хранилище (MinIO dev), вложения задач, перманентные Content URLs, Ctrl+V вставка скриншотов, Pytest E2E |
+| **Sprint 0.4.3** | [sprint-0.4.3.md](sprint-0.4.3.md) | 2026-10-15 | `✅ Done` | Полнотекстовый поиск /search, палитра команд Cmd+K, панель мультифильтрации (теги AND), View Sorting, Pytest E2E |
 
 ---
 

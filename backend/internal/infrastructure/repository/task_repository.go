@@ -344,3 +344,22 @@ func mapTaskRowToDomain(row sqlc.Task) *domainTask.Task {
 		UpdatedAt:           pgToTime(row.UpdatedAt),
 	}
 }
+
+// SearchTasks finds tasks matching the query in title or description.
+func (r *TaskRepository) SearchTasks(ctx context.Context, workspaceID uuid.UUID, query string, limit int32) ([]*domainTask.Task, error) {
+	q := getQuerier(ctx, r.queries)
+	rows, err := q.SearchTasksInWorkspace(ctx, sqlc.SearchTasksInWorkspaceParams{
+		WorkspaceID: uuidToPg(workspaceID),
+		Query:       query,
+		LimitCount:  limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	tasks := make([]*domainTask.Task, 0, len(rows))
+	for _, row := range rows {
+		tasks = append(tasks, mapTaskRowToDomain(row))
+	}
+	return tasks, nil
+}

@@ -23,6 +23,7 @@ import { useTodayTasksQuery } from '@/entities/task';
 import { useProjectTasksQuery } from '@/entities/project';
 import { AutomationsModal } from '@/features/automations-toggle';
 import { AcceptInviteModal } from '@/features/workspace-members';
+import { CommandPaletteModal } from '@/features/command-palette';
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
@@ -59,16 +60,37 @@ export const App: React.FC = () => {
   const [catalogTab, setCatalogTab] = useState<'ui-kit' | 'states'>('ui-kit');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isAutomationsModalOpen, setIsAutomationsModalOpen] = useState<boolean>(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
 
   // Invalidate tasks query when user auth state changes
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
   }, [user, queryClient]);
 
+  // Global hotkey Cmd+K / Ctrl+K for Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Global hotkey 'c' for Quick Capture
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isQuickCaptureOpen || isAuthModalOpen || isAutomationsModalOpen || showUiCatalog) return;
+      if (
+        isQuickCaptureOpen ||
+        isAuthModalOpen ||
+        isAutomationsModalOpen ||
+        isCommandPaletteOpen ||
+        showUiCatalog
+      )
+        return;
 
       const target = e.target as HTMLElement | null;
       const isInput =
@@ -88,7 +110,14 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isQuickCaptureOpen, isAuthModalOpen, isAutomationsModalOpen, showUiCatalog, setQuickCaptureOpen]);
+  }, [
+    isQuickCaptureOpen,
+    isAuthModalOpen,
+    isAutomationsModalOpen,
+    isCommandPaletteOpen,
+    showUiCatalog,
+    setQuickCaptureOpen,
+  ]);
 
   let currentNavTasks =
     activeNav === 'today'
@@ -124,6 +153,7 @@ export const App: React.FC = () => {
         activeNav={activeNav}
         onNavChange={setActiveNav}
         onOpenQuickCapture={() => setQuickCaptureOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={logout}
         showUiCatalog={showUiCatalog}
@@ -233,6 +263,13 @@ export const App: React.FC = () => {
 
       <AcceptInviteModal
         onAccepted={() => refresh()}
+      />
+
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        workspaceId={workspace?.id}
+        onOpenQuickCapture={() => setQuickCaptureOpen(true)}
       />
     </div>
   );

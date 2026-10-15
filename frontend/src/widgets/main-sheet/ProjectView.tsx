@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FolderClosed, Plus } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { FolderClosed, Plus, Filter } from 'lucide-react';
 import { ViewToggle, KanbanBoard } from '@/features/kanban-board';
 import { useTaskStore } from '@/features/task-navigation';
 import {
@@ -7,6 +7,8 @@ import {
   useProjectTasksQuery,
 } from '@/entities/project';
 import { useToggleTaskMutation, useDeleteTaskMutation } from '@/features/task-navigation';
+import { BoardFilterBar, filterAndSortTasks, initialFilterState } from '@/features/board-filters';
+import type { BoardFilterState } from '@/features/board-filters';
 import { TaskRow } from './TaskRow';
 import { Skeleton, EmptyState, ErrorBanner, Input, Button } from '@/shared/components/ui';
 
@@ -30,6 +32,9 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
   const tasksQuery = useProjectTasksQuery(workspaceId, projectId);
   const tasks = tasksQuery.data ?? [];
 
+  const [filters, setFilters] = useState<BoardFilterState>(initialFilterState);
+  const visibleTasks = useMemo(() => filterAndSortTasks(tasks, filters), [tasks, filters]);
+
   const toggleTaskMutation = useToggleTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
 
@@ -40,6 +45,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
     if (!inlineTitle.trim()) return;
     setInlineTitle('');
   };
+
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -68,13 +74,21 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
       </div>
 
       {/* Project Content: Kanban vs List */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {/* Board Multi-Filters & View Sorting */}
+        <BoardFilterBar
+          filters={filters}
+          onFilterChange={setFilters}
+          workspaceId={workspaceId}
+        />
+
         {viewMode === 'kanban' ? (
           <KanbanBoard
             projectId={projectId}
             workspaceId={workspaceId}
             selectedTaskId={selectedTaskId}
             onSelectTask={onSelectTask}
+            filteredTasks={visibleTasks}
           />
         ) : (
           <div className="space-y-4 max-w-3xl">
@@ -129,9 +143,17 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
               />
             )}
 
-            {!tasksQuery.isLoading && !tasksQuery.isError && tasks.length > 0 && (
+            {!tasksQuery.isLoading && !tasksQuery.isError && tasks.length > 0 && visibleTasks.length === 0 && (
+              <EmptyState
+                icon={<Filter className="w-7 h-7 stroke-[1.5]" />}
+                title="Задачи не найдены"
+                description="Нет задач, соответствующих выбранным фильтрам. Попробуйте сбросить фильтры."
+              />
+            )}
+
+            {!tasksQuery.isLoading && !tasksQuery.isError && visibleTasks.length > 0 && (
               <div className="space-y-0.5">
-                {tasks.map((task) => (
+                {visibleTasks.map((task) => (
                   <TaskRow
                     key={task.id}
                     task={task}

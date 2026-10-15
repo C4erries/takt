@@ -103,6 +103,21 @@ export interface Attachment {
   createdAt: string;
 }
 
+export interface Project {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SearchResponse {
+  tasks: Task[];
+  projects: Project[];
+}
+
 export interface ApiError {
   code: string;
   message: string;

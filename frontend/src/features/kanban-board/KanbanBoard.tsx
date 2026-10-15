@@ -13,6 +13,7 @@ import {
   useMoveTaskMutation,
 } from '@/entities/project';
 import { useToggleTaskMutation } from '@/features/task-navigation';
+import type { Task } from '@/shared/api';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { useKanbanDnd } from './useKanbanDnd';
@@ -23,6 +24,7 @@ export interface KanbanBoardProps {
   onSelectTask?: (taskId: string) => void;
   selectedTaskId?: string | null;
   onCreateTaskInColumn?: (title: string, columnId: string) => Promise<void>;
+  filteredTasks?: Task[];
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -31,6 +33,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onSelectTask,
   selectedTaskId,
   onCreateTaskInColumn,
+  filteredTasks,
 }) => {
   const boardsQuery = useProjectBoardsQuery(workspaceId, projectId);
   const activeBoard = boardsQuery.data?.[0];
@@ -39,7 +42,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const columns = columnsQuery.data ?? [];
 
   const tasksQuery = useProjectTasksQuery(workspaceId, projectId);
-  const tasks = tasksQuery.data ?? [];
+  const tasks = filteredTasks ?? tasksQuery.data ?? [];
 
   const moveTaskMutation = useMoveTaskMutation(workspaceId, projectId);
   const toggleTaskMutation = useToggleTaskMutation();

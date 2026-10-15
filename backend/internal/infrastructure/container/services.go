@@ -1,6 +1,9 @@
 package container
 
 import (
+	"log"
+
+	attachmentApp "takt/internal/application/attachment"
 	automationApp "takt/internal/application/automation"
 	projectApp "takt/internal/application/project"
 	taskApp "takt/internal/application/task"
@@ -8,6 +11,7 @@ import (
 	"takt/internal/infrastructure/config"
 	"takt/internal/infrastructure/eventbus"
 	httpDelivery "takt/internal/infrastructure/http"
+	"takt/internal/infrastructure/storage/s3"
 )
 
 // Services container holding all domain and application use cases.
@@ -16,6 +20,7 @@ type Services struct {
 	TaskService       taskApp.UseCases
 	ProjectService    projectApp.UseCases
 	AutomationService automationApp.UseCases
+	AttachmentService attachmentApp.UseCases
 	EventBus          *eventbus.InMemoryEventBus
 	JWTManager        *httpDelivery.JWTManager
 }
@@ -65,11 +70,39 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 		projectService.SetEventPublisher(eventBus)
 	}
 
+	var s3Storage *s3.Storage
+	if cfg.S3Endpoint != "" && cfg.S3Bucket != "" {
+		storageInstance, err := s3.NewStorage(s3.Config{
+			Endpoint:  cfg.S3Endpoint,
+			Region:    cfg.S3Region,
+			Bucket:    cfg.S3Bucket,
+			AccessKey: cfg.S3AccessKey,
+			SecretKey: cfg.S3SecretKey,
+			UseSSL:    cfg.S3UseSSL,
+		})
+		if err != nil {
+			log.Printf("[WARN] Failed to initialize S3 storage adapter: %v", err)
+		} else {
+			s3Storage = storageInstance
+		}
+	}
+
+	var attachmentService *attachmentApp.Service
+	if repos.AttachmentRepo != nil && s3Storage != nil {
+		attachmentService = attachmentApp.NewService(
+			repos.AttachmentRepo,
+			s3Storage,
+			repos.WorkspaceRepo,
+			repos.AttachmentRepo,
+		)
+	}
+
 	return &Services{
 		WorkspaceService:  workspaceService,
 		TaskService:       taskService,
 		ProjectService:    projectService,
 		AutomationService: automationService,
+		AttachmentService: attachmentService,
 		EventBus:          eventBus,
 		JWTManager:        jwtManager,
 	}

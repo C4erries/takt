@@ -92,6 +92,17 @@ export interface CreateInboxTaskRequest {
   dueDate?: string | null;
 }
 
+export interface Attachment {
+  id: string;
+  workspaceId: string;
+  taskId: string;
+  fileName: string;
+  fileSize: number;
+  contentType: string;
+  contentUrl: string;
+  createdAt: string;
+}
+
 export interface ApiError {
   code: string;
   message: string;

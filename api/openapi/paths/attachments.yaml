@@ -1,0 +1,218 @@
+taskAttachments:
+  post:
+    tags:
+      - Attachments
+    summary: Upload an attachment for a task
+    description: Uploads a file as an attachment to a task via multipart/form-data.
+    operationId: uploadTaskAttachment
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - file
+            properties:
+              file:
+                type: string
+                format: binary
+    responses:
+      '201':
+        description: Attachment uploaded successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/attachment.yaml#/Attachment'
+      '400':
+        description: Bad request or file size exceeds maximum limit
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Task not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+  get:
+    tags:
+      - Attachments
+    summary: List attachments for a task
+    description: Returns all attachments associated with a specific task.
+    operationId: listTaskAttachments
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: List of task attachments
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../schemas/attachment.yaml#/Attachment'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Task not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+attachmentContent:
+  get:
+    tags:
+      - Attachments
+    summary: Get attachment binary content
+    description: Streams binary content of an attachment with optional download disposition.
+    operationId: getAttachmentContent
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: attachment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: download
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '200':
+        description: Binary file content
+        content:
+          '*/*':
+            schema:
+              type: string
+              format: binary
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Attachment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+attachmentItem:
+  delete:
+    tags:
+      - Attachments
+    summary: Delete an attachment
+    description: Deletes an attachment and removes its file from storage.
+    operationId: deleteAttachment
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: attachment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Attachment deleted successfully
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Attachment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+

@@ -13,6 +13,7 @@
 |---|---|---|---|---|
 | **ADR-0001** | [0001-initial-architecture-and-stack.md](0001-initial-architecture-and-stack.md) | 2026-10-14 | `Accepted` | Выбор стека Go 1.23+ (Echo, sqlc, pgx v5, Transactor) + React/TS + PostgreSQL 16 + Multi-file OpenAPI + Pytest E2E + Nginx |
 | **ADR-0002** | [0002-jwt-auth-and-tenant-isolation.md](0002-jwt-auth-and-tenant-isolation.md) | 2026-10-14 | `Accepted` | Гибридный JWT (HTTP-only Cookie + Bearer Fallback), автосоздание Personal Workspace и Tenant Isolation |
+| **ADR-0003** | [0003-s3-storage-and-attachments-architecture.md](0003-s3-storage-and-attachments-architecture.md) | 2026-10-15 | `Accepted` | S3-хранилище (MinIO dev), бэкенд-прокси загрузки multipart, перманентные Content URLs для Markdown и лимит 50 МБ |
 
 ---
 

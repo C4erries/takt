@@ -265,6 +265,33 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Attachment defines model for Attachment.
+type Attachment struct {
+	// ContentType Example: image/png
+	ContentType string `json:"contentType"`
+
+	// ContentUrl Example: /api/v1/workspaces/123e4567-e89b-12d3-a456-426614174001/attachments/123e4567-e89b-12d3-a456-426614174000/content
+	ContentUrl string `json:"contentUrl"`
+
+	// CreatedAt Example: 2026-10-15T12:00:00Z
+	CreatedAt time.Time `json:"createdAt"`
+
+	// FileName Example: screenshot.png
+	FileName string `json:"fileName"`
+
+	// FileSize Example: 1048576
+	FileSize int64 `json:"fileSize"`
+
+	// Id Example: 123e4567-e89b-12d3-a456-426614174000
+	Id openapi_types.UUID `json:"id"`
+
+	// TaskId Example: 123e4567-e89b-12d3-a456-426614174002
+	TaskId openapi_types.UUID `json:"taskId"`
+
+	// WorkspaceId Example: 123e4567-e89b-12d3-a456-426614174001
+	WorkspaceId openapi_types.UUID `json:"workspaceId"`
+}
+
 // AuthResponse defines model for AuthResponse.
 type AuthResponse struct {
 	// Token JWT session token
@@ -751,10 +778,20 @@ type HealthDatabaseStatus string
 // HealthStatus Example: ok
 type HealthStatus string
 
+// GetAttachmentContentParams defines parameters for GetAttachmentContent.
+type GetAttachmentContentParams struct {
+	Download *bool `form:"download,omitempty" json:"download,omitempty"`
+}
+
 // CreateProjectBoardJSONBody defines parameters for CreateProjectBoard.
 type CreateProjectBoardJSONBody struct {
 	// Name Example: Вторая доска
 	Name string `json:"name"`
+}
+
+// UploadTaskAttachmentMultipartBody defines parameters for UploadTaskAttachment.
+type UploadTaskAttachmentMultipartBody struct {
+	File openapi_types.File `json:"file"`
 }
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
@@ -795,6 +832,9 @@ type CreateWorkspaceTagJSONRequestBody = CreateTagRequest
 
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody = UpdateTaskRequest
+
+// UploadTaskAttachmentMultipartRequestBody defines body for UploadTaskAttachment for multipart/form-data ContentType.
+type UploadTaskAttachmentMultipartRequestBody UploadTaskAttachmentMultipartBody
 
 // SetTaskFocusJSONRequestBody defines body for SetTaskFocus for application/json ContentType.
 type SetTaskFocusJSONRequestBody = SetFocusRequest
@@ -846,6 +886,12 @@ type ServerInterface interface {
 	// UpdateWorkspace Rename workspace
 	// (PATCH /workspaces/{workspace_id})
 	UpdateWorkspace(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// DeleteAttachment Delete an attachment
+	// (DELETE /workspaces/{workspace_id}/attachments/{attachment_id})
+	DeleteAttachment(ctx echo.Context, workspaceId openapi_types.UUID, attachmentId openapi_types.UUID) error
+	// GetAttachmentContent Get attachment binary content
+	// (GET /workspaces/{workspace_id}/attachments/{attachment_id}/content)
+	GetAttachmentContent(ctx echo.Context, workspaceId openapi_types.UUID, attachmentId openapi_types.UUID, params GetAttachmentContentParams) error
 	// ListWorkspaceAutomations List all automations in a workspace
 	// (GET /workspaces/{workspace_id}/automations)
 	ListWorkspaceAutomations(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -915,6 +961,12 @@ type ServerInterface interface {
 	// UpdateTask Update a task
 	// (PATCH /workspaces/{workspace_id}/tasks/{task_id})
 	UpdateTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
+	// ListTaskAttachments List attachments for a task
+	// (GET /workspaces/{workspace_id}/tasks/{task_id}/attachments)
+	ListTaskAttachments(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
+	// UploadTaskAttachment Upload an attachment for a task
+	// (POST /workspaces/{workspace_id}/tasks/{task_id}/attachments)
+	UploadTaskAttachment(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
 	// SetTaskFocus Set or clear task focus order
 	// (POST /workspaces/{workspace_id}/tasks/{task_id}/focus)
 	SetTaskFocus(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
@@ -1092,6 +1144,63 @@ func (w *ServerInterfaceWrapper) UpdateWorkspace(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.UpdateWorkspace(ctx, workspaceId)
+	return err
+}
+
+// DeleteAttachment converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteAttachment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "attachment_id" -------------
+	var attachmentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "attachment_id", ctx.Param("attachment_id"), &attachmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter attachment_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteAttachment(ctx, workspaceId, attachmentId)
+	return err
+}
+
+// GetAttachmentContent converts echo context to params.
+func (w *ServerInterfaceWrapper) GetAttachmentContent(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "attachment_id" -------------
+	var attachmentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "attachment_id", ctx.Param("attachment_id"), &attachmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter attachment_id: %s", err))
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAttachmentContentParams
+	// ------------- Optional query parameter "download" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "download", ctx.QueryParams(), &params.Download, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter download: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetAttachmentContent(ctx, workspaceId, attachmentId, params)
 	return err
 }
 
@@ -1591,6 +1700,54 @@ func (w *ServerInterfaceWrapper) UpdateTask(ctx echo.Context) error {
 	return err
 }
 
+// ListTaskAttachments converts echo context to params.
+func (w *ServerInterfaceWrapper) ListTaskAttachments(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListTaskAttachments(ctx, workspaceId, taskId)
+	return err
+}
+
+// UploadTaskAttachment converts echo context to params.
+func (w *ServerInterfaceWrapper) UploadTaskAttachment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UploadTaskAttachment(ctx, workspaceId, taskId)
+	return err
+}
+
 // SetTaskFocus converts echo context to params.
 func (w *ServerInterfaceWrapper) SetTaskFocus(ctx echo.Context) error {
 	var err error
@@ -1764,6 +1921,8 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/workspaces", wrapper.ListWorkspaces, options.OperationMiddlewares["listWorkspaces"]...)
 	router.POST(options.BaseURL+"/workspaces", wrapper.CreateWorkspace, options.OperationMiddlewares["createWorkspace"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id", wrapper.UpdateWorkspace, options.OperationMiddlewares["updateWorkspace"]...)
+	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/attachments/:attachment_id", wrapper.DeleteAttachment, options.OperationMiddlewares["deleteAttachment"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/attachments/:attachment_id/content", wrapper.GetAttachmentContent, options.OperationMiddlewares["getAttachmentContent"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/automations", wrapper.ListWorkspaceAutomations, options.OperationMiddlewares["listWorkspaceAutomations"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/automations/:automation_id/toggle", wrapper.ToggleAutomation, options.OperationMiddlewares["toggleAutomation"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns", wrapper.ListBoardColumns, options.OperationMiddlewares["listBoardColumns"]...)
@@ -1787,6 +1946,8 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.DeleteWorkspaceTag, options.OperationMiddlewares["deleteWorkspaceTag"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/today", wrapper.GetTodayTasks, options.OperationMiddlewares["getTodayTasks"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id", wrapper.UpdateTask, options.OperationMiddlewares["updateTask"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.ListTaskAttachments, options.OperationMiddlewares["listTaskAttachments"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.UploadTaskAttachment, options.OperationMiddlewares["uploadTaskAttachment"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/focus", wrapper.SetTaskFocus, options.OperationMiddlewares["setTaskFocus"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/move", wrapper.MoveTaskToColumn, options.OperationMiddlewares["moveTaskToColumn"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/tags/:tag_id", wrapper.RemoveTagFromTask, options.OperationMiddlewares["removeTagFromTask"]...)

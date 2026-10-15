@@ -21,6 +21,7 @@ type Repositories struct {
 	ColumnRepo     *repository.ColumnRepository
 	TaskMoveRepo   *repository.TaskMoveRepository
 	AutomationRepo *repository.AutomationRepository
+	AttachmentRepo *repository.AttachmentRepository
 }
 
 // initRepositories initializes database connection pool and repositories.
@@ -38,6 +39,7 @@ func initRepositories(ctx context.Context, cfg *config.Config) (*Repositories, e
 	var columnRepo *repository.ColumnRepository
 	var taskMoveRepo *repository.TaskMoveRepository
 	var automationRepo *repository.AutomationRepository
+	var attachmentRepo *repository.AttachmentRepository
 
 	if database != nil && database.Pool != nil {
 		queries := sqlc.New(database.Pool)
@@ -49,6 +51,7 @@ func initRepositories(ctx context.Context, cfg *config.Config) (*Repositories, e
 		columnRepo = repository.NewColumnRepository(queries)
 		taskMoveRepo = repository.NewTaskMoveRepository(queries)
 		automationRepo = repository.NewAutomationRepository(queries)
+		attachmentRepo = repository.NewAttachmentRepository(queries)
 	}
 
 	return &Repositories{
@@ -61,5 +64,6 @@ func initRepositories(ctx context.Context, cfg *config.Config) (*Repositories, e
 		ColumnRepo:     columnRepo,
 		TaskMoveRepo:   taskMoveRepo,
 		AutomationRepo: automationRepo,
+		AttachmentRepo: attachmentRepo,
 	}, nil
 }

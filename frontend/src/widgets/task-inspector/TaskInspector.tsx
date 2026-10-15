@@ -20,8 +20,10 @@ import {
   useRemoveTagFromTaskMutation,
 } from '@/entities/task';
 import { useProjectsQuery } from '@/entities/project';
+import { useUploadAttachmentMutation } from '@/entities/attachment';
 import { useTaskStore } from '@/features/task-navigation';
 import { MarkdownNotes } from './MarkdownNotes';
+import { TaskAttachments } from './TaskAttachments';
 
 export interface TaskInspectorProps {
   task: Task | null;
@@ -32,10 +34,8 @@ export interface TaskInspectorProps {
 }
 
 const PRIORITIES: { value: Priority; label: string }[] = [
-  { value: 'none', label: 'Обычный' },
-  { value: 'low', label: 'Низкий' },
-  { value: 'medium', label: 'Средний' },
-  { value: 'high', label: 'Высокий' },
+  { value: 'none', label: 'Обычный' }, { value: 'low', label: 'Низкий' },
+  { value: 'medium', label: 'Средний' }, { value: 'high', label: 'Высокий' },
   { value: 'urgent', label: 'Срочно' },
 ];
 
@@ -54,11 +54,49 @@ export const TaskInspector: React.FC<TaskInspectorProps> = ({
   const addTagMutation = useAddTagToTaskMutation(workspaceId);
   const removeTagMutation = useRemoveTagFromTaskMutation(workspaceId);
   const { data: projects = [] } = useProjectsQuery(workspaceId);
+  const uploadAttachmentMutation = useUploadAttachmentMutation(workspaceId, task?.id);
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (task && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      for (const file of Array.from(e.dataTransfer.files)) {
+        try {
+          await uploadAttachmentMutation.mutateAsync(file);
+        } catch {
+          // ignore
+        }
+      }
+    }
+  };
+
+  const handleUploadImageForNotes = async (file: File): Promise<string | null> => {
+    if (!task) return null;
+    try {
+      const att = await uploadAttachmentMutation.mutateAsync(file);
+      return att.contentUrl;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     setTitle(task?.title ?? '');
@@ -118,7 +156,14 @@ export const TaskInspector: React.FC<TaskInspectorProps> = ({
   };
 
   return (
-    <div className="w-80 shrink-0 bg-surface border border-subtle rounded-2xl p-4 shadow-washi flex flex-col justify-between overflow-y-auto max-h-[580px] select-none space-y-4">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`w-80 shrink-0 bg-surface border border-subtle rounded-2xl p-4 shadow-washi flex flex-col justify-between overflow-y-auto max-h-[580px] select-none space-y-4 transition-colors ${
+        isDragOver ? 'ring-2 ring-accent-solid/50 bg-accent-surface/10' : ''
+      }`}
+    >
       <div className="space-y-4">
         {/* Header bar */}
         <div className="flex items-center justify-between border-b border-subtle/50 pb-2.5">
@@ -305,7 +350,11 @@ export const TaskInspector: React.FC<TaskInspectorProps> = ({
           onSave={(val) =>
             updateTaskMutation.mutate({ taskId: task.id, data: { descriptionMarkdown: val } })
           }
+          onUploadImage={handleUploadImageForNotes}
         />
+
+        {/* Attachments Section */}
+        <TaskAttachments workspaceId={workspaceId} taskId={task.id} />
       </div>
 
       {/* Action buttons footer */}

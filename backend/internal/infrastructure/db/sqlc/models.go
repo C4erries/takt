@@ -8,6 +8,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Attachment struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	TaskID      pgtype.UUID        `json:"task_id"`
+	FileName    string             `json:"file_name"`
+	FileSize    int64              `json:"file_size"`
+	ContentType string             `json:"content_type"`
+	S3Key       string             `json:"s3_key"`
+	CreatedByID pgtype.UUID        `json:"created_by_id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type Automation struct {
 	ID             pgtype.UUID        `json:"id"`
 	WorkspaceID    pgtype.UUID        `json:"workspace_id"`

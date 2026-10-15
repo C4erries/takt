@@ -15,6 +15,7 @@ type Querier interface {
 	CheckHealth(ctx context.Context) (int32, error)
 	ClearTaskTags(ctx context.Context, taskID pgtype.UUID) error
 	CountTasksInColumn(ctx context.Context, columnID pgtype.UUID) (int64, error)
+	CreateAttachment(ctx context.Context, arg CreateAttachmentParams) (Attachment, error)
 	CreateAutomation(ctx context.Context, arg CreateAutomationParams) (Automation, error)
 	CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error)
 	CreateColumn(ctx context.Context, arg CreateColumnParams) (Column, error)
@@ -25,6 +26,8 @@ type Querier interface {
 	CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams) (Workspace, error)
 	CreateWorkspaceInvite(ctx context.Context, arg CreateWorkspaceInviteParams) (WorkspaceInvite, error)
 	CreateWorkspaceMember(ctx context.Context, arg CreateWorkspaceMemberParams) (WorkspaceMember, error)
+	DeleteAttachment(ctx context.Context, arg DeleteAttachmentParams) error
+	DeleteAttachmentsByTaskID(ctx context.Context, arg DeleteAttachmentsByTaskIDParams) error
 	DeleteBoard(ctx context.Context, id pgtype.UUID) error
 	DeleteColumn(ctx context.Context, id pgtype.UUID) error
 	DeleteProject(ctx context.Context, arg DeleteProjectParams) error
@@ -34,6 +37,7 @@ type Querier interface {
 	DeleteWorkspaceInviteByToken(ctx context.Context, token string) error
 	DeleteWorkspaceMember(ctx context.Context, arg DeleteWorkspaceMemberParams) error
 	GetActiveWorkspaceInvite(ctx context.Context, workspaceID pgtype.UUID) (WorkspaceInvite, error)
+	GetAttachmentByID(ctx context.Context, arg GetAttachmentByIDParams) (Attachment, error)
 	GetAutomationByID(ctx context.Context, arg GetAutomationByIDParams) (Automation, error)
 	GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, error)
 	GetColumnByID(ctx context.Context, id pgtype.UUID) (Column, error)
@@ -51,6 +55,7 @@ type Querier interface {
 	GetWorkspaceInviteByToken(ctx context.Context, token string) (GetWorkspaceInviteByTokenRow, error)
 	GetWorkspaceMember(ctx context.Context, arg GetWorkspaceMemberParams) (WorkspaceMember, error)
 	GetWorkspacesByUserID(ctx context.Context, userID pgtype.UUID) ([]GetWorkspacesByUserIDRow, error)
+	ListAttachmentsByTaskID(ctx context.Context, arg ListAttachmentsByTaskIDParams) ([]Attachment, error)
 	ListBoardsByProject(ctx context.Context, projectID pgtype.UUID) ([]Board, error)
 	ListColumnsByBoard(ctx context.Context, boardID pgtype.UUID) ([]Column, error)
 	ListEnabledAutomationsByTrigger(ctx context.Context, arg ListEnabledAutomationsByTriggerParams) ([]Automation, error)

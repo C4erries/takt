@@ -1,0 +1,42 @@
+Attachment:
+  type: object
+  required:
+    - id
+    - workspaceId
+    - taskId
+    - fileName
+    - fileSize
+    - contentType
+    - contentUrl
+    - createdAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174000"
+    workspaceId:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174001"
+    taskId:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174002"
+    fileName:
+      type: string
+      example: "screenshot.png"
+    fileSize:
+      type: integer
+      format: int64
+      example: 1048576
+    contentType:
+      type: string
+      example: "image/png"
+    contentUrl:
+      type: string
+      example: "/api/v1/workspaces/123e4567-e89b-12d3-a456-426614174001/attachments/123e4567-e89b-12d3-a456-426614174000/content"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-10-15T12:00:00Z"
+

@@ -5,6 +5,7 @@ import {
   MeResponse,
   RegisterRequest,
   Task,
+  Attachment,
   ApiError,
 } from './types';
 
@@ -133,3 +134,31 @@ export const tasksApi = {
     });
   },
 };
+
+export const attachmentsApi = {
+  async uploadTaskAttachment(workspaceId: string, taskId: string, file: File): Promise<Attachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<Attachment>(`/workspaces/${workspaceId}/tasks/${taskId}/attachments`, {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  async listTaskAttachments(workspaceId: string, taskId: string): Promise<Attachment[]> {
+    return request<Attachment[]>(`/workspaces/${workspaceId}/tasks/${taskId}/attachments`, {
+      method: 'GET',
+    });
+  },
+
+  async deleteAttachment(workspaceId: string, attachmentId: string): Promise<void> {
+    await request<void>(`/workspaces/${workspaceId}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+export const uploadTaskAttachment = attachmentsApi.uploadTaskAttachment;
+export const listTaskAttachments = attachmentsApi.listTaskAttachments;
+export const deleteAttachment = attachmentsApi.deleteAttachment;
+

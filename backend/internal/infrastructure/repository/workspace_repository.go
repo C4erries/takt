@@ -115,6 +115,12 @@ func (r *WorkspaceRepository) GetMember(ctx context.Context, workspaceID, userID
 	}, nil
 }
 
+// CheckAccess verifies that the given user has access to the workspace.
+func (r *WorkspaceRepository) CheckAccess(ctx context.Context, workspaceID, userID uuid.UUID) error {
+	_, err := r.GetMember(ctx, workspaceID, userID)
+	return err
+}
+
 func (r *WorkspaceRepository) ListMembers(ctx context.Context, workspaceID uuid.UUID) ([]*workspaceApp.WorkspaceMemberInfo, error) {
 	q := getQuerier(ctx, r.queries)
 	rows, err := q.ListWorkspaceMembers(ctx, uuidToPg(workspaceID))

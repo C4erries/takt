@@ -216,16 +216,19 @@ erDiagram
 | **Domain: Workspace** | `internal/domain/workspace` | Модель Workspace, WorkspaceMember, роли и инварианты. |
 | **Domain: Project** | `internal/domain/project` | Модели Project, Board, Column, порядок и статусы. |
 | **Domain: Task** | `internal/domain/task` | Модели Task, Tag, чекбокс выполнения, приоритеты, фокус. |
+| **Domain: Attachment** | `internal/domain/attachment` | Модель Attachment, валидация типов, лимитов размера и санитайзинг имен файлов. |
 | **Domain: Automation** | `internal/domain/automation` | Модель Automation, Rule Evaluator, типы триггеров и действий. |
 | **Domain: Events** | `internal/domain/events` | Доменные события (`TaskCreated`, `TaskMoved`, `TaskCompleted`) и интерфейс `EventBus`. |
 | **App: Workspace** | `internal/application/workspace` | Сценарии создания воркспейса, приглашений + `ports.go`. |
 | **App: Project** | `internal/application/project` | Сценарии управления проектами, досками и колонками + `ports.go`. |
 | **App: Task** | `internal/application/task` | Сценарии создания задач (Inbox capture), перемещения, отметки Done + `ports.go`. |
+| **App: Attachment** | `internal/application/attachment` | Сценарии загрузки, получения контента, списка и удаления вложений + `ports.go`. |
 | **App: Automation** | `internal/application/automation` | Подписка на события домена, вычисление условий и исполнение действий + `ports.go`. |
 | **Infra: Container (DI)** | `internal/infrastructure/container` | Сборка сервисов, репозиториев и роутинга Echo (`repos.go`, `services.go`, `router.go`, `container.go`). `main.go < 50 строк`. |
 | **Infra: Config** | `internal/infrastructure/config` | Загрузка и валидация переменных окружения из .env (`config.go`). |
 | **Infra: HTTP** | `internal/infrastructure/http` | Роутер Echo, хендлеры API (по OpenAPI), middleware (Auth, Tenant, ErrorMapper). |
 | **Infra: DB** | `internal/infrastructure/db` | Инициализация `pgxpool`, Unit of Work / Transactor через `context.Context`, сгенерированный `sqlc`-код. |
+| **Infra: Storage (S3)** | `internal/infrastructure/storage/s3` | Адаптер S3/MinIO на базе AWS SDK v2 (`PutObject`, `GetObject`, `DeleteObject`). |
 | **Infra: EventBus** | `internal/infrastructure/eventbus` | In-memory диспетчер доменных событий с пулом горутин (задел под Kafka). |
 | **Infra: Repositories** | `internal/infrastructure/repository` | Реализация интерфейсов хранения на базе `sqlc` по подпакетам. |
 

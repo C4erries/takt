@@ -4,63 +4,62 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.4.1 (Фаза 3: Единые Воркспейсы, Роли Owner/Member и Инвайты) ✅ ЗАВЕРШЕН (Готов к архивации)
+## Текущий спринт: Спринт 0.4.2 (Фаза 3: Собственное S3-хранилище MinIO/S3, Вложения и Медиа к задачам) ✅ ЗАВЕРШЕН (Готов к архивации)
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Режим «Штаб»)
 
-* **Бизнес-цель**: Реализовать совместную работу без искусственного разделения на «личные» и «командные» воркспейсы. Все воркспейсы унифицированы: пользователь может владеть несколькими пространствами, переключаться между ними в сайдбаре, приглашать коллег по ссылке-инвайту и работать в соответствии с ролями Owner / Member.
-* **Зафиксированные продуктовые и архитектурные микро-решения**:
-  1. **Концепция «Единых Воркспейсов» (Unified Workspaces)**:
-     - Все воркспейсы равноправны. Отсутствует жесткое искусственное деление на `type = personal` и `type = shared`.
-     - Пользователь может создать любое количество воркспейсов («Личное», «Работа», «Стартап», «Дом»).
-     - В любой воркспейс можно пригласить других пользователей по ссылке. До приглашения воркспейс работает как персональный; после приглашения — как командный.
-     - При создании любого воркспейса для него автоматически генерируются 3 пресетные автоматизации и начальные обучающие задачи.
-  2. **Инвайты по токен-ссылке (Token Invite Links)**:
-     - Таблица `workspace_invites`: `id`, `workspace_id`, `invited_by_id`, `token` (32-байтный hex-токен), `expires_at` (7 дней), `created_at`.
-     - `POST /api/v1/workspaces/{workspace_id}/invites`: генерация или получение действующей инвайт-ссылки вида `/invite/{token}` (доступно только `owner`).
-     - `GET /api/v1/invites/{token}`: публичный предпросмотр инвайта (название воркспейса, имя пригласившего).
-     - `POST /api/v1/invites/{token}/accept`: принятие приглашения авторизованным пользователем (добавление в `workspace_members` с ролью `member`).
-  3. **Ролевая модель (RBAC: Owner vs Member)**:
-     - **`Owner`**: Полный контроль (переименование воркспейса, удаление, генерация инвайтов, исключение участников, управление автоматизациями).
-     - **`Member`**: Полноценная работа с контентом (задачи, проекты, доски, колонки, теги), но запрет на деструктивные действия над воркспейсом и чужими участниками.
-     - При удалении/выходе участника созданные им задачи и проекты **остаются в воркспейсе** (не удаляются каскадно), так как принадлежат `workspace_id`.
-     - `Member` может в любой момент добровольно покинуть воркспейс (`DELETE /members/{user_id}`).
-  4. **Переключение активного воркспейса**:
-     - Эндпоинт `POST /api/v1/workspaces/{workspace_id}/switch`: проверяет членство пользователя в целевом воркспейсе, генерирует новый валидный JWT токен с `WorkspaceID` и выставляет его в Cookie/Header.
-     - В интерфейсе сайдбара интерактивный селектор `WorkspaceSwitcher` в эстетике Washi со списком доступных пространств, чекмарком у активного, кнопкой «+ Новый воркспейс» и «Участники и доступ».
-  5. **Двухфазная поставка Contract-First**:
-     - **Шаг 1**: Миграция `000006_workspace_invites.up.sql`, sqlc-запросы `queries/workspaces.sql`, OpenAPI схемы и эндпоинты (`paths/workspaces.yaml`, `schemas/workspace.yaml`), `make generate`, чистый доменный слой `internal/domain/workspace`.
-     - **Шаг 2**: Use Cases в `internal/application/workspace`, репозитории, HTTP-хендлеры `workspaces_handler.go`, фронтенд (`WorkspaceSwitcher`, `CreateWorkspaceModal`, `WorkspaceMembersModal`, `AcceptInviteModal`), E2E-тесты на Pytest (31/31 PASS).
+* **Бизнес-цель**: Реализовать файловое хранилище на базе S3 (MinIO в локальном dev-окружении, любой S3-провайдер в production), позволяющее прикреплять вложения (файлы, документы) к задачам, отображать их в блоке «Вложения» в TaskInspector и мгновенно вставлять скриншоты из буфера обмена (`Ctrl+V`) прямо в текст Markdown-заметок с отображением превью.
+* **Зафиксированные архитектурные и продуктовые микро-решения**:
+  1. **Архитектура загрузки (Бэкенд-прокси / Multipart)**:
+     - Загрузка выполняется через бэкенд: `POST /api/v1/workspaces/{workspace_id}/tasks/{task_id}/attachments` (`multipart/form-data`, поле `file`).
+     - Бэкенд валидирует права доступа пользователя (членство в воркспейсе), размер и тип файла, стримит данные в MinIO/S3 через AWS SDK v2 (`PutObject`) и создает запись в таблице `attachments`.
+  2. **Перманентный Content URL (Защита от протухания ссылок в Markdown)**:
+     - Просмотр и скачивание осуществляются по стабильному URL:
+       `GET /api/v1/workspaces/{workspace_id}/attachments/{attachment_id}/content` (с заголовками `Content-Type`, `Cache-Control: public, max-age=86400`, `Content-Disposition: inline; filename="..."`).
+     - Для скачивания как вложение поддерживается query-параметр `?download=true` (`Content-Disposition: attachment`).
+  3. **Лимиты, типы файлов и конфигурация**:
+     - Лимит размера настраивается через конфигурацию: `MAX_ATTACHMENT_SIZE_BYTES` (по умолчанию **50 МБ** = `52428800`).
+     - Поддерживаются любые типы файлов (изображения `image/*`, документы `application/pdf`, текстовые файлы `text/*`, архивы `application/zip` и др.).
+  4. **Жизненный цикл и хранение в S3**:
+     - Ключ S3: `workspaces/{workspace_id}/tasks/{task_id}/{uuid}_{sanitized_file_name}`.
+     - При удалении задачи метаданные в БД удаляются каскадно (`ON DELETE CASCADE`), а в S3 файлы удаляются через сценарий `DeleteTaskAttachments`. При удалении конкретного файла (`DELETE /attachments/{id}`) объект удаляется из S3 и запись удаляется из БД.
+  5. **UX и интерфейс (Совмещенный режим)**:
+     - **Вставка из буфера (`Ctrl+V`)**: В поле Markdown-заметок перехватывается `onPaste`. Если в буфере изображение (`image/*`), оно загружается на сервер, вставляется Markdown-тег `![имя_файла](content_url)`, а файл также автоматически появляется в списке вложений задачи.
+     - **Секция «Вложения» в TaskInspector**: Под Markdown-заметками размещается блок с галереей прикрепленных файлов (превью для картинок, карточки для файлов, кнопка удаления, кнопка «+ Прикрепить файл» / скрытый файловый инпут, drag-and-drop).
+  6. **Инфраструктура Docker**:
+     - В `docker-compose.yml` добавлены сервисы `minio` и `minio_createbucket` (на базе `minio/mc`) для автосоздания бакета `takt-attachments`.
 
 ---
 
-## 📋 Таблица задач спринта 0.4.1
+## 📋 Таблица задач спринта 0.4.2
 
 | # | Задача | Статус | Приоритет | Ответственный | Заметки и контракты |
 |---|--------|--------|-----------|---------------|---------------------|
-| 1 | **[Backend Step 1]**: Миграция 0006 (workspace_invites), sqlc-запросы, OpenAPI контракты и домен | ✅ Done | Критический | `backend_developer` | `workspace_invites` table, OpenAPI `workspaces.yaml`, `internal/domain/workspace`, `make generate` |
-| 2 | **[Gatekeeper Checkpoint 1]**: Проверка контрактов и кодогенерации | ✅ Done | Критический | `lead_architect` | `make check-arch && make generate && make test` (0 ошибок) |
-| 3 | **[Backend Step 2]**: Use cases воркспейсов и инвайтов, HTTP-хендлеры, переключение JWT, тесты | ✅ Done | Высокий | `backend_developer` | `application/workspace`, `infrastructure/http`, `infrastructure/repository`, `container` |
-| 4 | **[Frontend]**: Выпадающее меню воркспейсов в сайдбаре, модалы создания и участников, инвайт | ✅ Done | Высокий | `frontend_developer` | `entities/workspace`, `features/workspace-switcher`, `features/workspace-members` |
-| 5 | **[QA & Verification]**: E2E тесты создания воркспейсов, генерации инвайтов, принятия и RBAC | ✅ Done | Критический | `qa_engineer` | `tests/e2e/test_workspaces.py`, `make check-arch`, `make test`, `make test-e2e` (31/31 PASS) |
+| 1 | **[Decisions]**: Блиц-опрос и фиксация архитектурных микро-решений S3 | ✅ Done | Критический | `lead_architect` & User | Решения: бэкенд-прокси multipart, Content URL, 50MB, Ctrl+V + галерея, ADR-0003 |
+| 2 | **[Backend Step 1]**: Миграция 0007, sqlc-запросы, OpenAPI схемы, генерация кода, чистый домен `internal/domain/attachment` | ✅ Done | Критический | `backend_developer` | `attachments.sql`, `schemas/attachment.yaml`, `paths/attachments.yaml`, `make generate` |
+| 3 | **[Gatekeeper Checkpoint 1]**: Проверка контрактов и чистоты домена | ✅ Done | Критический | `lead_architect` | `make check-arch && make generate && make test` (PASS) |
+| 4 | **[Backend Step 2]**: MinIO в compose, S3-адаптер (`aws-sdk-go-v2`), Use Cases `application/attachment`, Echo-хендлеры, связывание в `container` | ✅ Done | Высокий | `backend_developer` | `infrastructure/storage/s3`, `attachments_handler.go`, unit & repo tests |
+| 5 | **[Frontend]**: Интеграция вложений в TaskInspector, Drag-and-drop, загрузка по `Ctrl+V` в MarkdownNotes, превью | ✅ Done | Высокий | `frontend_developer` | `entities/attachment`, `widgets/task-inspector`, Washi & Matcha UI-Kit |
+| 6 | **[QA & Verification]**: Pytest E2E сквозные тесты S3 загрузки, скачивания контента, каскадного удаления и изоляции | ✅ Done | Критический | `qa_engineer` | `tests/e2e/test_attachments.py`, `make check-arch`, `make test`, `make test-e2e` (36/36 PASS) |
 
 ---
 
 ## 🎯 Definition of Done (DoD)
 
-- [x] Создана миграция `000006_workspace_invites.up.sql` с таблицей `workspace_invites` и снятием жесткого ограничения `workspaces_type_check`.
-- [x] Описаны контракты OpenAPI для воркспейсов, участников и инвайтов (`paths/workspaces.yaml`, `schemas/workspace.yaml`).
-- [x] Сгенерирован `api.gen.go` через `make generate`, HTTP-хендлеры реализуют `ServerInterface`.
-- [x] Домен `internal/domain/workspace` расширен сущностями `WorkspaceInvite`, конструктором `NewWorkspace`, методами проверки срока действия и инвариантами.
-- [x] Реализованы сценарии: создание воркспейса, переключение (`/switch`), список участников, удаление участника, генерация инвайта, предпросмотр и принятие инвайта.
-- [x] Реализована строгая проверка прав: только `owner` может генерировать инвайты, менять имя воркспейса и удалять других участников.
-- [x] На фронтенде создан селектор воркспейсов `WorkspaceSwitcher` в сайдбаре, модалы создания воркспейса `CreateWorkspaceModal`, управления участниками `WorkspaceMembersModal` и принятия инвайта `AcceptInviteModal`.
+- [x] Сервис MinIO добавлен в `docker-compose.yml` с автоматическим созданием бакета `takt-attachments`.
+- [x] Конфигурация бэкенда поддерживает S3 (`S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_USE_SSL`, `MAX_ATTACHMENT_SIZE_BYTES=52428800`).
+- [x] Создана миграция `000007_attachments.up.sql` с внешними ключами и индексами.
+- [x] Описаны OpenAPI контракты (`paths/attachments.yaml`, `schemas/attachment.yaml`), кодогенерация `make generate` проходит без ошибок.
+- [x] Чистый домен `internal/domain/attachment` покрыт табличными тестами инвариантов.
+- [x] Реализован адаптер хранилища S3 в `internal/infrastructure/storage/s3` с использованием `aws-sdk-go-v2`.
+- [x] Реализованы сценарии: загрузка вложения (`multipart`), получение списка, отдача бинарного контента с авторизацией, удаление.
+- [x] Во фронтенде в [TaskInspector](file:///home/pavel/projects/takt/frontend/src/widgets/task-inspector/TaskInspector.tsx) добавлена галерея вложений и перехват `Ctrl+V` для вставки картинок в [MarkdownNotes](file:///home/pavel/projects/takt/frontend/src/widgets/task-inspector/MarkdownNotes.tsx).
 - [x] `make check-arch` — 0 ошибок по всем 5 проверкам.
 - [x] `make test` — 100% PASS с флагом `-race`.
 - [x] `cd frontend && npm run build` — 0 ошибок сборки.
-- [x] Сквозные Pytest E2E-тесты в `tests/e2e/test_workspaces.py` проверяют полный цикл (31/31 PASS).
+- [x] Pytest E2E-тесты проверяют полный жизненный цикл вложений и Tenant Isolation (36/36 PASS).
 
 ---
 
@@ -68,4 +67,4 @@
 
 | Дата | Что изменилось |
 |------|---------------|
-| 2026-10-15 | **Спринт 0.4.1 завершен**: Реализована концепция Единых Воркспейсов (Unified Workspaces) без искусственного разделения на personal/shared. Добавлена генерация криптографических токен-ссылок инвайтов (`workspace_invites`), публичный предпросмотр инвайта и его принятие, ролевая модель RBAC (Owner vs Member), переключение активного воркспейса через `/switch` с выпуском нового JWT, интерактивный выпадающий селектор воркспейсов в сайдбаре, модальные окна создания и управления участниками, и 6 новых E2E-тестов на Pytest (31/31 PASS). |
+| 2026-10-15 | **Спринт 0.4.2 успешно завершен**: Зафиксирован [ADR-0003](file:///home/pavel/projects/takt/docs/decisions/0003-s3-storage-and-attachments-architecture.md). Интегрирован MinIO в `docker-compose.yml`, создана миграция `000007_attachments.up.sql`, генерация sqlc и OpenAPI контрактов, чистый домен `internal/domain/attachment`, S3 storage adapter на `aws-sdk-go-v2`, Use Cases в `internal/application/attachment`, HTTP-хендлеры в `internal/infrastructure/http`. На фронтенде реализована галерея вложений [TaskAttachments.tsx](file:///home/pavel/projects/takt/frontend/src/widgets/task-inspector/TaskAttachments.tsx) с Drag-and-drop и автозагрузка скриншотов по `Ctrl+V` в [MarkdownNotes.tsx](file:///home/pavel/projects/takt/frontend/src/widgets/task-inspector/MarkdownNotes.tsx). Полный E2E тест-сьют на Pytest проходит со 100% успехом (36/36 тестов). |

@@ -24,6 +24,8 @@ tags:
     description: Background workflows and trigger rules
   - name: Tags
     description: Workspace context tags
+  - name: Attachments
+    description: Task attachments and media storage
 
 paths:
   /health:
@@ -88,6 +90,12 @@ paths:
     $ref: './paths/automations.yaml#/automations'
   /workspaces/{workspace_id}/automations/{automation_id}/toggle:
     $ref: './paths/automations.yaml#/toggle'
+  /workspaces/{workspace_id}/tasks/{task_id}/attachments:
+    $ref: './paths/attachments.yaml#/taskAttachments'
+  /workspaces/{workspace_id}/attachments/{attachment_id}/content:
+    $ref: './paths/attachments.yaml#/attachmentContent'
+  /workspaces/{workspace_id}/attachments/{attachment_id}:
+    $ref: './paths/attachments.yaml#/attachmentItem'
 
 components:
   securitySchemes:
@@ -150,3 +158,5 @@ components:
       $ref: './schemas/automation.yaml#/Automation'
     ToggleAutomationRequest:
       $ref: './schemas/automation.yaml#/ToggleAutomationRequest'
+    Attachment:
+      $ref: './schemas/attachment.yaml#/Attachment'

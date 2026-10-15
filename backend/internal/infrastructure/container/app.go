@@ -47,6 +47,10 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		services.AutomationService,
 	)
 
+	if services.AttachmentService != nil {
+		handler.SetAttachmentService(services.AttachmentService, cfg.MaxAttachmentSizeBytes)
+	}
+
 	e := echo.New()
 	e.HideBanner = true
 	setupRouter(e, handler)

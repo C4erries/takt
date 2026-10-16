@@ -163,6 +163,11 @@ CreateColumnRequest:
 UpdateColumnRequest:
   type: object
   properties:
+    boardId:
+      type: string
+      format: uuid
+      nullable: true
+      example: "b0000000-0000-0000-0000-000000000001"
     name:
       type: string
       minLength: 1

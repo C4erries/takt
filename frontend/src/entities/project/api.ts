@@ -65,6 +65,34 @@ export const projectApi = {
     });
   },
 
+  async updateProjectBoard(
+    workspaceId: string,
+    projectId: string,
+    boardId: string,
+    name: string
+  ): Promise<Board> {
+    return request<Board>(
+      `/workspaces/${workspaceId}/projects/${projectId}/boards/${boardId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      }
+    );
+  },
+
+  async deleteProjectBoard(
+    workspaceId: string,
+    projectId: string,
+    boardId: string
+  ): Promise<void> {
+    await request<void>(
+      `/workspaces/${workspaceId}/projects/${projectId}/boards/${boardId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  },
+
   async listBoardColumns(workspaceId: string, boardId: string): Promise<Column[]> {
     return request<Column[]>(`/workspaces/${workspaceId}/boards/${boardId}/columns`, {
       method: 'GET',

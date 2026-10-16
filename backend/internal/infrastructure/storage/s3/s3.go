@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
@@ -16,6 +18,8 @@ type S3ClientAPI interface {
 	PutObject(ctx context.Context, params *s3Service.PutObjectInput, optFns ...func(*s3Service.Options)) (*s3Service.PutObjectOutput, error)
 	GetObject(ctx context.Context, params *s3Service.GetObjectInput, optFns ...func(*s3Service.Options)) (*s3Service.GetObjectOutput, error)
 	DeleteObject(ctx context.Context, params *s3Service.DeleteObjectInput, optFns ...func(*s3Service.Options)) (*s3Service.DeleteObjectOutput, error)
+	HeadBucket(ctx context.Context, params *s3Service.HeadBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.HeadBucketOutput, error)
+	CreateBucket(ctx context.Context, params *s3Service.CreateBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.CreateBucketOutput, error)
 }
 
 // Config contains connection parameters for S3 or MinIO storage.
@@ -126,5 +130,39 @@ func (s *Storage) DeleteObject(ctx context.Context, key string) error {
 		return fmt.Errorf("failed to delete object from s3: %w", err)
 	}
 	return nil
+}
+
+// EnsureBucket checks if the configured bucket exists, and creates it if not.
+// Retries with a short backoff in case S3/MinIO is still initializing during startup.
+func (s *Storage) EnsureBucket(ctx context.Context) error {
+	var lastErr error
+	for attempt := 0; attempt < 5; attempt++ {
+		_, err := s.client.HeadBucket(ctx, &s3Service.HeadBucketInput{
+			Bucket: aws.String(s.bucket),
+		})
+		if err == nil {
+			return nil
+		}
+
+		_, err = s.client.CreateBucket(ctx, &s3Service.CreateBucketInput{
+			Bucket: aws.String(s.bucket),
+		})
+		if err == nil {
+			return nil
+		}
+
+		errStr := err.Error()
+		if strings.Contains(errStr, "BucketAlreadyOwnedByYou") || strings.Contains(errStr, "BucketAlreadyExists") {
+			return nil
+		}
+
+		lastErr = err
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(1 * time.Second):
+		}
+	}
+	return fmt.Errorf("failed to ensure s3 bucket %s: %w", s.bucket, lastErr)
 }
 

@@ -29,6 +29,7 @@ func (h *Handler) respondDomainError(c echo.Context, err error) error {
 	case errors.Is(err, domainProject.ErrInvalidProjectName),
 		errors.Is(err, domainProject.ErrInvalidProjectColor),
 		errors.Is(err, domainProject.ErrInvalidBoardName),
+		errors.Is(err, domainProject.ErrInvalidBoardID),
 		errors.Is(err, domainProject.ErrInvalidColumnName),
 		errors.Is(err, domainProject.ErrInvalidStatusCategory),
 		errors.Is(err, domainProject.ErrInvalidPosition):
@@ -238,7 +239,7 @@ func (h *Handler) UpdateBoardColumn(ctx echo.Context, workspaceId openapi_types.
 	}
 	col, err := h.projectService.UpdateColumn(ctx.Request().Context(), projectApp.UpdateColumnInput{
 		WorkspaceID:    workspaceId,
-		BoardID:        boardId,
+		BoardID:        req.BoardId,
 		ColumnID:       columnId,
 		Name:           name,
 		Position:       pos,

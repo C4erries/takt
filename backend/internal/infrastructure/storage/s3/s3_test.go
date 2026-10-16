@@ -20,6 +20,8 @@ type mockS3Client struct {
 	putObjectFunc    func(ctx context.Context, params *s3Service.PutObjectInput, optFns ...func(*s3Service.Options)) (*s3Service.PutObjectOutput, error)
 	getObjectFunc    func(ctx context.Context, params *s3Service.GetObjectInput, optFns ...func(*s3Service.Options)) (*s3Service.GetObjectOutput, error)
 	deleteObjectFunc func(ctx context.Context, params *s3Service.DeleteObjectInput, optFns ...func(*s3Service.Options)) (*s3Service.DeleteObjectOutput, error)
+	headBucketFunc   func(ctx context.Context, params *s3Service.HeadBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.HeadBucketOutput, error)
+	createBucketFunc func(ctx context.Context, params *s3Service.CreateBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.CreateBucketOutput, error)
 }
 
 func (m *mockS3Client) PutObject(ctx context.Context, params *s3Service.PutObjectInput, optFns ...func(*s3Service.Options)) (*s3Service.PutObjectOutput, error) {
@@ -41,6 +43,20 @@ func (m *mockS3Client) DeleteObject(ctx context.Context, params *s3Service.Delet
 		return m.deleteObjectFunc(ctx, params, optFns...)
 	}
 	return &s3Service.DeleteObjectOutput{}, nil
+}
+
+func (m *mockS3Client) HeadBucket(ctx context.Context, params *s3Service.HeadBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.HeadBucketOutput, error) {
+	if m.headBucketFunc != nil {
+		return m.headBucketFunc(ctx, params, optFns...)
+	}
+	return &s3Service.HeadBucketOutput{}, nil
+}
+
+func (m *mockS3Client) CreateBucket(ctx context.Context, params *s3Service.CreateBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.CreateBucketOutput, error) {
+	if m.createBucketFunc != nil {
+		return m.createBucketFunc(ctx, params, optFns...)
+	}
+	return &s3Service.CreateBucketOutput{}, nil
 }
 
 func TestStorage_PutObject(t *testing.T) {
@@ -198,4 +214,36 @@ func TestStorage_DeleteObject(t *testing.T) {
 		})
 	}
 }
+
+func TestStorage_EnsureBucket(t *testing.T) {
+	t.Run("bucket already exists via HeadBucket", func(t *testing.T) {
+		mockClient := &mockS3Client{
+			headBucketFunc: func(ctx context.Context, params *s3Service.HeadBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.HeadBucketOutput, error) {
+				assert.Equal(t, "test-bucket", *params.Bucket)
+				return &s3Service.HeadBucketOutput{}, nil
+			},
+		}
+
+		storage := s3.NewStorageWithClient(mockClient, "test-bucket")
+		err := storage.EnsureBucket(context.Background())
+		require.NoError(t, err)
+	})
+
+	t.Run("bucket created via CreateBucket when HeadBucket fails", func(t *testing.T) {
+		mockClient := &mockS3Client{
+			headBucketFunc: func(ctx context.Context, params *s3Service.HeadBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.HeadBucketOutput, error) {
+				return nil, errors.New("not found")
+			},
+			createBucketFunc: func(ctx context.Context, params *s3Service.CreateBucketInput, optFns ...func(*s3Service.Options)) (*s3Service.CreateBucketOutput, error) {
+				assert.Equal(t, "test-bucket", *params.Bucket)
+				return &s3Service.CreateBucketOutput{}, nil
+			},
+		}
+
+		storage := s3.NewStorageWithClient(mockClient, "test-bucket")
+		err := storage.EnsureBucket(context.Background())
+		require.NoError(t, err)
+	})
+}
+
 

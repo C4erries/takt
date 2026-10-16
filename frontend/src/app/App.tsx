@@ -13,6 +13,7 @@ import {
 import { PanelLeftOpen } from 'lucide-react';
 import { QuickCaptureModal } from '@/features/quick-capture';
 import { Sidebar } from '@/widgets/sidebar';
+import { BoardsRail } from '@/widgets/boards-panel';
 import { MainSheet } from '@/widgets/main-sheet';
 import { TaskDrawer } from '@/widgets/task-drawer';
 import { UiCatalog } from './components/UiCatalog';
@@ -38,6 +39,10 @@ export const App: React.FC = () => {
     setActiveNav,
     selectedProjectId,
     selectedDateFilter,
+    activeBoardId,
+    setActiveBoardId,
+    isBoardsPanelCollapsed,
+    toggleBoardsPanel,
   } = useTaskStore();
 
   const {
@@ -77,85 +82,39 @@ export const App: React.FC = () => {
     });
   };
 
-  // Global hotkey '[' for Sidebar toggle
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        isQuickCaptureOpen ||
-        isAuthModalOpen ||
-        isAutomationsModalOpen ||
-        isCommandPaletteOpen ||
-        showUiCatalog
-      )
-        return;
-
-      const target = e.target as HTMLElement | null;
-      const isInput =
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
-
-      if (isInput) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-
-      if (e.key === '[') {
-        e.preventDefault();
-        toggleSidebar();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    isQuickCaptureOpen,
-    isAuthModalOpen,
-    isAutomationsModalOpen,
-    isCommandPaletteOpen,
-    showUiCatalog,
-  ]);
-
-  // Invalidate tasks query when user auth state changes
-  useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
-  }, [user, queryClient]);
-
-  // Global hotkey Cmd+K / Ctrl+K for Command Palette
+  // Global hotkeys: Cmd+K (Palette), '[' (Sidebar), 'c' (Quick Capture)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         setIsCommandPaletteOpen((prev) => !prev);
+        return;
       }
-    };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+      const isInput =
+        e.target instanceof HTMLElement &&
+        (e.target.tagName === 'INPUT' ||
+          e.target.tagName === 'TEXTAREA' ||
+          e.target.isContentEditable);
 
-  // Global hotkey 'c' for Quick Capture
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
       if (
+        isInput ||
         isQuickCaptureOpen ||
         isAuthModalOpen ||
         isAutomationsModalOpen ||
         isCommandPaletteOpen ||
-        showUiCatalog
-      )
+        showUiCatalog ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey
+      ) {
         return;
+      }
 
-      const target = e.target as HTMLElement | null;
-      const isInput =
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable);
-
-      if (isInput) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-
-      if (e.key === 'c' || e.key === 'C') {
+      if (e.key === '[') {
+        e.preventDefault();
+        toggleSidebar();
+      } else if (e.key === 'c' || e.key === 'C') {
         e.preventDefault();
         setQuickCaptureOpen(true);
       }
@@ -172,10 +131,20 @@ export const App: React.FC = () => {
     setQuickCaptureOpen,
   ]);
 
+  // Invalidate tasks query when user auth state changes
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
+  }, [user, queryClient]);
+
+  const isProjectNav = activeNav.startsWith('project:') || Boolean(selectedProjectId);
+  const activeProjectId =
+    selectedProjectId ||
+    (activeNav.startsWith('project:') ? activeNav.replace('project:', '') : null);
+
   let currentNavTasks =
     activeNav === 'today'
       ? todayTasks
-      : selectedProjectId
+      : isProjectNav
       ? projectTasks
       : tasks;
 
@@ -191,10 +160,9 @@ export const App: React.FC = () => {
   });
 
   const allAvailableTasks = [...tasks, ...todayTasks, ...projectTasks];
-  const selectedTask =
-    (selectedTaskId ? allAvailableTasks.find((t) => t.id === selectedTaskId) : null) ??
-    currentNavTasks[selectedIndex] ??
-    null;
+  const selectedTask = selectedTaskId
+    ? allAvailableTasks.find((t) => t.id === selectedTaskId) ?? null
+    : null;
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex">
@@ -230,6 +198,18 @@ export const App: React.FC = () => {
             [
           </span>
         </button>
+      )}
+
+      {/* Boards Sub-Navigation Rail (WEEEK-style, 220px) */}
+      {!showUiCatalog && isProjectNav && activeProjectId && (
+        <BoardsRail
+          workspaceId={workspace?.id}
+          projectId={activeProjectId}
+          activeBoardId={activeBoardId}
+          onSelectBoard={setActiveBoardId}
+          isCollapsed={isBoardsPanelCollapsed}
+          onToggleCollapse={toggleBoardsPanel}
+        />
       )}
 
       {/* Main Content Area */}
@@ -278,7 +258,7 @@ export const App: React.FC = () => {
           </div>
         </main>
       ) : (
-        <main className="flex-1 h-full flex justify-center px-2 md:px-4 overflow-hidden w-full max-w-full">
+        <main className="flex-1 h-full flex overflow-hidden w-full max-w-full px-2 md:px-4">
           {/* Center Washi Sheet (100% available canvas) */}
           <MainSheet
             tasks={tasks}

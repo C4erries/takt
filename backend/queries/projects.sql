@@ -89,6 +89,14 @@ SET name = $2,
 WHERE id = $1
 RETURNING *;
 
+-- name: MoveColumnToBoard :one
+UPDATE columns
+SET board_id = $2,
+    position = $3,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING *;
+
 -- name: DeleteColumn :exec
 DELETE FROM columns
 WHERE id = $1;

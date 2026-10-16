@@ -23,6 +23,7 @@ import (
 type mockProjectService struct {
 	createProjectFn func(ctx context.Context, input projectApp.CreateProjectInput) (*domainProject.Project, error)
 	getProjectsFn   func(ctx context.Context, wsID uuid.UUID) ([]*domainProject.Project, error)
+	updateColumnFn  func(ctx context.Context, input projectApp.UpdateColumnInput) (*domainProject.Column, error)
 	deleteColumnFn  func(ctx context.Context, boardID, colID, wsID uuid.UUID) error
 	moveTaskFn      func(ctx context.Context, input projectApp.MoveTaskInput) (*domainTask.Task, error)
 }
@@ -70,6 +71,9 @@ func (m *mockProjectService) CreateColumn(ctx context.Context, input projectApp.
 }
 
 func (m *mockProjectService) UpdateColumn(ctx context.Context, input projectApp.UpdateColumnInput) (*domainProject.Column, error) {
+	if m.updateColumnFn != nil {
+		return m.updateColumnFn(ctx, input)
+	}
 	return nil, nil
 }
 
@@ -222,3 +226,99 @@ func TestHandler_MoveTask(t *testing.T) {
 	assert.Equal(t, float64(1500), resp.Position)
 	assert.Equal(t, &colID, resp.ColumnId)
 }
+
+func TestHandler_UpdateBoardColumn(t *testing.T) {
+	wsID := uuid.New()
+	boardID := uuid.New()
+	targetBoardID := uuid.New()
+	colID := uuid.New()
+	now := time.Now().UTC()
+
+	testCases := []struct {
+		name       string
+		body       string
+		mockFn     func(ctx context.Context, input projectApp.UpdateColumnInput) (*domainProject.Column, error)
+		wantStatus int
+		wantCode   string
+	}{
+		{
+			name: "successful update column with board move",
+			body: `{"name":"Готово к релизу","boardId":"` + targetBoardID.String() + `","position":4000.0}`,
+			mockFn: func(ctx context.Context, input projectApp.UpdateColumnInput) (*domainProject.Column, error) {
+				assert.Equal(t, wsID, input.WorkspaceID)
+				assert.Equal(t, colID, input.ColumnID)
+				require.NotNil(t, input.BoardID)
+				assert.Equal(t, targetBoardID, *input.BoardID)
+				assert.Equal(t, "Готово к релизу", input.Name)
+				assert.Equal(t, 4000.0, input.Position)
+
+				return &domainProject.Column{
+					ID:             colID,
+					BoardID:        targetBoardID,
+					Name:           input.Name,
+					Position:       input.Position,
+					StatusCategory: domainProject.StatusCategoryDone,
+					CreatedAt:      now,
+					UpdatedAt:      now,
+				}, nil
+			},
+			wantStatus: http.StatusOK,
+		},
+		{
+			name: "error invalid board ID",
+			body: `{"boardId":"00000000-0000-0000-0000-000000000000"}`,
+			mockFn: func(ctx context.Context, input projectApp.UpdateColumnInput) (*domainProject.Column, error) {
+				return nil, domainProject.ErrInvalidBoardID
+			},
+			wantStatus: http.StatusBadRequest,
+			wantCode:   "BAD_REQUEST",
+		},
+		{
+			name: "error target board not found",
+			body: `{"boardId":"` + targetBoardID.String() + `"}`,
+			mockFn: func(ctx context.Context, input projectApp.UpdateColumnInput) (*domainProject.Column, error) {
+				return nil, domainProject.ErrBoardNotFound
+			},
+			wantStatus: http.StatusNotFound,
+			wantCode:   "BOARD_NOT_FOUND",
+		},
+		{
+			name: "error access denied on target board",
+			body: `{"boardId":"` + targetBoardID.String() + `"}`,
+			mockFn: func(ctx context.Context, input projectApp.UpdateColumnInput) (*domainProject.Column, error) {
+				return nil, domainProject.ErrAccessDenied
+			},
+			wantStatus: http.StatusForbidden,
+			wantCode:   "FORBIDDEN",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockSvc := &mockProjectService{updateColumnFn: tc.mockFn}
+			handler := NewHandler(nil, "0.3.1", false, nil, nil, mockSvc, nil)
+
+			e := echo.New()
+			req := httptest.NewRequest(
+				http.MethodPatch,
+				"/api/v1/workspaces/"+wsID.String()+"/boards/"+boardID.String()+"/columns/"+colID.String(),
+				bytes.NewReader([]byte(tc.body)),
+			)
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			err := handler.UpdateBoardColumn(c, wsID, boardID, colID)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantStatus, rec.Code)
+
+			if tc.wantCode != "" {
+				var errResp generated.Error
+				err = json.Unmarshal(rec.Body.Bytes(), &errResp)
+				require.NoError(t, err)
+				assert.Equal(t, tc.wantCode, errResp.Code)
+			}
+		})
+	}
+}
+

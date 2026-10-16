@@ -144,3 +144,74 @@ func TestColumn_Update(t *testing.T) {
 	})
 }
 
+func TestColumn_MoveToBoard(t *testing.T) {
+	initialBoardID := uuid.New()
+	targetBoardID := uuid.New()
+
+	testCases := []struct {
+		name        string
+		newBoardID  uuid.UUID
+		newPosition float64
+		wantErr     error
+		verify      func(t *testing.T, col *Column)
+	}{
+		{
+			name:        "successful move to target board",
+			newBoardID:  targetBoardID,
+			newPosition: 5000.0,
+			wantErr:     nil,
+			verify: func(t *testing.T, col *Column) {
+				assert.Equal(t, targetBoardID, col.BoardID)
+				assert.Equal(t, 5000.0, col.Position)
+			},
+		},
+		{
+			name:        "error on nil board ID",
+			newBoardID:  uuid.Nil,
+			newPosition: 5000.0,
+			wantErr:     ErrInvalidBoardID,
+			verify: func(t *testing.T, col *Column) {
+				assert.Equal(t, initialBoardID, col.BoardID)
+			},
+		},
+		{
+			name:        "error on zero position",
+			newBoardID:  targetBoardID,
+			newPosition: 0.0,
+			wantErr:     ErrInvalidPosition,
+			verify: func(t *testing.T, col *Column) {
+				assert.Equal(t, initialBoardID, col.BoardID)
+				assert.Equal(t, 1000.0, col.Position)
+			},
+		},
+		{
+			name:        "error on negative position",
+			newBoardID:  targetBoardID,
+			newPosition: -100.0,
+			wantErr:     ErrInvalidPosition,
+			verify: func(t *testing.T, col *Column) {
+				assert.Equal(t, initialBoardID, col.BoardID)
+				assert.Equal(t, 1000.0, col.Position)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			col, err := NewColumn(initialBoardID, "К выполнению", 1000.0, StatusCategoryTodo)
+			require.NoError(t, err)
+
+			err = col.MoveToBoard(tc.newBoardID, tc.newPosition)
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			if tc.verify != nil {
+				tc.verify(t, col)
+			}
+		})
+	}
+}
+
+

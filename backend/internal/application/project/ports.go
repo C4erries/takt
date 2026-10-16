@@ -38,6 +38,7 @@ type ColumnRepository interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*domainProject.Column, error)
 	ListByBoard(ctx context.Context, boardID uuid.UUID) ([]*domainProject.Column, error)
 	Update(ctx context.Context, c *domainProject.Column) error
+	MoveToBoard(ctx context.Context, columnID, newBoardID uuid.UUID, newPosition float64) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	CountTasksInColumn(ctx context.Context, columnID uuid.UUID) (int64, error)
 }

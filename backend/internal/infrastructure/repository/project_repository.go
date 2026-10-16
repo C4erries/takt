@@ -263,6 +263,22 @@ func (r *ColumnRepository) Update(ctx context.Context, c *domainProject.Column) 
 	return nil
 }
 
+func (r *ColumnRepository) MoveToBoard(ctx context.Context, columnID, newBoardID uuid.UUID, newPosition float64) error {
+	q := getQuerier(ctx, r.queries)
+	_, err := q.MoveColumnToBoard(ctx, sqlc.MoveColumnToBoardParams{
+		ID:       uuidToPg(columnID),
+		BoardID:  uuidToPg(newBoardID),
+		Position: newPosition,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domainProject.ErrColumnNotFound
+		}
+		return err
+	}
+	return nil
+}
+
 func (r *ColumnRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	q := getQuerier(ctx, r.queries)
 	return q.DeleteColumn(ctx, uuidToPg(id))
@@ -357,30 +373,5 @@ func (r *TaskMoveRepository) ListTasksByColumn(ctx context.Context, columnID, wo
 		res = append(res, mapTaskRowToDomain(row))
 	}
 	return res, nil
-}
-
-// mappers
-func mapProjectRowToDomain(row sqlc.Project) *domainProject.Project {
-	return &domainProject.Project{
-		ID: pgToUUID(row.ID), WorkspaceID: pgToUUID(row.WorkspaceID),
-		Name: row.Name, Description: row.Description, Color: row.Color,
-		CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
-	}
-}
-
-func mapBoardRowToDomain(row sqlc.Board) *domainProject.Board {
-	return &domainProject.Board{
-		ID: pgToUUID(row.ID), ProjectID: pgToUUID(row.ProjectID),
-		Name: row.Name, CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
-	}
-}
-
-func mapColumnRowToDomain(row sqlc.Column) *domainProject.Column {
-	return &domainProject.Column{
-		ID: pgToUUID(row.ID), BoardID: pgToUUID(row.BoardID),
-		Name: row.Name, Position: row.Position,
-		StatusCategory: domainProject.StatusCategory(row.StatusCategory),
-		CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
-	}
 }
 

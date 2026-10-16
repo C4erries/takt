@@ -248,6 +248,7 @@ erDiagram
 | **Features: Workspace Switcher**| `src/features/workspace-switcher`| Выпадающее меню переключения воркспейсов и модал создания. |
 | **Features: Workspace Members** | `src/features/workspace-members` | Управление участниками, генерация инвайт-ссылок и принятие. |
 | **Widgets: Sidebar** | `src/widgets/sidebar` | Сворачиваемая навигация (Inbox, Today, Someday, Projects, встроенный MiniCalendar). |
+| **Widgets: Boards Rail** | `src/widgets/boards-panel` | Сворачиваемая промежуточная панель мульти-досок WEEEK-style (220px, создание, счетчики). |
 | **Widgets: Main Sheet** | `src/widgets/main-sheet` | 100% Canvas холст (разлинованный список задач или Канбан-доска). |
 | **Widgets: Task Drawer**| `src/widgets/task-drawer`| Выдвижная шторка деталей задачи 560px с Non-modal режимом и быстрыми капсулами. |
 | **Widgets: Mini Calendar** | `src/widgets/mini-calendar` | Компактная сетка матричного календаря, интегрированная в сайдбар. |

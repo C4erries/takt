@@ -56,6 +56,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      {...(!isOverlay ? { ...attributes, ...listeners } : {})}
       onClick={() => onSelect?.(task.id)}
       className={cn(
         'group relative bg-surface border border-subtle rounded-lg p-3 select-none transition-shadow duration-150',
@@ -63,22 +64,24 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         isSelected && 'ring-1 ring-accent-solid/30 bg-accent-surface/30',
         isDragging && 'opacity-30 border-dashed border-subtle/80 shadow-none',
         isOverlay && 'shadow-washi-modal ring-1 ring-accent-solid/40 rotate-1 cursor-grabbing bg-surface',
-        !isOverlay && 'cursor-pointer'
+        !isOverlay && 'cursor-grab active:cursor-grabbing'
       )}
     >
       <div className="flex items-start gap-2.5">
         {/* Drag handle */}
         <div
-          {...attributes}
-          {...listeners}
-          className="mt-0.5 text-muted/40 hover:text-muted cursor-grab active:cursor-grabbing p-0.5 -ml-1 rounded transition-colors"
+          className="mt-0.5 text-muted/40 group-hover:text-muted/70 p-0.5 -ml-1 rounded transition-colors"
           title="Перетащить карточку"
         >
           <GripVertical className="w-3.5 h-3.5" />
         </div>
 
         {/* Round 18px GTD Checkbox */}
-        <div className="pt-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="pt-0.5 shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <Checkbox
             checked={task.isCompleted}
             onChange={() => onToggle?.(task.id)}

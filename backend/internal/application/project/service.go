@@ -137,7 +137,20 @@ func (s *Service) CreateBoard(ctx context.Context, projectID, workspaceID uuid.U
 		return nil, err
 	}
 
-	if err := s.boardRepo.Create(ctx, b); err != nil {
+	err = s.transactor.WithinTx(ctx, func(txCtx context.Context) error {
+		if err := s.boardRepo.Create(txCtx, b); err != nil {
+			return err
+		}
+
+		cols := domainProject.NewDefaultColumns(b.ID)
+		for _, col := range cols {
+			if err := s.columnRepo.Create(txCtx, col); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 
@@ -190,7 +203,12 @@ func (s *Service) CreateColumn(ctx context.Context, input CreateColumnInput) (*d
 }
 
 func (s *Service) UpdateColumn(ctx context.Context, input UpdateColumnInput) (*domainProject.Column, error) {
-	b, err := s.boardRepo.GetByID(ctx, input.BoardID)
+	col, err := s.columnRepo.GetByID(ctx, input.ColumnID)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := s.boardRepo.GetByID(ctx, col.BoardID)
 	if err != nil {
 		return nil, err
 	}
@@ -199,17 +217,47 @@ func (s *Service) UpdateColumn(ctx context.Context, input UpdateColumnInput) (*d
 		return nil, err
 	}
 
-	col, err := s.columnRepo.GetByID(ctx, input.ColumnID)
-	if err != nil {
-		return nil, err
+	isMoved := false
+	if input.BoardID != nil && *input.BoardID != col.BoardID {
+		isMoved = true
+		if *input.BoardID == uuid.Nil {
+			return nil, domainProject.ErrInvalidBoardID
+		}
+		targetBoard, err := s.boardRepo.GetByID(ctx, *input.BoardID)
+		if err != nil {
+			return nil, err
+		}
+		if targetBoard.ProjectID != b.ProjectID {
+			return nil, domainProject.ErrAccessDenied
+		}
+
+		newPos := col.Position
+		if input.Position > 0 {
+			newPos = input.Position
+		}
+
+		if err := col.MoveToBoard(*input.BoardID, newPos); err != nil {
+			return nil, err
+		}
+
+		if err := s.columnRepo.MoveToBoard(ctx, col.ID, *input.BoardID, newPos); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := col.Update(input.Name, input.Position, input.StatusCategory); err != nil {
-		return nil, err
+	posForUpdate := input.Position
+	if isMoved {
+		posForUpdate = 0
 	}
 
-	if err := s.columnRepo.Update(ctx, col); err != nil {
-		return nil, err
+	if input.Name != "" || posForUpdate > 0 || input.StatusCategory != "" {
+		if err := col.Update(input.Name, posForUpdate, input.StatusCategory); err != nil {
+			return nil, err
+		}
+
+		if err := s.columnRepo.Update(ctx, col); err != nil {
+			return nil, err
+		}
 	}
 
 	return col, nil

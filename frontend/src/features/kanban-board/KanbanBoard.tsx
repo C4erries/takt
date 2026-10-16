@@ -4,6 +4,7 @@ import {
   DragOverlay,
   closestCorners,
 } from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { Skeleton, EmptyState, ErrorBanner } from '@/shared/components/ui';
 import { LayoutGrid } from 'lucide-react';
 import {
@@ -11,6 +12,7 @@ import {
   useBoardColumnsQuery,
   useProjectTasksQuery,
   useMoveTaskMutation,
+  useReorderColumnMutation,
 } from '@/entities/project';
 import { useToggleTaskMutation } from '@/features/task-navigation';
 import type { Task } from '@/shared/api';
@@ -20,6 +22,7 @@ import { useKanbanDnd } from './useKanbanDnd';
 
 export interface KanbanBoardProps {
   projectId: string;
+  activeBoardId?: string | null;
   workspaceId?: string;
   onSelectTask?: (taskId: string) => void;
   selectedTaskId?: string | null;
@@ -29,6 +32,7 @@ export interface KanbanBoardProps {
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   projectId,
+  activeBoardId,
   workspaceId,
   onSelectTask,
   selectedTaskId,
@@ -36,15 +40,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   filteredTasks,
 }) => {
   const boardsQuery = useProjectBoardsQuery(workspaceId, projectId);
-  const activeBoard = boardsQuery.data?.[0];
+  const activeBoard =
+    (activeBoardId
+      ? boardsQuery.data?.find((b) => b.id === activeBoardId)
+      : null) ?? boardsQuery.data?.[0];
 
   const columnsQuery = useBoardColumnsQuery(workspaceId, activeBoard?.id);
-  const columns = columnsQuery.data ?? [];
+  const columns = [...(columnsQuery.data ?? [])].sort((a, b) => a.position - b.position);
 
   const tasksQuery = useProjectTasksQuery(workspaceId, projectId);
   const tasks = filteredTasks ?? tasksQuery.data ?? [];
 
   const moveTaskMutation = useMoveTaskMutation(workspaceId, projectId);
+  const reorderColumnMutation = useReorderColumnMutation(workspaceId, activeBoard?.id);
   const toggleTaskMutation = useToggleTaskMutation();
 
   const handleMoveTask = (taskId: string, columnId: string, position: number) => {
@@ -58,8 +66,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     });
   };
 
+  const handleReorderColumn = (columnId: string, position: number) => {
+    reorderColumnMutation.mutate({
+      columnId,
+      position,
+    });
+  };
+
   const {
     activeTask,
+    activeColumn,
     sensors,
     handleDragStart,
     handleDragEnd,
@@ -68,6 +84,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     tasks,
     columns,
     onMoveTask: handleMoveTask,
+    onReorderColumn: handleReorderColumn,
   });
 
   const isLoading = boardsQuery.isLoading || columnsQuery.isLoading || tasksQuery.isLoading;
@@ -141,28 +158,45 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4 h-full min-h-[360px] items-start">
-        {columns.map((column) => {
-          const columnTasks = tasks
-            .filter((t) => t.columnId === column.id)
-            .sort((a, b) => a.position - b.position);
+      <SortableContext
+        items={columns.map((c) => c.id)}
+        strategy={horizontalListSortingStrategy}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-4 h-full min-h-[360px] items-start">
+          {columns.map((column) => {
+            const columnTasks = tasks
+              .filter((t) => t.columnId === column.id)
+              .sort((a, b) => a.position - b.position);
 
-          return (
-            <KanbanColumn
-              key={column.id}
-              column={column}
-              tasks={columnTasks}
-              selectedTaskId={selectedTaskId}
-              onSelectTask={onSelectTask}
-              onToggleTask={(id) => toggleTaskMutation.mutate(id)}
-              onCreateTask={onCreateTaskInColumn}
-            />
-          );
-        })}
-      </div>
+            return (
+              <KanbanColumn
+                key={column.id}
+                column={column}
+                tasks={columnTasks}
+                projectId={projectId}
+                workspaceId={workspaceId}
+                selectedTaskId={selectedTaskId}
+                onSelectTask={onSelectTask}
+                onToggleTask={(id) => toggleTaskMutation.mutate(id)}
+                onCreateTask={onCreateTaskInColumn}
+              />
+            );
+          })}
+        </div>
+      </SortableContext>
 
       <DragOverlay dropAnimation={null}>
-        {activeTask ? (
+        {activeColumn ? (
+          <KanbanColumn
+            column={activeColumn}
+            tasks={tasks
+              .filter((t) => t.columnId === activeColumn.id)
+              .sort((a, b) => a.position - b.position)}
+            projectId={projectId}
+            workspaceId={workspaceId}
+            isOverlay
+          />
+        ) : activeTask ? (
           <KanbanCard task={activeTask} isOverlay />
         ) : null}
       </DragOverlay>

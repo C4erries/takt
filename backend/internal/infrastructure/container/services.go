@@ -1,6 +1,7 @@
 package container
 
 import (
+	"context"
 	"log"
 
 	attachmentApp "takt/internal/application/attachment"
@@ -86,6 +87,11 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 			log.Printf("[WARN] Failed to initialize S3 storage adapter: %v", err)
 		} else {
 			s3Storage = storageInstance
+			go func() {
+				if err := s3Storage.EnsureBucket(context.Background()); err != nil {
+					log.Printf("[WARN] Failed to ensure S3 bucket exists: %v", err)
+				}
+			}()
 		}
 	}
 

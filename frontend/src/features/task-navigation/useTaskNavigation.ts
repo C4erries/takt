@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import type { Task } from '@/shared/api';
 import { useTaskStore } from './taskStore';
 
@@ -21,27 +21,28 @@ export const useTaskNavigation = ({
   isEnabled = true,
 }: UseTaskNavigationProps): UseTaskNavigationReturn => {
   const { selectedTaskId, setSelectedTaskId } = useTaskStore();
+  const [cursorIndex, setCursorIndex] = useState<number>(0);
 
-  const selectedIndex = useMemo(() => {
-    if (tasks.length === 0) return 0;
-    if (!selectedTaskId) return 0;
-    const idx = tasks.findIndex((t) => t.id === selectedTaskId);
-    return idx >= 0 ? idx : 0;
-  }, [tasks, selectedTaskId]);
-
+  // Keep cursorIndex valid when tasks list changes
   useEffect(() => {
-    if (tasks.length > 0) {
-      const exists = tasks.some((t) => t.id === selectedTaskId);
-      if (!exists && tasks[0]) {
-        setSelectedTaskId(tasks[0].id);
-      }
-    } else if (selectedTaskId !== null) {
-      setSelectedTaskId(null);
+    if (cursorIndex >= tasks.length && tasks.length > 0) {
+      setCursorIndex(tasks.length - 1);
     }
-  }, [tasks, selectedTaskId, setSelectedTaskId]);
+  }, [tasks.length, cursorIndex]);
+
+  // Sync cursorIndex with selectedTaskId if selectedTaskId exists in tasks
+  useEffect(() => {
+    if (selectedTaskId) {
+      const idx = tasks.findIndex((t) => t.id === selectedTaskId);
+      if (idx >= 0) {
+        setCursorIndex(idx);
+      }
+    }
+  }, [selectedTaskId, tasks]);
 
   const setSelectedIndex = useCallback(
     (index: number) => {
+      setCursorIndex(index);
       if (tasks[index]) {
         setSelectedTaskId(tasks[index].id);
       }
@@ -67,24 +68,36 @@ export const useTaskNavigation = ({
 
       if (key === 'j' || key === 'J' || key === 'ArrowDown') {
         e.preventDefault();
-        const nextIndex = Math.min(selectedIndex + 1, tasks.length - 1);
-        if (tasks[nextIndex]) {
+        const nextIndex = Math.min(cursorIndex + 1, tasks.length - 1);
+        setCursorIndex(nextIndex);
+        if (selectedTaskId && tasks[nextIndex]) {
           setSelectedTaskId(tasks[nextIndex].id);
         }
       } else if (key === 'k' || key === 'K' || key === 'ArrowUp') {
         e.preventDefault();
-        const prevIndex = Math.max(selectedIndex - 1, 0);
-        if (tasks[prevIndex]) {
+        const prevIndex = Math.max(cursorIndex - 1, 0);
+        setCursorIndex(prevIndex);
+        if (selectedTaskId && tasks[prevIndex]) {
           setSelectedTaskId(tasks[prevIndex].id);
         }
-      } else if (key === ' ' || key === 'x' || key === 'X') {
-        if (onToggleTask && tasks[selectedIndex]) {
+      } else if (key === 'Enter') {
+        if (tasks[cursorIndex]) {
           e.preventDefault();
-          onToggleTask(tasks[selectedIndex].id);
+          setSelectedTaskId(tasks[cursorIndex].id);
+        }
+      } else if (key === 'Escape') {
+        if (selectedTaskId) {
+          e.preventDefault();
+          setSelectedTaskId(null);
+        }
+      } else if (key === ' ' || key === 'x' || key === 'X') {
+        if (onToggleTask && tasks[cursorIndex]) {
+          e.preventDefault();
+          onToggleTask(tasks[cursorIndex].id);
         }
       }
     },
-    [isEnabled, tasks, selectedIndex, setSelectedTaskId, onToggleTask]
+    [isEnabled, tasks, cursorIndex, selectedTaskId, setSelectedTaskId, onToggleTask]
   );
 
   useEffect(() => {
@@ -94,12 +107,10 @@ export const useTaskNavigation = ({
     };
   }, [handleKeyDown]);
 
-  const currentSelectedTaskId = tasks[selectedIndex]?.id ?? selectedTaskId;
-
   return {
-    selectedIndex,
+    selectedIndex: cursorIndex,
     setSelectedIndex,
-    selectedTaskId: currentSelectedTaskId,
+    selectedTaskId,
     setSelectedTaskId,
   };
 };

@@ -597,6 +597,9 @@ type ToggleAutomationRequest struct {
 
 // UpdateColumnRequest defines model for UpdateColumnRequest.
 type UpdateColumnRequest struct {
+	// BoardId Example: b0000000-0000-0000-0000-000000000001
+	BoardId *openapi_types.UUID `json:"boardId,omitempty"`
+
 	// Name Example: В работе
 	Name *string `json:"name,omitempty"`
 

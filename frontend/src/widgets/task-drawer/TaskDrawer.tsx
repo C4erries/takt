@@ -7,7 +7,7 @@ import {
   Trash2,
   FolderClosed,
 } from 'lucide-react';
-import type { Priority, Tag } from '@/shared/api';
+import type { Priority, Tag, Task } from '@/shared/api';
 import {
   useUpdateTaskMutation,
   useSetTaskFocusMutation,
@@ -43,6 +43,12 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 }) => {
   const isOpen = Boolean(task);
 
+  const lastTaskRef = useRef<Task | null>(task);
+  if (task) {
+    lastTaskRef.current = task;
+  }
+  const currentTask = task || lastTaskRef.current;
+
   const updateTaskMutation = useUpdateTaskMutation(workspaceId);
   const setFocusMutation = useSetTaskFocusMutation(workspaceId);
   const { data: allTags = [] } = useWorkspaceTagsQuery(workspaceId);
@@ -51,15 +57,15 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   const removeTagMutation = useRemoveTagFromTaskMutation(workspaceId);
   const { data: projects = [] } = useProjectsQuery(workspaceId);
 
-  const boardsQuery = useProjectBoardsQuery(workspaceId, task?.projectId ?? undefined);
+  const boardsQuery = useProjectBoardsQuery(workspaceId, currentTask?.projectId ?? undefined);
   const activeBoard = boardsQuery.data?.[0];
   const columnsQuery = useBoardColumnsQuery(workspaceId, activeBoard?.id);
   const columns = columnsQuery.data ?? [];
-  const moveTaskMutation = useMoveTaskMutation(workspaceId, task?.projectId ?? undefined);
+  const moveTaskMutation = useMoveTaskMutation(workspaceId, currentTask?.projectId ?? undefined);
 
-  const uploadAttachmentMutation = useUploadAttachmentMutation(workspaceId, task?.id);
+  const uploadAttachmentMutation = useUploadAttachmentMutation(workspaceId, currentTask?.id);
 
-  const [title, setTitle] = useState(task?.title ?? '');
+  const [title, setTitle] = useState(currentTask?.title ?? '');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
@@ -67,9 +73,11 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setTitle(task?.title ?? '');
-    setIsEditingTitle(false);
-    setIsAddingTag(false);
+    if (task) {
+      setTitle(task.title ?? '');
+      setIsEditingTitle(false);
+      setIsAddingTag(false);
+    }
   }, [task?.id, task?.title]);
 
   // Закрытие по Escape
@@ -83,38 +91,38 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isEditingTitle, isAddingTag, onClose]);
 
-  if (!task && !isOpen) return null;
+  if (!currentTask) return null;
 
-  const isFocused = task ? task.focusOrder !== null && task.focusOrder !== undefined : false;
+  const isFocused = currentTask.focusOrder !== null && currentTask.focusOrder !== undefined;
 
   const handleTitleBlur = () => {
     setIsEditingTitle(false);
-    if (!task) return;
+    if (!currentTask) return;
     const trimmed = title.trim();
-    if (trimmed && trimmed !== task.title) {
-      updateTaskMutation.mutate({ taskId: task.id, data: { title: trimmed } });
+    if (trimmed && trimmed !== currentTask.title) {
+      updateTaskMutation.mutate({ taskId: currentTask.id, data: { title: trimmed } });
     }
   };
 
   const handleCreateAndAttachTag = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!task) return;
+    if (!currentTask) return;
     const clean = newTagName.trim().replace(/^@/, '');
     if (!clean) return;
 
     const existing = allTags.find((t) => t.name.toLowerCase() === clean.toLowerCase());
     if (existing) {
-      await addTagMutation.mutateAsync({ taskId: task.id, tag: existing });
+      await addTagMutation.mutateAsync({ taskId: currentTask.id, tag: existing });
     } else {
       const created = await createTagMutation.mutateAsync({ name: clean, colorHex: 'matcha' });
-      await addTagMutation.mutateAsync({ taskId: task.id, tag: created });
+      await addTagMutation.mutateAsync({ taskId: currentTask.id, tag: created });
     }
     setNewTagName('');
     setIsAddingTag(false);
   };
 
   const handleUploadImageForNotes = async (file: File): Promise<string | null> => {
-    if (!task) return null;
+    if (!currentTask) return null;
     try {
       const att = await uploadAttachmentMutation.mutateAsync(file);
       return att.contentUrl;
@@ -124,7 +132,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   };
 
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0 && task) {
+    if (e.target.files && e.target.files.length > 0 && currentTask) {
       for (const file of Array.from(e.target.files)) {
         try {
           await uploadAttachmentMutation.mutateAsync(file);
@@ -137,13 +145,13 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   };
 
   const handleColumnChange = (columnId: string) => {
-    if (!task || !columnId) return;
+    if (!currentTask || !columnId) return;
     moveTaskMutation.mutate({
-      taskId: task.id,
+      taskId: currentTask.id,
       data: {
         columnId,
-        position: task.position,
-        projectId: task.projectId ?? undefined,
+        position: currentTask.position,
+        projectId: currentTask.projectId ?? undefined,
       },
     });
   };
@@ -172,7 +180,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
           multiple
         />
 
-        {task ? (
+        {currentTask ? (
           <div className="flex-1 flex flex-col overflow-y-auto p-6 space-y-5">
             {/* Header top bar */}
             <div className="flex items-center justify-between border-b border-subtle/50 pb-3">
@@ -180,7 +188,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 type="button"
                 onClick={() =>
                   setFocusMutation.mutate({
-                    taskId: task.id,
+                    taskId: currentTask.id,
                     focusOrder: isFocused ? null : 1,
                   })
                 }
@@ -209,10 +217,10 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
             <div className="flex items-start gap-3">
               <button
                 type="button"
-                onClick={() => onToggleTask?.(task.id)}
+                onClick={() => onToggleTask?.(currentTask.id)}
                 className="mt-1 text-muted hover:text-accent-solid transition-colors shrink-0"
               >
-                {task.isCompleted ? (
+                {currentTask.isCompleted ? (
                   <CheckCircle2 className="w-5 h-5 text-accent-solid" />
                 ) : (
                   <Circle className="w-5 h-5" />
@@ -229,7 +237,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleTitleBlur();
                       if (e.key === 'Escape') {
-                        setTitle(task.title);
+                        setTitle(currentTask.title);
                         setIsEditingTitle(false);
                       }
                     }}
@@ -239,11 +247,11 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                   <h2
                     onClick={() => setIsEditingTitle(true)}
                     className={`font-serif text-xl font-normal leading-snug cursor-text hover:bg-canvas/30 rounded p-1 -m-1 transition-colors ${
-                      task.isCompleted ? 'line-through text-muted' : 'text-primary'
+                      currentTask.isCompleted ? 'line-through text-muted' : 'text-primary'
                     }`}
                     title="Нажмите для редактирования"
                   >
-                    {task.title}
+                    {currentTask.title}
                   </h2>
                 )}
               </div>
@@ -251,14 +259,14 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
             {/* Quick Action Bar */}
             <QuickActionBar
-              dueDate={task.dueDate}
+              dueDate={currentTask.dueDate}
               onDueDateChange={(date) =>
-                updateTaskMutation.mutate({ taskId: task.id, data: { dueDate: date } })
+                updateTaskMutation.mutate({ taskId: currentTask.id, data: { dueDate: date } })
               }
               onAttachClick={() => fileInputRef.current?.click()}
               onToggleTagInput={() => setIsAddingTag((prev) => !prev)}
               columns={columns}
-              selectedColumnId={task.columnId}
+              selectedColumnId={currentTask.columnId}
               onColumnChange={handleColumnChange}
             />
 
@@ -279,9 +287,9 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
             )}
 
             {/* Tags row */}
-            {task.tags && task.tags.length > 0 && (
+            {currentTask.tags && currentTask.tags.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap">
-                {task.tags.map((tag: Tag) => (
+                {currentTask.tags.map((tag: Tag) => (
                   <span
                     key={tag.id}
                     className="inline-flex items-center gap-1 bg-accent-surface text-primary text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-subtle"
@@ -289,7 +297,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                     #{tag.name}
                     <button
                       type="button"
-                      onClick={() => removeTagMutation.mutate({ taskId: task.id, tag })}
+                      onClick={() => removeTagMutation.mutate({ taskId: currentTask.id, tag })}
                       className="hover:text-muted"
                     >
                       <X className="w-3 h-3" />
@@ -306,13 +314,13 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
               </label>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {PRIORITIES.map((p) => {
-                  const active = task.priority === p.value;
+                  const active = currentTask.priority === p.value;
                   return (
                     <button
                       key={p.value}
                       type="button"
                       onClick={() =>
-                        updateTaskMutation.mutate({ taskId: task.id, data: { priority: p.value } })
+                        updateTaskMutation.mutate({ taskId: currentTask.id, data: { priority: p.value } })
                       }
                       className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
                         active
@@ -333,10 +341,10 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 <FolderClosed className="w-3 h-3" /> Проект
               </label>
               <select
-                value={task.projectId ?? ''}
+                value={currentTask.projectId ?? ''}
                 onChange={(e) =>
                   updateTaskMutation.mutate({
-                    taskId: task.id,
+                    taskId: currentTask.id,
                     data: { projectId: e.target.value || null },
                   })
                 }
@@ -353,25 +361,25 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
             {/* Markdown Notes with Ctrl+V support */}
             <MarkdownNotes
-              initialValue={task.descriptionMarkdown ?? ''}
+              initialValue={currentTask.descriptionMarkdown ?? ''}
               onSave={(val) =>
-                updateTaskMutation.mutate({ taskId: task.id, data: { descriptionMarkdown: val } })
+                updateTaskMutation.mutate({ taskId: currentTask.id, data: { descriptionMarkdown: val } })
               }
               onUploadImage={handleUploadImageForNotes}
             />
 
             {/* Attachments Section */}
-            <TaskAttachments workspaceId={workspaceId} taskId={task.id} />
+            <TaskAttachments workspaceId={workspaceId} taskId={currentTask.id} />
           </div>
         ) : null}
 
         {/* Footer actions */}
-        {task && onDeleteTask && (
+        {currentTask && onDeleteTask && (
           <div className="p-4 border-t border-subtle/50 bg-surface flex items-center justify-between">
             <button
               type="button"
               onClick={() => {
-                onDeleteTask(task.id);
+                onDeleteTask(currentTask.id);
                 onClose();
               }}
               className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-canvas"

@@ -8,6 +8,7 @@ var (
 	ErrInvalidProjectColor   = errors.New("invalid project color")
 	ErrBoardNotFound         = errors.New("board not found")
 	ErrInvalidBoardName      = errors.New("board name must be between 1 and 255 characters")
+	ErrInvalidBoardID        = errors.New("invalid board id")
 	ErrColumnNotFound        = errors.New("column not found")
 	ErrInvalidColumnName     = errors.New("column name must be between 1 and 255 characters")
 	ErrInvalidStatusCategory = errors.New("invalid status category")

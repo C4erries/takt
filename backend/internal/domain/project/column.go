@@ -136,3 +136,17 @@ func (c *Column) Update(name string, position float64, statusCategory StatusCate
 	return nil
 }
 
+func (c *Column) MoveToBoard(newBoardID uuid.UUID, newPosition float64) error {
+	if newBoardID == uuid.Nil {
+		return ErrInvalidBoardID
+	}
+	if newPosition <= 0 {
+		return ErrInvalidPosition
+	}
+
+	c.BoardID = newBoardID
+	c.Position = newPosition
+	c.UpdatedAt = time.Now().UTC()
+	return nil
+}
+

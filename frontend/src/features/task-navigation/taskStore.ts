@@ -13,6 +13,11 @@ export interface TaskNavigationState {
   setActiveNav: (nav: NavDestination) => void;
   selectedProjectId: string | null;
   setSelectedProjectId: (id: string | null) => void;
+  activeBoardId: string | null;
+  setActiveBoardId: (id: string | null) => void;
+  isBoardsPanelCollapsed: boolean;
+  setBoardsPanelCollapsed: (collapsed: boolean) => void;
+  toggleBoardsPanel: () => void;
   viewMode: 'kanban' | 'list';
   setViewMode: (mode: 'kanban' | 'list') => void;
   selectedDateFilter: string | null;
@@ -30,6 +35,22 @@ export const useTaskStore = create<TaskNavigationState>((set) => ({
   setActiveNav: (activeNav) => set({ activeNav }),
   selectedProjectId: null,
   setSelectedProjectId: (selectedProjectId) => set({ selectedProjectId }),
+  activeBoardId: null,
+  setActiveBoardId: (activeBoardId) => set({ activeBoardId }),
+  isBoardsPanelCollapsed:
+    typeof window !== 'undefined'
+      ? localStorage.getItem('takt_boards_panel_collapsed') === 'true'
+      : false,
+  setBoardsPanelCollapsed: (collapsed) => {
+    localStorage.setItem('takt_boards_panel_collapsed', String(collapsed));
+    set({ isBoardsPanelCollapsed: collapsed });
+  },
+  toggleBoardsPanel: () =>
+    set((state) => {
+      const next = !state.isBoardsPanelCollapsed;
+      localStorage.setItem('takt_boards_panel_collapsed', String(next));
+      return { isBoardsPanelCollapsed: next };
+    }),
   viewMode: 'kanban',
   setViewMode: (viewMode) => set({ viewMode }),
   selectedDateFilter: null,

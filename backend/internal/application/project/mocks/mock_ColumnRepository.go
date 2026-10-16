@@ -364,6 +364,75 @@ func (_c *MockColumnRepository_ListByBoard_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// MoveToBoard provides a mock function for the type MockColumnRepository
+func (_mock *MockColumnRepository) MoveToBoard(ctx context.Context, columnID uuid.UUID, newBoardID uuid.UUID, newPosition float64) error {
+	ret := _mock.Called(ctx, columnID, newBoardID, newPosition)
+
+	if len(ret) == 0 {
+		panic("no return value specified for MoveToBoard")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, float64) error); ok {
+		r0 = returnFunc(ctx, columnID, newBoardID, newPosition)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockColumnRepository_MoveToBoard_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'MoveToBoard'
+type MockColumnRepository_MoveToBoard_Call struct {
+	*mock.Call
+}
+
+// MoveToBoard is a helper method to define mock.On call
+//   - ctx context.Context
+//   - columnID uuid.UUID
+//   - newBoardID uuid.UUID
+//   - newPosition float64
+func (_e *MockColumnRepository_Expecter) MoveToBoard(ctx any, columnID any, newBoardID any, newPosition any) *MockColumnRepository_MoveToBoard_Call {
+	return &MockColumnRepository_MoveToBoard_Call{Call: _e.mock.On("MoveToBoard", ctx, columnID, newBoardID, newPosition)}
+}
+
+func (_c *MockColumnRepository_MoveToBoard_Call) Run(run func(ctx context.Context, columnID uuid.UUID, newBoardID uuid.UUID, newPosition float64)) *MockColumnRepository_MoveToBoard_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 float64
+		if args[3] != nil {
+			arg3 = args[3].(float64)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockColumnRepository_MoveToBoard_Call) Return(err error) *MockColumnRepository_MoveToBoard_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockColumnRepository_MoveToBoard_Call) RunAndReturn(run func(ctx context.Context, columnID uuid.UUID, newBoardID uuid.UUID, newPosition float64) error) *MockColumnRepository_MoveToBoard_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Update provides a mock function for the type MockColumnRepository
 func (_mock *MockColumnRepository) Update(ctx context.Context, c *project.Column) error {
 	ret := _mock.Called(ctx, c)

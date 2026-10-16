@@ -4,6 +4,7 @@ import { ViewToggle, KanbanBoard } from '@/features/kanban-board';
 import { useTaskStore } from '@/features/task-navigation';
 import {
   useProjectsQuery,
+  useProjectBoardsQuery,
   useProjectTasksQuery,
 } from '@/entities/project';
 import { useToggleTaskMutation, useDeleteTaskMutation } from '@/features/task-navigation';
@@ -14,6 +15,7 @@ import { Skeleton, EmptyState, ErrorBanner, Input, Button } from '@/shared/compo
 
 export interface ProjectViewProps {
   projectId: string;
+  activeBoardId?: string | null;
   workspaceId?: string;
   onSelectTask?: (taskId: string) => void;
   selectedTaskId?: string | null;
@@ -21,6 +23,7 @@ export interface ProjectViewProps {
 
 export const ProjectView: React.FC<ProjectViewProps> = ({
   projectId,
+  activeBoardId,
   workspaceId,
   onSelectTask,
   selectedTaskId,
@@ -28,6 +31,12 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
   const { viewMode, setViewMode } = useTaskStore();
   const { data: projects = [] } = useProjectsQuery(workspaceId);
   const currentProject = projects.find((p) => p.id === projectId) ?? projects[0];
+
+  const boardsQuery = useProjectBoardsQuery(workspaceId, projectId);
+  const activeBoard =
+    (activeBoardId
+      ? boardsQuery.data?.find((b) => b.id === activeBoardId)
+      : null) ?? boardsQuery.data?.[0];
 
   const tasksQuery = useProjectTasksQuery(workspaceId, projectId);
   const tasks = tasksQuery.data ?? [];
@@ -52,9 +61,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
       {/* Project Header */}
       <div className="p-8 pb-4 border-b border-subtle/50 space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-muted">
+          <div className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-muted">
             <span className="w-2 h-2 rounded-full bg-accent-solid inline-block" />
             <span>Проект · {currentProject?.name || 'Takt'}</span>
+            <span className="text-muted/40">/</span>
+            <span className="text-primary font-medium">{activeBoard?.name || 'Основная'}</span>
           </div>
 
           {/* View Toggle */}
@@ -63,9 +74,16 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-serif text-3xl font-normal tracking-tight text-primary">
-              {currentProject?.name || 'Проект'}
-            </h1>
+            <div className="flex items-baseline gap-2">
+              <h1 className="font-serif text-3xl font-normal tracking-tight text-primary">
+                {currentProject?.name || 'Проект'}
+              </h1>
+              {activeBoard && (
+                <span className="text-base text-muted font-sans font-normal">
+                  · {activeBoard.name}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted mt-0.5">
               {currentProject?.description || 'Управление структурой задач и ходом выполнения'}
             </p>
@@ -85,6 +103,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
         {viewMode === 'kanban' ? (
           <KanbanBoard
             projectId={projectId}
+            activeBoardId={activeBoard?.id}
             workspaceId={workspaceId}
             selectedTaskId={selectedTaskId}
             onSelectTask={onSelectTask}

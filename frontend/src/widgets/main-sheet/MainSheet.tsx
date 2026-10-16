@@ -48,6 +48,7 @@ export const MainSheet: React.FC<MainSheetProps> = ({
     activeNav,
     selectedProjectId,
     selectedTaskId,
+    activeBoardId,
     setSelectedTaskId,
     setQuickCaptureOpen,
   } = useTaskStore();
@@ -93,10 +94,11 @@ export const MainSheet: React.FC<MainSheetProps> = ({
     (activeNav.startsWith('project:') ? activeNav.replace('project:', '') : null);
 
   return (
-    <div className="flex-1 max-w-[880px] w-full bg-surface border border-subtle rounded-sheet shadow-washi flex flex-col overflow-hidden my-3">
+    <div className="flex-1 w-full bg-surface border border-subtle rounded-sheet shadow-washi flex flex-col overflow-hidden my-3">
       {isProjectNav && activeProjectId ? (
         <ProjectView
           projectId={activeProjectId}
+          activeBoardId={activeBoardId}
           workspaceId={workspaceId}
           selectedTaskId={selectedTaskId}
           onSelectTask={(id) => setSelectedTaskId(id)}

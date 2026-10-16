@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	domainProject "takt/internal/domain/project"
 	"takt/internal/infrastructure/db"
 	"takt/internal/infrastructure/db/sqlc"
 )
@@ -87,3 +88,28 @@ func pgToDatePtr(d pgtype.Date) *time.Time {
 	res := d.Time
 	return &res
 }
+
+func mapProjectRowToDomain(row sqlc.Project) *domainProject.Project {
+	return &domainProject.Project{
+		ID: pgToUUID(row.ID), WorkspaceID: pgToUUID(row.WorkspaceID),
+		Name: row.Name, Description: row.Description, Color: row.Color,
+		CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
+	}
+}
+
+func mapBoardRowToDomain(row sqlc.Board) *domainProject.Board {
+	return &domainProject.Board{
+		ID: pgToUUID(row.ID), ProjectID: pgToUUID(row.ProjectID),
+		Name: row.Name, CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
+	}
+}
+
+func mapColumnRowToDomain(row sqlc.Column) *domainProject.Column {
+	return &domainProject.Column{
+		ID: pgToUUID(row.ID), BoardID: pgToUUID(row.BoardID),
+		Name: row.Name, Position: row.Position,
+		StatusCategory: domainProject.StatusCategory(row.StatusCategory),
+		CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
+	}
+}
+

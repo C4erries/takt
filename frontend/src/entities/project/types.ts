@@ -51,6 +51,7 @@ export interface CreateColumnRequest {
 }
 
 export interface UpdateColumnRequest {
+  boardId?: string | null;
   name?: string;
   position?: number;
   statusCategory?: ColumnStatusCategory;

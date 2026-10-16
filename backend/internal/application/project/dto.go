@@ -30,7 +30,7 @@ type CreateColumnInput struct {
 
 type UpdateColumnInput struct {
 	WorkspaceID    uuid.UUID
-	BoardID        uuid.UUID
+	BoardID        *uuid.UUID
 	ColumnID       uuid.UUID
 	Name           string
 	Position       float64

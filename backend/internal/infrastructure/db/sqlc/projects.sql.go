@@ -420,6 +420,36 @@ func (q *Queries) ListTasksByProject(ctx context.Context, arg ListTasksByProject
 	return items, nil
 }
 
+const moveColumnToBoard = `-- name: MoveColumnToBoard :one
+UPDATE columns
+SET board_id = $2,
+    position = $3,
+    updated_at = NOW()
+WHERE id = $1
+RETURNING id, board_id, name, position, status_category, created_at, updated_at
+`
+
+type MoveColumnToBoardParams struct {
+	ID       pgtype.UUID `json:"id"`
+	BoardID  pgtype.UUID `json:"board_id"`
+	Position float64     `json:"position"`
+}
+
+func (q *Queries) MoveColumnToBoard(ctx context.Context, arg MoveColumnToBoardParams) (Column, error) {
+	row := q.db.QueryRow(ctx, moveColumnToBoard, arg.ID, arg.BoardID, arg.Position)
+	var i Column
+	err := row.Scan(
+		&i.ID,
+		&i.BoardID,
+		&i.Name,
+		&i.Position,
+		&i.StatusCategory,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const moveTaskToColumnAndPosition = `-- name: MoveTaskToColumnAndPosition :one
 UPDATE tasks
 SET column_id = $1,

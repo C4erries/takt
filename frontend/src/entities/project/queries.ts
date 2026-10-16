@@ -9,102 +9,23 @@ import type {
   Column,
   MoveTaskRequest,
 } from './types';
+import {
+  DEMO_PROJECT_ID,
+  DEMO_BOARDS,
+  DEMO_PROJECTS,
+  DEMO_COLUMNS,
+  DEMO_PROJECT_TASKS,
+  updateDemoTaskPosition,
+  updateDemoColumnPosition,
+} from './demo';
 
-export const DEMO_PROJECT_ID = 'demo-project-1';
-export const DEMO_BOARD_ID = 'demo-board-1';
-
-export const DEMO_PROJECTS: Project[] = [
-  {
-    id: DEMO_PROJECT_ID,
-    workspaceId: 'demo-workspace',
-    name: 'Запуск Takt 0.3.1',
-    description: 'Внедрение проектов и Канбан-доски с тактильным Drag-and-Drop',
-    color: '#2D4F3E',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-export const DEMO_COLUMNS: Column[] = [
-  {
-    id: 'demo-col-todo',
-    boardId: DEMO_BOARD_ID,
-    name: 'К выполнению',
-    position: 1000.0,
-    statusCategory: 'todo',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-col-in-progress',
-    boardId: DEMO_BOARD_ID,
-    name: 'В работе',
-    position: 2000.0,
-    statusCategory: 'in_progress',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'demo-col-done',
-    boardId: DEMO_BOARD_ID,
-    name: 'Готово',
-    position: 3000.0,
-    statusCategory: 'done',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-export const DEMO_PROJECT_TASKS: Task[] = [
-  {
-    id: 'pt-1',
-    workspaceId: 'demo-workspace',
-    projectId: DEMO_PROJECT_ID,
-    columnId: 'demo-col-todo',
-    title: 'Настроить Fractional Indexing для колонок',
-    descriptionMarkdown: 'Новая позиция вычисляется как (pos_A + pos_B) / 2',
-    isCompleted: false,
-    priority: 'high',
-    position: 1000.0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'pt-2',
-    workspaceId: 'demo-workspace',
-    projectId: DEMO_PROJECT_ID,
-    columnId: 'demo-col-in-progress',
-    title: 'Интегрировать @dnd-kit/core с тактильным Washi-дизайном',
-    descriptionMarkdown: 'Ощущение японской канцелярии Midori MD при перетаскивании карточек',
-    isCompleted: false,
-    priority: 'urgent',
-    position: 1000.0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'pt-3',
-    workspaceId: 'demo-workspace',
-    projectId: DEMO_PROJECT_ID,
-    columnId: 'demo-col-done',
-    title: 'Разработать спецификацию OpenAPI для проектов и досок',
-    descriptionMarkdown: 'Контракты согласованы и зафиксированы в api/openapi/paths/projects.yaml',
-    isCompleted: true,
-    completedAt: new Date().toISOString(),
-    priority: 'medium',
-    position: 1000.0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+export * from './demo';
 
 export const useProjectsQuery = (workspaceId?: string) => {
   return useQuery<Project[], Error>({
     queryKey: ['projects', workspaceId],
     queryFn: async () => {
-      if (!workspaceId || !getAuthToken()) {
-        return DEMO_PROJECTS;
-      }
+      if (!workspaceId || !getAuthToken()) return DEMO_PROJECTS;
       try {
         const data = await projectApi.listProjects(workspaceId);
         return data.length > 0 ? data : DEMO_PROJECTS;
@@ -122,7 +43,7 @@ export const useCreateProjectMutation = (workspaceId?: string) => {
   return useMutation({
     mutationFn: async (req: CreateProjectRequest) => {
       if (!workspaceId || !getAuthToken()) {
-        const demo: Project = {
+        return {
           id: `project-${Date.now()}`,
           workspaceId: workspaceId || 'demo-workspace',
           name: req.name,
@@ -130,15 +51,13 @@ export const useCreateProjectMutation = (workspaceId?: string) => {
           color: req.color || '#2D4F3E',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-        };
-        return demo;
+        } as Project;
       }
       return projectApi.createProject(workspaceId, req);
     },
     onMutate: async (newProject) => {
       await queryClient.cancelQueries({ queryKey: ['projects', workspaceId] });
       const previousProjects = queryClient.getQueryData<Project[]>(['projects', workspaceId]);
-
       const optimistic: Project = {
         id: `temp-${Date.now()}`,
         workspaceId: workspaceId || 'demo-workspace',
@@ -148,12 +67,7 @@ export const useCreateProjectMutation = (workspaceId?: string) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-
-      queryClient.setQueryData<Project[]>(['projects', workspaceId], (old = []) => [
-        ...old,
-        optimistic,
-      ]);
-
+      queryClient.setQueryData<Project[]>(['projects', workspaceId], (old = []) => [...old, optimistic]);
       return { previousProjects };
     },
     onError: (_err, _newProject, context) => {
@@ -178,11 +92,9 @@ export const useDeleteProjectMutation = (workspaceId?: string) => {
     onMutate: async (projectId) => {
       await queryClient.cancelQueries({ queryKey: ['projects', workspaceId] });
       const previousProjects = queryClient.getQueryData<Project[]>(['projects', workspaceId]);
-
       queryClient.setQueryData<Project[]>(['projects', workspaceId], (old = []) =>
         old.filter((p) => p.id !== projectId)
       );
-
       return { previousProjects };
     },
     onError: (_err, _projectId, context) => {
@@ -201,44 +113,116 @@ export const useProjectBoardsQuery = (workspaceId?: string, projectId?: string) 
   return useQuery<Board[], Error>({
     queryKey: ['boards', workspaceId, projectId],
     queryFn: async () => {
-      if (!workspaceId || !projectId || !getAuthToken()) {
-        return [
-          {
-            id: DEMO_BOARD_ID,
-            projectId: projectId || DEMO_PROJECT_ID,
-            name: 'Основная',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ];
-      }
+      if (!workspaceId || !projectId || !getAuthToken()) return DEMO_BOARDS;
       try {
         const boards = await projectApi.listProjectBoards(workspaceId, projectId);
-        if (boards.length === 0) {
-          return [
-            {
-              id: DEMO_BOARD_ID,
-              projectId,
-              name: 'Основная',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-          ];
-        }
-        return boards;
+        return boards.length > 0 ? boards : DEMO_BOARDS;
       } catch {
-        return [
-          {
-            id: DEMO_BOARD_ID,
-            projectId: projectId || DEMO_PROJECT_ID,
-            name: 'Основная',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ];
+        return DEMO_BOARDS;
       }
     },
     enabled: !!projectId,
+  });
+};
+
+export const useCreateBoardMutation = (workspaceId?: string, projectId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (name: string) => {
+      if (!workspaceId || !projectId || !getAuthToken()) {
+        const newBoardId = `board-${Date.now()}`;
+        const demoBoard: Board = {
+          id: newBoardId,
+          projectId: projectId || DEMO_PROJECT_ID,
+          name,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        const defaultCols: Column[] = [
+          { id: `c-1-${Date.now()}`, boardId: newBoardId, name: 'К выполнению', position: 1000.0, statusCategory: 'todo', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: `c-2-${Date.now()}`, boardId: newBoardId, name: 'В работе', position: 2000.0, statusCategory: 'in_progress', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: `c-3-${Date.now()}`, boardId: newBoardId, name: 'Готово', position: 3000.0, statusCategory: 'done', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        ];
+        queryClient.setQueryData(['columns', workspaceId, newBoardId], defaultCols);
+        return demoBoard;
+      }
+      return projectApi.createProjectBoard(workspaceId, projectId, name);
+    },
+    onMutate: async (name) => {
+      const queryKey = ['boards', workspaceId, projectId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousBoards = queryClient.getQueryData<Board[]>(queryKey);
+      const optimistic: Board = {
+        id: `temp-board-${Date.now()}`,
+        projectId: projectId || DEMO_PROJECT_ID,
+        name,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      queryClient.setQueryData<Board[]>(queryKey, (old = []) => [...old, optimistic]);
+      return { previousBoards };
+    },
+    onError: (_err, _name, context) => {
+      if (context?.previousBoards) {
+        queryClient.setQueryData(['boards', workspaceId, projectId], context.previousBoards);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['boards', workspaceId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['columns', workspaceId] });
+    },
+  });
+};
+
+export interface MoveColumnVariables {
+  columnId: string;
+  targetBoardId: string;
+}
+
+export const useMoveColumnMutation = (workspaceId?: string, boardId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ columnId, targetBoardId }: MoveColumnVariables) => {
+      if (!workspaceId || !boardId || !getAuthToken()) {
+        const sourceCols = queryClient.getQueryData<Column[]>(['columns', workspaceId, boardId]) ?? DEMO_COLUMNS;
+        const col = sourceCols.find((c) => c.id === columnId);
+        if (col) {
+          const updated = { ...col, boardId: targetBoardId };
+          queryClient.setQueryData<Column[]>(['columns', workspaceId, targetBoardId], (old = []) => [...old, updated]);
+          return updated;
+        }
+        return {} as Column;
+      }
+      return projectApi.updateBoardColumn(workspaceId, boardId, columnId, { boardId: targetBoardId });
+    },
+    onMutate: async ({ columnId, targetBoardId }) => {
+      const sourceKey = ['columns', workspaceId, boardId];
+      const targetKey = ['columns', workspaceId, targetBoardId];
+      await queryClient.cancelQueries({ queryKey: sourceKey });
+      await queryClient.cancelQueries({ queryKey: targetKey });
+
+      const previousSource = queryClient.getQueryData<Column[]>(sourceKey);
+      const previousTarget = queryClient.getQueryData<Column[]>(targetKey);
+      const movingCol = previousSource?.find((c) => c.id === columnId);
+
+      if (movingCol) {
+        queryClient.setQueryData<Column[]>(sourceKey, (old = []) => old.filter((c) => c.id !== columnId));
+        queryClient.setQueryData<Column[]>(targetKey, (old = []) => [...old, { ...movingCol, boardId: targetBoardId }]);
+      }
+      return { previousSource, previousTarget };
+    },
+    onError: (_err, vars, context) => {
+      if (context?.previousSource) queryClient.setQueryData(['columns', workspaceId, boardId], context.previousSource);
+      if (context?.previousTarget) queryClient.setQueryData(['columns', workspaceId, vars.targetBoardId], context.previousTarget);
+    },
+    onSettled: (_data, _err, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['columns', workspaceId, boardId] });
+      if (vars?.targetBoardId) {
+        queryClient.invalidateQueries({ queryKey: ['columns', workspaceId, vars.targetBoardId] });
+      }
+    },
   });
 };
 
@@ -247,16 +231,63 @@ export const useBoardColumnsQuery = (workspaceId?: string, boardId?: string) => 
     queryKey: ['columns', workspaceId, boardId],
     queryFn: async () => {
       if (!workspaceId || !boardId || !getAuthToken()) {
-        return DEMO_COLUMNS;
+        const matching = DEMO_COLUMNS.filter((c) => c.boardId === boardId);
+        const result = matching.length > 0 ? matching : DEMO_COLUMNS;
+        return [...result].sort((a, b) => a.position - b.position);
       }
       try {
         const cols = await projectApi.listBoardColumns(workspaceId, boardId);
-        return cols.length > 0 ? cols : DEMO_COLUMNS;
+        const result = cols.length > 0 ? cols : DEMO_COLUMNS;
+        return [...result].sort((a, b) => a.position - b.position);
       } catch {
-        return DEMO_COLUMNS;
+        return [...DEMO_COLUMNS].sort((a, b) => a.position - b.position);
       }
     },
     enabled: !!boardId,
+  });
+};
+
+export interface ReorderColumnVariables {
+  columnId: string;
+  position: number;
+}
+
+export const useReorderColumnMutation = (workspaceId?: string, boardId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ columnId, position }: ReorderColumnVariables) => {
+      if (!workspaceId || !boardId || !getAuthToken()) {
+        updateDemoColumnPosition(columnId, position);
+        const col = DEMO_COLUMNS.find((c) => c.id === columnId);
+        return col ? { ...col, position } : ({ id: columnId, position } as Column);
+      }
+      return projectApi.updateBoardColumn(workspaceId, boardId, columnId, { position });
+    },
+    onMutate: async ({ columnId, position }) => {
+      if (!workspaceId || !boardId || !getAuthToken()) {
+        updateDemoColumnPosition(columnId, position);
+      }
+      const queryKey = ['columns', workspaceId, boardId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousColumns = queryClient.getQueryData<Column[]>(queryKey);
+
+      queryClient.setQueryData<Column[]>(queryKey, (old = []) =>
+        old
+          .map((c) => (c.id === columnId ? { ...c, position } : c))
+          .sort((a, b) => a.position - b.position)
+      );
+
+      return { previousColumns };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousColumns) {
+        queryClient.setQueryData(['columns', workspaceId, boardId], context.previousColumns);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['columns', workspaceId, boardId] });
+    },
   });
 };
 
@@ -264,14 +295,12 @@ export const useProjectTasksQuery = (workspaceId?: string, projectId?: string) =
   return useQuery<Task[], Error>({
     queryKey: ['project-tasks', workspaceId, projectId],
     queryFn: async () => {
-      if (!workspaceId || !projectId || !getAuthToken()) {
-        return DEMO_PROJECT_TASKS;
-      }
+      if (!workspaceId || !projectId || !getAuthToken()) return [...DEMO_PROJECT_TASKS];
       try {
         const tasks = await projectApi.listProjectTasks(workspaceId, projectId);
-        return tasks.length > 0 ? tasks : DEMO_PROJECT_TASKS;
+        return tasks.length > 0 ? tasks : [...DEMO_PROJECT_TASKS];
       } catch {
-        return DEMO_PROJECT_TASKS;
+        return [...DEMO_PROJECT_TASKS];
       }
     },
     enabled: !!projectId,
@@ -289,34 +318,31 @@ export const useMoveTaskMutation = (workspaceId?: string, projectId?: string) =>
   return useMutation({
     mutationFn: async ({ taskId, data }: MoveTaskVariables) => {
       if (!workspaceId || !getAuthToken()) {
-        return {} as Task;
+        updateDemoTaskPosition(taskId, data.columnId, data.position);
+        const task = DEMO_PROJECT_TASKS.find((t) => t.id === taskId);
+        return task ? { ...task } : ({} as Task);
       }
       return projectApi.moveTask(workspaceId, taskId, data);
     },
     onMutate: async ({ taskId, data }) => {
+      if (!workspaceId || !getAuthToken()) {
+        updateDemoTaskPosition(taskId, data.columnId, data.position);
+      }
       const queryKey = ['project-tasks', workspaceId, projectId];
       await queryClient.cancelQueries({ queryKey });
       const previousTasks = queryClient.getQueryData<Task[]>(queryKey);
-
       queryClient.setQueryData<Task[]>(queryKey, (old = []) =>
-        old.map((t) =>
-          t.id === taskId
-            ? { ...t, columnId: data.columnId, position: data.position }
-            : t
-        )
+        old.map((t) => (t.id === taskId ? { ...t, columnId: data.columnId, position: data.position } : t))
       );
-
       return { previousTasks };
     },
     onError: (_err, _vars, context) => {
-      const queryKey = ['project-tasks', workspaceId, projectId];
       if (context?.previousTasks) {
-        queryClient.setQueryData(queryKey, context.previousTasks);
+        queryClient.setQueryData(['project-tasks', workspaceId, projectId], context.previousTasks);
       }
     },
     onSettled: () => {
-      const queryKey = ['project-tasks', workspaceId, projectId];
-      queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ['project-tasks', workspaceId, projectId] });
     },
   });
 };

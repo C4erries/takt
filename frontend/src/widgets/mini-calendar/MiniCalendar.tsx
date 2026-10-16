@@ -5,9 +5,15 @@ import { useTodayTasksQuery, useUpdateTaskMutation } from '@/entities/task';
 
 export interface MiniCalendarProps {
   workspaceId?: string;
+  isCompact?: boolean;
+  className?: string;
 }
 
-export const MiniCalendar: React.FC<MiniCalendarProps> = ({ workspaceId }) => {
+export const MiniCalendar: React.FC<MiniCalendarProps> = ({
+  workspaceId,
+  isCompact = false,
+  className = '',
+}) => {
   const [currentDate, setCurrentDate] = useState(() => new Date());
 
   const {
@@ -74,18 +80,26 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({ workspaceId }) => {
   };
 
   return (
-    <div className="w-80 shrink-0 bg-surface border border-subtle rounded-2xl p-4 shadow-washi select-none space-y-3">
+    <div
+      className={
+        className
+          ? className
+          : isCompact
+          ? 'w-full bg-transparent select-none space-y-2'
+          : 'w-80 shrink-0 bg-surface border border-subtle rounded-2xl p-4 shadow-washi select-none space-y-3'
+      }
+    >
       {/* Month header & navigation */}
-      <div className="flex items-center justify-between border-b border-subtle/50 pb-2">
-        <div className="flex items-center gap-1.5">
-          <span className="font-serif text-sm font-normal text-primary capitalize">
+      <div className="flex items-center justify-between border-b border-subtle/50 pb-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-serif text-xs font-normal text-primary capitalize truncate">
             {monthName}
           </span>
           {selectedDateFilter && (
             <button
               type="button"
               onClick={() => setSelectedDateFilter(null)}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-accent-surface text-[10px] text-primary hover:bg-accent-surface/70"
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-accent-surface text-[9px] text-primary hover:bg-accent-surface/70"
               title="Сбросить фильтр по дате"
             >
               <span>{selectedDateFilter}</span>
@@ -94,11 +108,11 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({ workspaceId }) => {
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 shrink-0">
           <button
             type="button"
             onClick={handlePrevMonth}
-            className="p-1 rounded text-muted hover:text-primary hover:bg-canvas transition-colors"
+            className="p-0.5 rounded text-muted hover:text-primary hover:bg-canvas transition-colors"
             title="Предыдущий месяц"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
@@ -106,7 +120,7 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({ workspaceId }) => {
           <button
             type="button"
             onClick={handleNextMonth}
-            className="p-1 rounded text-muted hover:text-primary hover:bg-canvas transition-colors"
+            className="p-0.5 rounded text-muted hover:text-primary hover:bg-canvas transition-colors"
             title="Следующий месяц"
           >
             <ChevronRight className="w-3.5 h-3.5" />
@@ -115,19 +129,19 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({ workspaceId }) => {
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1 text-center">
+      <div className="grid grid-cols-7 gap-0.5 text-center">
         {weekDays.map((wd) => (
-          <span key={wd} className="text-[10px] font-mono text-muted">
+          <span key={wd} className="text-[9px] font-mono text-muted">
             {wd}
           </span>
         ))}
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-7 gap-1 text-center">
+      <div className="grid grid-cols-7 gap-0.5 text-center">
         {days.map((day, idx) => {
           if (day === null) {
-            return <div key={`empty-${idx}`} className="h-7" />;
+            return <div key={`empty-${idx}`} className={isCompact ? 'h-6' : 'h-7'} />;
           }
 
           const formattedMonth = String(month + 1).padStart(2, '0');
@@ -146,7 +160,9 @@ export const MiniCalendar: React.FC<MiniCalendarProps> = ({ workspaceId }) => {
               key={day}
               type="button"
               onClick={() => handleDayClick(day)}
-              className={`h-7 flex flex-col items-center justify-center text-xs font-mono rounded relative transition-all ${
+              className={`${
+                isCompact ? 'h-6 text-[10px]' : 'h-7 text-xs'
+              } flex flex-col items-center justify-center font-mono rounded relative transition-all ${
                 isToday
                   ? 'bg-accent-solid text-surface font-semibold shadow-washi-sm'
                   : isFilterActive

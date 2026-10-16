@@ -10,11 +10,11 @@ import {
   useTaskStore,
   TASKS_QUERY_KEY,
 } from '@/features/task-navigation';
+import { PanelLeftOpen } from 'lucide-react';
 import { QuickCaptureModal } from '@/features/quick-capture';
 import { Sidebar } from '@/widgets/sidebar';
 import { MainSheet } from '@/widgets/main-sheet';
-import { TaskInspector } from '@/widgets/task-inspector';
-import { MiniCalendar } from '@/widgets/mini-calendar';
+import { TaskDrawer } from '@/widgets/task-drawer';
 import { UiCatalog } from './components/UiCatalog';
 import { StatesShowcase } from './components/StatesShowcase';
 import { Button } from '@/shared/components/ui';
@@ -31,6 +31,7 @@ export const App: React.FC = () => {
 
   const {
     selectedTaskId,
+    setSelectedTaskId,
     isQuickCaptureOpen,
     setQuickCaptureOpen,
     activeNav,
@@ -61,6 +62,58 @@ export const App: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isAutomationsModalOpen, setIsAutomationsModalOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem('takt_sidebar_open');
+    if (saved !== null) return saved === 'true';
+    return typeof window !== 'undefined' ? window.innerWidth >= 1024 : true;
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => {
+      const next = !prev;
+      localStorage.setItem('takt_sidebar_open', String(next));
+      return next;
+    });
+  };
+
+  // Global hotkey '[' for Sidebar toggle
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        isQuickCaptureOpen ||
+        isAuthModalOpen ||
+        isAutomationsModalOpen ||
+        isCommandPaletteOpen ||
+        showUiCatalog
+      )
+        return;
+
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+
+      if (isInput) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === '[') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isQuickCaptureOpen,
+    isAuthModalOpen,
+    isAutomationsModalOpen,
+    isCommandPaletteOpen,
+    showUiCatalog,
+  ]);
 
   // Invalidate tasks query when user auth state changes
   useEffect(() => {
@@ -145,7 +198,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex">
-      {/* 3-Column Layout: Column 1 - Left Sidebar */}
+      {/* Sidebar with collapse support */}
       <Sidebar
         user={user}
         workspace={workspace}
@@ -154,6 +207,8 @@ export const App: React.FC = () => {
         onNavChange={setActiveNav}
         onOpenQuickCapture={() => setQuickCaptureOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        isCollapsed={!isSidebarOpen}
+        onToggleCollapse={toggleSidebar}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={logout}
         showUiCatalog={showUiCatalog}
@@ -161,6 +216,21 @@ export const App: React.FC = () => {
         onOpenAutomations={() => setIsAutomationsModalOpen(true)}
         onWorkspaceChange={setWorkspace}
       />
+
+      {/* Floating button when sidebar is collapsed */}
+      {!isSidebarOpen && (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="fixed top-4 left-4 z-30 p-2 rounded-xl bg-surface/90 hover:bg-surface border border-subtle shadow-washi text-muted hover:text-primary transition-all duration-200 group flex items-center gap-1.5"
+          title="Развернуть сайдбар ([)"
+        >
+          <PanelLeftOpen className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
+          <span className="text-[10px] font-mono text-muted group-hover:text-primary hidden sm:inline">
+            [
+          </span>
+        </button>
+      )}
 
       {/* Main Content Area */}
       {showUiCatalog ? (
@@ -208,8 +278,8 @@ export const App: React.FC = () => {
           </div>
         </main>
       ) : (
-        <main className="flex-1 h-full flex justify-center px-4 gap-4 overflow-hidden">
-          {/* Column 2: Center Washi Sheet */}
+        <main className="flex-1 h-full flex justify-center px-2 md:px-4 overflow-hidden w-full max-w-full">
+          {/* Center Washi Sheet (100% available canvas) */}
           <MainSheet
             tasks={tasks}
             isLoading={isLoadingTasks}
@@ -225,19 +295,17 @@ export const App: React.FC = () => {
             onOpenQuickCapture={() => setQuickCaptureOpen(true)}
             workspaceId={workspace?.id}
           />
-
-          {/* Column 3: Right Bento Panel (Inspector + MiniCalendar) */}
-          <div className="hidden lg:flex flex-col gap-3 py-3 h-full justify-start overflow-hidden">
-            <TaskInspector
-              task={selectedTask}
-              workspaceId={workspace?.id}
-              onToggleTask={(id) => toggleTaskMutation.mutate(id)}
-              onDeleteTask={(id) => deleteTaskMutation.mutate(id)}
-            />
-            <MiniCalendar workspaceId={workspace?.id} />
-          </div>
         </main>
       )}
+
+      {/* Slide-out Task Drawer (560px, non-modal on desktop) */}
+      <TaskDrawer
+        task={selectedTask}
+        workspaceId={workspace?.id}
+        onClose={() => setSelectedTaskId(null)}
+        onToggleTask={(id) => toggleTaskMutation.mutate(id)}
+        onDeleteTask={(id) => deleteTaskMutation.mutate(id)}
+      />
 
       {/* Global Modals */}
       <QuickCaptureModal

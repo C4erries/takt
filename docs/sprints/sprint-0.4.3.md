@@ -66,3 +66,4 @@
 * **`make test`**: `100% PASS` с флагом `-race` во всех пакетах бэкенда.
 * **`make test-e2e`**: `39/39 PASS (100%)` в Pytest E2E сьюте.
 * **`cd frontend && npm run build`**: `0 ошибок, 0 предупреждений` (Vite build собран за 3.91s).
+

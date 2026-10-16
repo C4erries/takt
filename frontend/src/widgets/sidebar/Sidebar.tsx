@@ -11,10 +11,12 @@ import {
   X,
   Sparkles,
   Search,
+  PanelLeftClose,
 } from 'lucide-react';
 import { Button, Badge, Input } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
 import { WorkspaceSwitcher } from '@/features/workspace-switcher';
+import { MiniCalendar } from '@/widgets/mini-calendar';
 import { useTaskStore, useInboxTasks } from '@/features/task-navigation';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
 import { useTodayTasksQuery } from '@/entities/task';
@@ -27,6 +29,8 @@ export interface SidebarProps {
   onNavChange?: (nav: string) => void;
   onOpenQuickCapture?: () => void;
   onOpenCommandPalette?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
   onOpenAuth: () => void;
   onLogout: () => void;
   showUiCatalog: boolean;
@@ -43,6 +47,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavChange,
   onOpenQuickCapture,
   onOpenCommandPalette,
+  isCollapsed = false,
+  onToggleCollapse,
   onOpenAuth,
   onLogout,
   showUiCatalog,
@@ -95,15 +101,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside className="w-60 shrink-0 h-full flex flex-col justify-between py-6 px-4 select-none">
+    <aside
+      className={`shrink-0 h-full flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out ${
+        isCollapsed
+          ? 'w-0 -translate-x-full overflow-hidden opacity-0 p-0 pointer-events-none'
+          : 'w-60 translate-x-0 opacity-100 px-4'
+      }`}
+    >
       {/* Top section: Workspace, Quick Action, Navigation */}
       <div className="space-y-6 overflow-y-auto pr-0.5">
-        {/* Workspace Switcher */}
-        <WorkspaceSwitcher
-          currentWorkspace={workspace}
-          currentUser={user}
-          onWorkspaceChange={onWorkspaceChange}
-        />
+        {/* Workspace Switcher & Collapse Button */}
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex-1 min-w-0">
+            <WorkspaceSwitcher
+              currentWorkspace={workspace}
+              currentUser={user}
+              onWorkspaceChange={onWorkspaceChange}
+            />
+          </div>
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="p-1 rounded-md text-muted hover:text-primary hover:bg-surface/80 transition-colors shrink-0"
+              title="Свернуть сайдбар ([)"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
+        </div>
 
         {/* Search / Command Palette Button */}
         <button
@@ -267,6 +293,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               );
             })}
           </div>
+        </div>
+
+        {/* MiniCalendar section */}
+        <div className="pt-2 border-t border-subtle/50">
+          <MiniCalendar workspaceId={workspace?.id} isCompact />
         </div>
 
         {/* Automations & UI-Kit section */}

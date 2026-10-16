@@ -247,10 +247,10 @@ erDiagram
 | **Features: Automations Toggle**| `src/features/automations-toggle`| Панель тумблеров включения/выключения готовых правил на доске. |
 | **Features: Workspace Switcher**| `src/features/workspace-switcher`| Выпадающее меню переключения воркспейсов и модал создания. |
 | **Features: Workspace Members** | `src/features/workspace-members` | Управление участниками, генерация инвайт-ссылок и принятие. |
-| **Widgets: Sidebar** | `src/widgets/sidebar` | Левая навигация (Inbox, Today, Someday, Projects). |
-| **Widgets: Main Sheet** | `src/widgets/main-sheet` | Центральный бумажный лист (разлинованный список задач или Канбан-доска). |
-| **Widgets: Inspector** | `src/widgets/task-inspector` | Правая верхняя карточка деталей выбранной задачи. |
-| **Widgets: Mini Calendar** | `src/widgets/mini-calendar` | Правая нижняя сетка матричного календаря с 1px границами. |
+| **Widgets: Sidebar** | `src/widgets/sidebar` | Сворачиваемая навигация (Inbox, Today, Someday, Projects, встроенный MiniCalendar). |
+| **Widgets: Main Sheet** | `src/widgets/main-sheet` | 100% Canvas холст (разлинованный список задач или Канбан-доска). |
+| **Widgets: Task Drawer**| `src/widgets/task-drawer`| Выдвижная шторка деталей задачи 560px с Non-modal режимом и быстрыми капсулами. |
+| **Widgets: Mini Calendar** | `src/widgets/mini-calendar` | Компактная сетка матричного календаря, интегрированная в сайдбар. |
 
 ---
 

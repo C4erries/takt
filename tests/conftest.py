@@ -103,6 +103,15 @@ def base_url() -> Generator[str, None, None]:
             f"Failed to start local Takt server: {err.decode('utf-8', errors='ignore')}"
         )
 
+    # Ensure S3 bucket exists for tests
+    s3_endpoint = env.get("S3_ENDPOINT", "http://localhost:9000")
+    s3_bucket = env.get("S3_BUCKET", "takt-attachments")
+    try:
+        with httpx.Client(timeout=1.0) as s3_c:
+            s3_c.put(f"{s3_endpoint}/{s3_bucket}")
+    except Exception:
+        pass
+
     try:
         yield local_url
     finally:

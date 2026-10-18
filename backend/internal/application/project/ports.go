@@ -41,6 +41,7 @@ type ColumnRepository interface {
 	MoveToBoard(ctx context.Context, columnID, newBoardID uuid.UUID, newPosition float64) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	CountTasksInColumn(ctx context.Context, columnID uuid.UUID) (int64, error)
+	ResetBoardInboxColumns(ctx context.Context, boardID uuid.UUID) error
 }
 
 type TaskMoveRepository interface {

@@ -41,6 +41,7 @@ type Column struct {
 	Name           string
 	Position       float64
 	StatusCategory StatusCategory
+	IsInbox        bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -148,5 +149,11 @@ func (c *Column) MoveToBoard(newBoardID uuid.UUID, newPosition float64) error {
 	c.Position = newPosition
 	c.UpdatedAt = time.Now().UTC()
 	return nil
+}
+
+// SetInbox sets whether this column serves as the designated inbox for the board.
+func (c *Column) SetInbox(isInbox bool) {
+	c.IsInbox = isInbox
+	c.UpdatedAt = time.Now().UTC()
 }
 

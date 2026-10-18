@@ -15,10 +15,12 @@ import (
 
 // Defines values for AutomationTriggerType.
 const (
-	DueDateReached AutomationTriggerType = "due_date_reached"
-	TaskCompleted  AutomationTriggerType = "task_completed"
-	TaskCreated    AutomationTriggerType = "task_created"
-	TaskUpdated    AutomationTriggerType = "task_updated"
+	DueDateReached        AutomationTriggerType = "due_date_reached"
+	TaskCompleted         AutomationTriggerType = "task_completed"
+	TaskCompletedInColumn AutomationTriggerType = "task_completed_in_column"
+	TaskCreated           AutomationTriggerType = "task_created"
+	TaskEnteredColumn     AutomationTriggerType = "task_entered_column"
+	TaskUpdated           AutomationTriggerType = "task_updated"
 )
 
 // Valid indicates whether the value is a known member of the AutomationTriggerType enum.
@@ -28,7 +30,11 @@ func (e AutomationTriggerType) Valid() bool {
 		return true
 	case TaskCompleted:
 		return true
+	case TaskCompletedInColumn:
+		return true
 	case TaskCreated:
+		return true
+	case TaskEnteredColumn:
 		return true
 	case TaskUpdated:
 		return true
@@ -307,6 +313,7 @@ type Automation struct {
 	// ActionsJson Example: {"action":"move_to_done"}
 	ActionsJson map[string]interface{} `json:"actionsJson"`
 	BoardId     *openapi_types.UUID    `json:"boardId,omitempty"`
+	ColumnId    *openapi_types.UUID    `json:"columnId,omitempty"`
 
 	// ConditionsJson Example: {}
 	ConditionsJson map[string]interface{} `json:"conditionsJson"`
@@ -364,6 +371,9 @@ type Column struct {
 
 	// Id Example: c0000000-0000-0000-0000-000000000001
 	Id openapi_types.UUID `json:"id"`
+
+	// IsInbox Example: false
+	IsInbox bool `json:"isInbox"`
 
 	// Name Example: К выполнению
 	Name string `json:"name"`
@@ -599,6 +609,9 @@ type ToggleAutomationRequest struct {
 type UpdateColumnRequest struct {
 	// BoardId Example: b0000000-0000-0000-0000-000000000001
 	BoardId *openapi_types.UUID `json:"boardId,omitempty"`
+
+	// IsInbox Example: false
+	IsInbox *bool `json:"isInbox,omitempty"`
 
 	// Name Example: В работе
 	Name *string `json:"name,omitempty"`

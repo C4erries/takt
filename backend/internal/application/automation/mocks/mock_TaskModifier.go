@@ -196,3 +196,72 @@ func (_c *MockTaskModifier_SetTaskFocus_Call) RunAndReturn(run func(ctx context.
 	_c.Call.Return(run)
 	return _c
 }
+
+// SetTaskPriority provides a mock function for the type MockTaskModifier
+func (_mock *MockTaskModifier) SetTaskPriority(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, priority string) error {
+	ret := _mock.Called(ctx, taskID, workspaceID, priority)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetTaskPriority")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, taskID, workspaceID, priority)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTaskModifier_SetTaskPriority_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetTaskPriority'
+type MockTaskModifier_SetTaskPriority_Call struct {
+	*mock.Call
+}
+
+// SetTaskPriority is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - workspaceID uuid.UUID
+//   - priority string
+func (_e *MockTaskModifier_Expecter) SetTaskPriority(ctx any, taskID any, workspaceID any, priority any) *MockTaskModifier_SetTaskPriority_Call {
+	return &MockTaskModifier_SetTaskPriority_Call{Call: _e.mock.On("SetTaskPriority", ctx, taskID, workspaceID, priority)}
+}
+
+func (_c *MockTaskModifier_SetTaskPriority_Call) Run(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, priority string)) *MockTaskModifier_SetTaskPriority_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskModifier_SetTaskPriority_Call) Return(err error) *MockTaskModifier_SetTaskPriority_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTaskModifier_SetTaskPriority_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, priority string) error) *MockTaskModifier_SetTaskPriority_Call {
+	_c.Call.Return(run)
+	return _c
+}

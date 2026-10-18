@@ -24,6 +24,11 @@ Automation:
       format: uuid
       nullable: true
       example: null
+    columnId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
     name:
       type: string
       minLength: 1
@@ -31,7 +36,7 @@ Automation:
       example: "Done & Archive"
     triggerType:
       type: string
-      enum: [task_completed, task_updated, task_created, due_date_reached]
+      enum: [task_completed, task_updated, task_created, due_date_reached, task_entered_column, task_completed_in_column]
       example: "task_completed"
     conditionsJson:
       type: object

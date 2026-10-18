@@ -6,7 +6,8 @@ package mocks
 
 import (
 	"context"
-	"takt/internal/domain/automation"
+	"takt/internal/application/automation"
+	automation0 "takt/internal/domain/automation"
 
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
@@ -48,24 +49,92 @@ func (_m *MockUseCases) EXPECT() *MockUseCases_Expecter {
 	return &MockUseCases_Expecter{mock: &_m.Mock}
 }
 
+// CreateColumnAutomation provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) CreateColumnAutomation(ctx context.Context, input automation.CreateColumnAutomationInput) (*automation0.Automation, error) {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateColumnAutomation")
+	}
+
+	var r0 *automation0.Automation
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, automation.CreateColumnAutomationInput) (*automation0.Automation, error)); ok {
+		return returnFunc(ctx, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, automation.CreateColumnAutomationInput) *automation0.Automation); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*automation0.Automation)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, automation.CreateColumnAutomationInput) error); ok {
+		r1 = returnFunc(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_CreateColumnAutomation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateColumnAutomation'
+type MockUseCases_CreateColumnAutomation_Call struct {
+	*mock.Call
+}
+
+// CreateColumnAutomation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input automation.CreateColumnAutomationInput
+func (_e *MockUseCases_Expecter) CreateColumnAutomation(ctx any, input any) *MockUseCases_CreateColumnAutomation_Call {
+	return &MockUseCases_CreateColumnAutomation_Call{Call: _e.mock.On("CreateColumnAutomation", ctx, input)}
+}
+
+func (_c *MockUseCases_CreateColumnAutomation_Call) Run(run func(ctx context.Context, input automation.CreateColumnAutomationInput)) *MockUseCases_CreateColumnAutomation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 automation.CreateColumnAutomationInput
+		if args[1] != nil {
+			arg1 = args[1].(automation.CreateColumnAutomationInput)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_CreateColumnAutomation_Call) Return(automation1 *automation0.Automation, err error) *MockUseCases_CreateColumnAutomation_Call {
+	_c.Call.Return(automation1, err)
+	return _c
+}
+
+func (_c *MockUseCases_CreateColumnAutomation_Call) RunAndReturn(run func(ctx context.Context, input automation.CreateColumnAutomationInput) (*automation0.Automation, error)) *MockUseCases_CreateColumnAutomation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListAutomations provides a mock function for the type MockUseCases
-func (_mock *MockUseCases) ListAutomations(ctx context.Context, workspaceID uuid.UUID) ([]*automation.Automation, error) {
+func (_mock *MockUseCases) ListAutomations(ctx context.Context, workspaceID uuid.UUID) ([]*automation0.Automation, error) {
 	ret := _mock.Called(ctx, workspaceID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListAutomations")
 	}
 
-	var r0 []*automation.Automation
+	var r0 []*automation0.Automation
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*automation.Automation, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*automation0.Automation, error)); ok {
 		return returnFunc(ctx, workspaceID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*automation.Automation); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*automation0.Automation); ok {
 		r0 = returnFunc(ctx, workspaceID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*automation.Automation)
+			r0 = ret.Get(0).([]*automation0.Automation)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
@@ -106,12 +175,86 @@ func (_c *MockUseCases_ListAutomations_Call) Run(run func(ctx context.Context, w
 	return _c
 }
 
-func (_c *MockUseCases_ListAutomations_Call) Return(automations []*automation.Automation, err error) *MockUseCases_ListAutomations_Call {
+func (_c *MockUseCases_ListAutomations_Call) Return(automations []*automation0.Automation, err error) *MockUseCases_ListAutomations_Call {
 	_c.Call.Return(automations, err)
 	return _c
 }
 
-func (_c *MockUseCases_ListAutomations_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*automation.Automation, error)) *MockUseCases_ListAutomations_Call {
+func (_c *MockUseCases_ListAutomations_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*automation0.Automation, error)) *MockUseCases_ListAutomations_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListColumnAutomations provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) ListColumnAutomations(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID) ([]*automation0.Automation, error) {
+	ret := _mock.Called(ctx, workspaceID, columnID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListColumnAutomations")
+	}
+
+	var r0 []*automation0.Automation
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) ([]*automation0.Automation, error)); ok {
+		return returnFunc(ctx, workspaceID, columnID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) []*automation0.Automation); ok {
+		r0 = returnFunc(ctx, workspaceID, columnID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*automation0.Automation)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID, columnID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_ListColumnAutomations_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListColumnAutomations'
+type MockUseCases_ListColumnAutomations_Call struct {
+	*mock.Call
+}
+
+// ListColumnAutomations is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+//   - columnID uuid.UUID
+func (_e *MockUseCases_Expecter) ListColumnAutomations(ctx any, workspaceID any, columnID any) *MockUseCases_ListColumnAutomations_Call {
+	return &MockUseCases_ListColumnAutomations_Call{Call: _e.mock.On("ListColumnAutomations", ctx, workspaceID, columnID)}
+}
+
+func (_c *MockUseCases_ListColumnAutomations_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID)) *MockUseCases_ListColumnAutomations_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_ListColumnAutomations_Call) Return(automations []*automation0.Automation, err error) *MockUseCases_ListColumnAutomations_Call {
+	_c.Call.Return(automations, err)
+	return _c
+}
+
+func (_c *MockUseCases_ListColumnAutomations_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID) ([]*automation0.Automation, error)) *MockUseCases_ListColumnAutomations_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -174,23 +317,23 @@ func (_c *MockUseCases_SeedDefaultAutomations_Call) RunAndReturn(run func(ctx co
 }
 
 // ToggleAutomation provides a mock function for the type MockUseCases
-func (_mock *MockUseCases) ToggleAutomation(ctx context.Context, workspaceID uuid.UUID, automationID uuid.UUID, isEnabled bool) (*automation.Automation, error) {
+func (_mock *MockUseCases) ToggleAutomation(ctx context.Context, workspaceID uuid.UUID, automationID uuid.UUID, isEnabled bool) (*automation0.Automation, error) {
 	ret := _mock.Called(ctx, workspaceID, automationID, isEnabled)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ToggleAutomation")
 	}
 
-	var r0 *automation.Automation
+	var r0 *automation0.Automation
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, bool) (*automation.Automation, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, bool) (*automation0.Automation, error)); ok {
 		return returnFunc(ctx, workspaceID, automationID, isEnabled)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, bool) *automation.Automation); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, bool) *automation0.Automation); ok {
 		r0 = returnFunc(ctx, workspaceID, automationID, isEnabled)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*automation.Automation)
+			r0 = ret.Get(0).(*automation0.Automation)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, bool) error); ok {
@@ -243,12 +386,12 @@ func (_c *MockUseCases_ToggleAutomation_Call) Run(run func(ctx context.Context, 
 	return _c
 }
 
-func (_c *MockUseCases_ToggleAutomation_Call) Return(automation1 *automation.Automation, err error) *MockUseCases_ToggleAutomation_Call {
+func (_c *MockUseCases_ToggleAutomation_Call) Return(automation1 *automation0.Automation, err error) *MockUseCases_ToggleAutomation_Call {
 	_c.Call.Return(automation1, err)
 	return _c
 }
 
-func (_c *MockUseCases_ToggleAutomation_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, automationID uuid.UUID, isEnabled bool) (*automation.Automation, error)) *MockUseCases_ToggleAutomation_Call {
+func (_c *MockUseCases_ToggleAutomation_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, automationID uuid.UUID, isEnabled bool) (*automation0.Automation, error)) *MockUseCases_ToggleAutomation_Call {
 	_c.Call.Return(run)
 	return _c
 }

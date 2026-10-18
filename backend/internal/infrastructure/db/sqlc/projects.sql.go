@@ -57,11 +57,12 @@ INSERT INTO columns (
     board_id,
     name,
     position,
-    status_category
+    status_category,
+    is_inbox
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4, $5
 )
-RETURNING id, board_id, name, position, status_category, created_at, updated_at
+RETURNING id, board_id, name, position, status_category, created_at, updated_at, is_inbox
 `
 
 type CreateColumnParams struct {
@@ -69,6 +70,7 @@ type CreateColumnParams struct {
 	Name           string      `json:"name"`
 	Position       float64     `json:"position"`
 	StatusCategory string      `json:"status_category"`
+	IsInbox        bool        `json:"is_inbox"`
 }
 
 func (q *Queries) CreateColumn(ctx context.Context, arg CreateColumnParams) (Column, error) {
@@ -77,6 +79,7 @@ func (q *Queries) CreateColumn(ctx context.Context, arg CreateColumnParams) (Col
 		arg.Name,
 		arg.Position,
 		arg.StatusCategory,
+		arg.IsInbox,
 	)
 	var i Column
 	err := row.Scan(
@@ -87,6 +90,7 @@ func (q *Queries) CreateColumn(ctx context.Context, arg CreateColumnParams) (Col
 		&i.StatusCategory,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsInbox,
 	)
 	return i, err
 }
@@ -184,7 +188,7 @@ func (q *Queries) GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, erro
 }
 
 const getColumnByID = `-- name: GetColumnByID :one
-SELECT id, board_id, name, position, status_category, created_at, updated_at FROM columns
+SELECT id, board_id, name, position, status_category, created_at, updated_at, is_inbox FROM columns
 WHERE id = $1
 `
 
@@ -199,6 +203,7 @@ func (q *Queries) GetColumnByID(ctx context.Context, id pgtype.UUID) (Column, er
 		&i.StatusCategory,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsInbox,
 	)
 	return i, err
 }
@@ -261,7 +266,7 @@ func (q *Queries) ListBoardsByProject(ctx context.Context, projectID pgtype.UUID
 }
 
 const listColumnsByBoard = `-- name: ListColumnsByBoard :many
-SELECT id, board_id, name, position, status_category, created_at, updated_at FROM columns
+SELECT id, board_id, name, position, status_category, created_at, updated_at, is_inbox FROM columns
 WHERE board_id = $1
 ORDER BY position ASC, created_at ASC
 `
@@ -283,6 +288,7 @@ func (q *Queries) ListColumnsByBoard(ctx context.Context, boardID pgtype.UUID) (
 			&i.StatusCategory,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsInbox,
 		); err != nil {
 			return nil, err
 		}
@@ -426,7 +432,7 @@ SET board_id = $2,
     position = $3,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, board_id, name, position, status_category, created_at, updated_at
+RETURNING id, board_id, name, position, status_category, created_at, updated_at, is_inbox
 `
 
 type MoveColumnToBoardParams struct {
@@ -446,6 +452,7 @@ func (q *Queries) MoveColumnToBoard(ctx context.Context, arg MoveColumnToBoardPa
 		&i.StatusCategory,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsInbox,
 	)
 	return i, err
 }
@@ -494,6 +501,18 @@ func (q *Queries) MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskT
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const resetBoardInboxColumns = `-- name: ResetBoardInboxColumns :exec
+UPDATE columns
+SET is_inbox = false,
+    updated_at = NOW()
+WHERE board_id = $1 AND is_inbox = true
+`
+
+func (q *Queries) ResetBoardInboxColumns(ctx context.Context, boardID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, resetBoardInboxColumns, boardID)
+	return err
 }
 
 const resetProjectTasksToInbox = `-- name: ResetProjectTasksToInbox :exec
@@ -545,9 +564,10 @@ UPDATE columns
 SET name = $2,
     position = $3,
     status_category = $4,
+    is_inbox = $5,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, board_id, name, position, status_category, created_at, updated_at
+RETURNING id, board_id, name, position, status_category, created_at, updated_at, is_inbox
 `
 
 type UpdateColumnParams struct {
@@ -555,6 +575,7 @@ type UpdateColumnParams struct {
 	Name           string      `json:"name"`
 	Position       float64     `json:"position"`
 	StatusCategory string      `json:"status_category"`
+	IsInbox        bool        `json:"is_inbox"`
 }
 
 func (q *Queries) UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Column, error) {
@@ -563,6 +584,7 @@ func (q *Queries) UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Col
 		arg.Name,
 		arg.Position,
 		arg.StatusCategory,
+		arg.IsInbox,
 	)
 	var i Column
 	err := row.Scan(
@@ -573,6 +595,7 @@ func (q *Queries) UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Col
 		&i.StatusCategory,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsInbox,
 	)
 	return i, err
 }

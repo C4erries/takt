@@ -41,6 +41,7 @@ export const DEMO_COLUMNS: Column[] = [
     name: 'К выполнению',
     position: 1000.0,
     statusCategory: 'todo',
+    isInbox: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

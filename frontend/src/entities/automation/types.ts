@@ -2,6 +2,7 @@ export interface Automation {
   id: string;
   workspaceId: string;
   boardId?: string | null;
+  columnId?: string | null;
   name: string;
   triggerType: string;
   conditionsJson: Record<string, unknown>;

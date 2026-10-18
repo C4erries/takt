@@ -32,6 +32,7 @@ func TestNewColumn(t *testing.T) {
 				assert.Equal(t, "В работе", col.Name)
 				assert.Equal(t, 2000.0, col.Position)
 				assert.Equal(t, StatusCategoryInProgress, col.StatusCategory)
+				assert.False(t, col.IsInbox)
 				assert.Equal(t, boardID, col.BoardID)
 				assert.NotEqual(t, uuid.Nil, col.ID)
 			},
@@ -212,6 +213,22 @@ func TestColumn_MoveToBoard(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestColumn_SetInbox(t *testing.T) {
+	boardID := uuid.New()
+	col, err := NewColumn(boardID, "Входящие", 500.0, StatusCategoryTodo)
+	require.NoError(t, err)
+	assert.False(t, col.IsInbox)
+
+	initialUpdatedAt := col.UpdatedAt
+
+	col.SetInbox(true)
+	assert.True(t, col.IsInbox)
+	assert.True(t, col.UpdatedAt.After(initialUpdatedAt) || col.UpdatedAt.Equal(initialUpdatedAt))
+
+	col.SetInbox(false)
+	assert.False(t, col.IsInbox)
 }
 
 

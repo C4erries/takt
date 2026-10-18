@@ -1,24 +1,27 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
   closestCorners,
 } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import { Skeleton, EmptyState, ErrorBanner } from '@/shared/components/ui';
-import { LayoutGrid } from 'lucide-react';
+import { Skeleton, EmptyState, ErrorBanner, Button } from '@/shared/components/ui';
+import { LayoutGrid, Plus } from 'lucide-react';
 import {
   useProjectBoardsQuery,
   useBoardColumnsQuery,
   useProjectTasksQuery,
   useMoveTaskMutation,
   useReorderColumnMutation,
+  useCreateColumnMutation,
 } from '@/entities/project';
+import { useUpdateTaskMutation } from '@/entities/task';
 import { useToggleTaskMutation } from '@/features/task-navigation';
 import type { Task } from '@/shared/api';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { useKanbanDnd } from './useKanbanDnd';
+import { getStoredColumnAutomationConfig } from './ColumnAutomationsModal';
 
 export interface KanbanBoardProps {
   projectId: string;
@@ -53,7 +56,28 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const moveTaskMutation = useMoveTaskMutation(workspaceId, projectId);
   const reorderColumnMutation = useReorderColumnMutation(workspaceId, activeBoard?.id);
+  const createColumnMutation = useCreateColumnMutation(workspaceId, activeBoard?.id);
+  const updateTaskMutation = useUpdateTaskMutation(workspaceId);
   const toggleTaskMutation = useToggleTaskMutation();
+
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [newColumnName, setNewColumnName] = useState('');
+  const [isSubmittingColumn, setIsSubmittingColumn] = useState(false);
+  const newColumnInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCreateColumn = async () => {
+    const trimmed = newColumnName.trim();
+    if (!trimmed || isSubmittingColumn) return;
+
+    setIsSubmittingColumn(true);
+    try {
+      await createColumnMutation.mutateAsync({ name: trimmed });
+      setNewColumnName('');
+      setIsAddingColumn(false);
+    } finally {
+      setIsSubmittingColumn(false);
+    }
+  };
 
   const handleMoveTask = (taskId: string, columnId: string, position: number) => {
     moveTaskMutation.mutate({
@@ -64,6 +88,36 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         projectId,
       },
     });
+
+    // Column automation: change priority upon entering column
+    const autoConfig = getStoredColumnAutomationConfig(columnId);
+    if (autoConfig.enterPriorityEnabled && autoConfig.enterPriority) {
+      updateTaskMutation.mutate({
+        taskId,
+        data: { priority: autoConfig.enterPriority },
+      });
+    }
+  };
+
+  const handleToggleTask = (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    toggleTaskMutation.mutate(taskId);
+
+    // If task was incomplete, and is now being completed:
+    if (task && !task.isCompleted && task.columnId) {
+      const autoConfig = getStoredColumnAutomationConfig(task.columnId);
+      if (autoConfig.completeMoveEnabled && autoConfig.completeTargetColumnId) {
+        // Automatically move task to target column upon completion!
+        moveTaskMutation.mutate({
+          taskId,
+          data: {
+            columnId: autoConfig.completeTargetColumnId,
+            position: Date.now(),
+            projectId,
+          },
+        });
+      }
+    }
   };
 
   const handleReorderColumn = (columnId: string, position: number) => {
@@ -137,14 +191,27 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   }
 
   // State 3: Empty State (no columns)
-  if (columns.length === 0) {
+  if (columns.length === 0 && !isAddingColumn) {
     return (
-      <div className="py-12">
+      <div className="py-12 flex flex-col items-center justify-center">
         <EmptyState
           icon={<LayoutGrid className="w-7 h-7 stroke-[1.5]" />}
           title="Колонки отсутствуют"
           description="В этом проекте пока нет ни одной колонки для организации задач."
         />
+        <div className="mt-4">
+          <Button
+            variant="solid"
+            size="sm"
+            onClick={() => {
+              setIsAddingColumn(true);
+              setTimeout(() => newColumnInputRef.current?.focus(), 50);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            Добавить колонку
+          </Button>
+        </div>
       </div>
     );
   }
@@ -173,15 +240,78 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 key={column.id}
                 column={column}
                 tasks={columnTasks}
+                allColumns={columns}
                 projectId={projectId}
                 workspaceId={workspaceId}
                 selectedTaskId={selectedTaskId}
                 onSelectTask={onSelectTask}
-                onToggleTask={(id) => toggleTaskMutation.mutate(id)}
+                onToggleTask={handleToggleTask}
                 onCreateTask={onCreateTaskInColumn}
               />
             );
           })}
+
+          {/* Ghost Button: Добавить колонку (равная ширина w-72) */}
+          {!isAddingColumn ? (
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddingColumn(true);
+                setTimeout(() => newColumnInputRef.current?.focus(), 50);
+              }}
+              className="w-72 shrink-0 min-h-[140px] rounded-xl border-2 border-dashed border-subtle/70 hover:border-accent-solid/60 bg-transparent hover:bg-canvas/50 flex flex-col items-center justify-center gap-2 text-muted hover:text-primary transition-all duration-150 group cursor-pointer select-none"
+              title="Добавить новую колонку на доску"
+            >
+              <div className="w-8 h-8 rounded-lg bg-surface border border-subtle/60 flex items-center justify-center group-hover:border-accent-solid/50 group-hover:text-accent-solid transition-colors">
+                <Plus className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-medium">Добавить колонку</span>
+            </button>
+          ) : (
+            <div className="w-72 shrink-0 bg-canvas/80 border border-subtle rounded-xl p-3 shadow-washi space-y-2.5 animate-in fade-in duration-150">
+              <div className="text-xs font-semibold text-primary uppercase tracking-wider">
+                Новая колонка
+              </div>
+              <input
+                ref={newColumnInputRef}
+                type="text"
+                value={newColumnName}
+                onChange={(e) => setNewColumnName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateColumn();
+                  if (e.key === 'Escape') {
+                    setIsAddingColumn(false);
+                    setNewColumnName('');
+                  }
+                }}
+                placeholder="Название колонки..."
+                className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-subtle bg-surface text-primary placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-accent-solid"
+                autoFocus
+              />
+              <div className="flex items-center justify-end gap-1.5 pt-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => {
+                    setIsAddingColumn(false);
+                    setNewColumnName('');
+                  }}
+                >
+                  Отмена
+                </Button>
+                <Button
+                  variant="solid"
+                  size="sm"
+                  className="text-xs h-7 px-3"
+                  disabled={!newColumnName.trim() || isSubmittingColumn}
+                  onClick={handleCreateColumn}
+                >
+                  Создать
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </SortableContext>
 

@@ -11,5 +11,8 @@ var (
 
 	// ErrInvalidAutomationName indicates that the rule name is empty or too long.
 	ErrInvalidAutomationName = errors.New("invalid automation name")
+
+	// ErrInvalidColumnID indicates that the provided column ID is invalid.
+	ErrInvalidColumnID = errors.New("invalid column ID")
 )
 

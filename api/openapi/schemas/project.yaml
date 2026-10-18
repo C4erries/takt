@@ -108,6 +108,7 @@ Column:
     - name
     - position
     - statusCategory
+    - isInbox
     - createdAt
     - updatedAt
   properties:
@@ -130,6 +131,9 @@ Column:
       type: string
       enum: [backlog, todo, in_progress, done]
       example: "todo"
+    isInbox:
+      type: boolean
+      example: false
     createdAt:
       type: string
       format: date-time
@@ -181,6 +185,10 @@ UpdateColumnRequest:
       type: string
       enum: [backlog, todo, in_progress, done]
       example: "in_progress"
+    isInbox:
+      type: boolean
+      nullable: true
+      example: false
 
 MoveTaskRequest:
   type: object

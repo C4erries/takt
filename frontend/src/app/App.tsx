@@ -22,10 +22,18 @@ import { StatesShowcase } from './components/StatesShowcase';
 import { Button } from '@/shared/components/ui';
 
 import { useTodayTasksQuery } from '@/entities/task';
-import { useProjectTasksQuery } from '@/entities/project';
+import {
+  useProjectTasksQuery,
+  useProjectsQuery,
+  useBoardColumnsQuery,
+  projectApi,
+  DEMO_PROJECT_TASKS,
+} from '@/entities/project';
+import { tasksApi, getAuthToken, type Task, type CreateInboxTaskRequest } from '@/shared/api';
 import { AutomationsModal } from '@/features/automations-toggle';
 import { AcceptInviteModal } from '@/features/workspace-members';
 import { CommandPaletteModal } from '@/features/command-palette';
+import { getStoredColumnAutomationConfig } from '@/features/kanban-board';
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
@@ -154,6 +162,49 @@ export const App: React.FC = () => {
     selectedProjectId ||
     (activeNav.startsWith('project:') ? activeNav.replace('project:', '') : null);
 
+  const { data: projects = [] } = useProjectsQuery(workspace?.id);
+  const { data: currentBoardColumns = [] } = useBoardColumnsQuery(workspace?.id, activeBoardId ?? undefined);
+  const currentProject = activeProjectId ? projects.find((p) => p.id === activeProjectId) : null;
+  const designatedInboxColumn = isProjectNav && activeProjectId ? currentBoardColumns.find((c) => c.isInbox) : null;
+
+  const handleQuickCaptureSubmit = async (req: CreateInboxTaskRequest) => {
+    if (designatedInboxColumn && activeProjectId) {
+      const autoConfig = getStoredColumnAutomationConfig(designatedInboxColumn.id);
+      const effectivePriority =
+        req.priority && req.priority !== 'none'
+          ? req.priority
+          : autoConfig.enterPriorityEnabled
+          ? autoConfig.enterPriority
+          : 'none';
+
+      if (!workspace?.id || !getAuthToken()) {
+        const newTask: Task = {
+          id: `pt-${Date.now()}`,
+          workspaceId: workspace?.id || 'demo-workspace',
+          projectId: activeProjectId,
+          columnId: designatedInboxColumn.id,
+          title: req.title,
+          descriptionMarkdown: '',
+          isCompleted: false,
+          priority: effectivePriority,
+          position: Date.now(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        DEMO_PROJECT_TASKS.push(newTask);
+        queryClient.setQueryData<Task[]>(['project-tasks', workspace?.id, activeProjectId], (old = []) => [...old, newTask]);
+        return;
+      }
+      const created = await tasksApi.createInbox({ ...req, priority: effectivePriority });
+      if (created?.id) {
+        await projectApi.moveTask(workspace.id, created.id, { columnId: designatedInboxColumn.id, position: Date.now(), projectId: activeProjectId });
+        queryClient.invalidateQueries({ queryKey: ['project-tasks', workspace.id, activeProjectId] });
+      }
+      return;
+    }
+    await createTaskMutation.mutateAsync(req);
+  };
+
   let currentNavTasks =
     activeNav === 'today'
       ? todayTasks
@@ -257,25 +308,13 @@ export const App: React.FC = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={catalogTab === 'ui-kit' ? 'solid' : 'ghost'}
-                  onClick={() => setCatalogTab('ui-kit')}
-                >
+                <Button size="sm" variant={catalogTab === 'ui-kit' ? 'solid' : 'ghost'} onClick={() => setCatalogTab('ui-kit')}>
                   Компоненты UI
                 </Button>
-                <Button
-                  size="sm"
-                  variant={catalogTab === 'states' ? 'solid' : 'ghost'}
-                  onClick={() => setCatalogTab('states')}
-                >
+                <Button size="sm" variant={catalogTab === 'states' ? 'solid' : 'ghost'} onClick={() => setCatalogTab('states')}>
                   4 Состояния экрана
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowUiCatalog(false)}
-                >
+                <Button size="sm" variant="outline" onClick={() => setShowUiCatalog(false)}>
                   Вернуться к приложению
                 </Button>
               </div>
@@ -322,9 +361,9 @@ export const App: React.FC = () => {
       <QuickCaptureModal
         isOpen={isQuickCaptureOpen}
         onClose={() => setQuickCaptureOpen(false)}
-        onSubmit={async (req) => {
-          await createTaskMutation.mutateAsync(req);
-        }}
+        onSubmit={handleQuickCaptureSubmit}
+        designatedColumnName={designatedInboxColumn?.name}
+        projectName={currentProject?.name}
       />
 
       <AuthModal

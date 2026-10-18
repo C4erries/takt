@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	appAutomation "takt/internal/application/automation"
 	domainAutomation "takt/internal/domain/automation"
 	"takt/internal/infrastructure/http/generated"
 )
@@ -32,10 +33,18 @@ func (m *mockAutomationService) ListAutomations(ctx context.Context, wsID uuid.U
 	return nil, nil
 }
 
+func (m *mockAutomationService) ListColumnAutomations(ctx context.Context, wsID, colID uuid.UUID) ([]*domainAutomation.Automation, error) {
+	return nil, nil
+}
+
 func (m *mockAutomationService) ToggleAutomation(ctx context.Context, wsID, autoID uuid.UUID, isEnabled bool) (*domainAutomation.Automation, error) {
 	if m.toggleFn != nil {
 		return m.toggleFn(ctx, wsID, autoID, isEnabled)
 	}
+	return nil, nil
+}
+
+func (m *mockAutomationService) CreateColumnAutomation(ctx context.Context, input appAutomation.CreateColumnAutomationInput) (*domainAutomation.Automation, error) {
 	return nil, nil
 }
 

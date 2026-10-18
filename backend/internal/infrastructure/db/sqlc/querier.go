@@ -19,6 +19,7 @@ type Querier interface {
 	CreateAutomation(ctx context.Context, arg CreateAutomationParams) (Automation, error)
 	CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error)
 	CreateColumn(ctx context.Context, arg CreateColumnParams) (Column, error)
+	CreateColumnAutomation(ctx context.Context, arg CreateColumnAutomationParams) (Automation, error)
 	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
 	CreateTag(ctx context.Context, arg CreateTagParams) (Tag, error)
 	CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error)
@@ -56,6 +57,7 @@ type Querier interface {
 	GetWorkspaceMember(ctx context.Context, arg GetWorkspaceMemberParams) (WorkspaceMember, error)
 	GetWorkspacesByUserID(ctx context.Context, userID pgtype.UUID) ([]GetWorkspacesByUserIDRow, error)
 	ListAttachmentsByTaskID(ctx context.Context, arg ListAttachmentsByTaskIDParams) ([]Attachment, error)
+	ListAutomationsByColumn(ctx context.Context, arg ListAutomationsByColumnParams) ([]Automation, error)
 	ListBoardsByProject(ctx context.Context, projectID pgtype.UUID) ([]Board, error)
 	ListColumnsByBoard(ctx context.Context, boardID pgtype.UUID) ([]Column, error)
 	ListEnabledAutomationsByTrigger(ctx context.Context, arg ListEnabledAutomationsByTriggerParams) ([]Automation, error)
@@ -68,10 +70,12 @@ type Querier interface {
 	MoveColumnToBoard(ctx context.Context, arg MoveColumnToBoardParams) (Column, error)
 	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)
 	RemoveTagFromTask(ctx context.Context, arg RemoveTagFromTaskParams) error
+	ResetBoardInboxColumns(ctx context.Context, boardID pgtype.UUID) error
 	ResetProjectTasksToInbox(ctx context.Context, arg ResetProjectTasksToInboxParams) error
 	SearchProjectsInWorkspace(ctx context.Context, arg SearchProjectsInWorkspaceParams) ([]Project, error)
 	SearchTasksInWorkspace(ctx context.Context, arg SearchTasksInWorkspaceParams) ([]Task, error)
 	SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Task, error)
+	SetTaskPriority(ctx context.Context, arg SetTaskPriorityParams) (Task, error)
 	ToggleAutomation(ctx context.Context, arg ToggleAutomationParams) (Automation, error)
 	ToggleTaskCompletion(ctx context.Context, arg ToggleTaskCompletionParams) (Task, error)
 	UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error)

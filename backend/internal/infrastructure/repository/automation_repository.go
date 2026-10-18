@@ -34,6 +34,7 @@ func toDomainAutomation(m sqlc.Automation) *domainAutomation.Automation {
 		ID:             pgToUUID(m.ID),
 		WorkspaceID:    pgToUUID(m.WorkspaceID),
 		BoardID:        pgToUUIDPtr(m.BoardID),
+		ColumnID:       pgToUUIDPtr(m.ColumnID),
 		Name:           m.Name,
 		TriggerType:    m.TriggerType,
 		ConditionsJSON: m.ConditionsJson,
@@ -129,6 +130,49 @@ func (r *AutomationRepository) ListEnabledAutomationsByTrigger(ctx context.Conte
 	return result, nil
 }
 
+func (r *AutomationRepository) ListAutomationsByColumn(ctx context.Context, workspaceID, columnID uuid.UUID) ([]*domainAutomation.Automation, error) {
+	q := getQuerier(ctx, r.queries)
+	rows, err := q.ListAutomationsByColumn(ctx, sqlc.ListAutomationsByColumnParams{
+		ColumnID:    uuidToPg(columnID),
+		WorkspaceID: uuidToPg(workspaceID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*domainAutomation.Automation, len(rows))
+	for i, row := range rows {
+		result[i] = toDomainAutomation(row)
+	}
+	return result, nil
+}
+
+func (r *AutomationRepository) CreateColumnAutomation(ctx context.Context, a *domainAutomation.Automation) error {
+	q := getQuerier(ctx, r.queries)
+	var colPg pgtype.UUID
+	if a.ColumnID != nil {
+		colPg = uuidToPg(*a.ColumnID)
+	}
+	row, err := q.CreateColumnAutomation(ctx, sqlc.CreateColumnAutomationParams{
+		WorkspaceID:    uuidToPg(a.WorkspaceID),
+		BoardID:        uuidPtrToPg(a.BoardID),
+		ColumnID:       colPg,
+		Name:           a.Name,
+		TriggerType:    a.TriggerType,
+		ConditionsJson: a.ConditionsJSON,
+		ActionsJson:    a.ActionsJSON,
+		IsEnabled:      a.IsEnabled,
+	})
+	if err != nil {
+		return err
+	}
+
+	a.ID = pgToUUID(row.ID)
+	a.CreatedAt = pgToTime(row.CreatedAt)
+	a.UpdatedAt = pgToTime(row.UpdatedAt)
+	return nil
+}
+
 // TaskModifier implementation
 
 func (r *AutomationRepository) MoveTaskToColumn(ctx context.Context, taskID, workspaceID uuid.UUID, columnID, projectID *uuid.UUID, position float64) error {
@@ -153,6 +197,16 @@ func (r *AutomationRepository) SetTaskFocus(ctx context.Context, taskID, workspa
 		ID:          uuidToPg(taskID),
 		WorkspaceID: uuidToPg(workspaceID),
 		FocusOrder:  fo,
+	})
+	return err
+}
+
+func (r *AutomationRepository) SetTaskPriority(ctx context.Context, taskID, workspaceID uuid.UUID, priority string) error {
+	q := getQuerier(ctx, r.queries)
+	_, err := q.SetTaskPriority(ctx, sqlc.SetTaskPriorityParams{
+		ID:          uuidToPg(taskID),
+		WorkspaceID: uuidToPg(workspaceID),
+		Priority:    priority,
 	})
 	return err
 }

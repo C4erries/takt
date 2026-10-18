@@ -31,6 +31,7 @@ type Automation struct {
 	IsEnabled      bool               `json:"is_enabled"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	ColumnID       pgtype.UUID        `json:"column_id"`
 }
 
 type Board struct {
@@ -49,6 +50,7 @@ type Column struct {
 	StatusCategory string             `json:"status_category"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	IsInbox        bool               `json:"is_inbox"`
 }
 
 type Project struct {

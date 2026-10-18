@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { FolderClosed, Plus, Filter } from 'lucide-react';
-import { ViewToggle, KanbanBoard } from '@/features/kanban-board';
+import { ViewToggle, KanbanBoard, getStoredColumnAutomationConfig } from '@/features/kanban-board';
 import { useTaskStore } from '@/features/task-navigation';
 import {
   useProjectsQuery,
@@ -59,6 +59,9 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
   const firstColumn = columnsQuery.data?.[0];
 
   const handleCreateTaskInColumn = async (title: string, columnId: string) => {
+    const autoConfig = getStoredColumnAutomationConfig(columnId);
+    const initialPriority = autoConfig.enterPriorityEnabled ? autoConfig.enterPriority : 'none';
+
     if (!workspaceId || !getAuthToken()) {
       const newTask: Task = {
         id: `pt-${Date.now()}`,
@@ -68,7 +71,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
         title,
         descriptionMarkdown: '',
         isCompleted: false,
-        priority: 'none',
+        priority: initialPriority,
         position: Date.now(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -82,7 +85,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
     }
 
     try {
-      const created = await tasksApi.createInbox({ title });
+      const created = await tasksApi.createInbox({ title, priority: initialPriority });
       if (created?.id) {
         await projectApi.moveTask(workspaceId, created.id, {
           columnId,

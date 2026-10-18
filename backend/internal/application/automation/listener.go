@@ -50,13 +50,16 @@ func (l *EventListener) Register(bus events.EventBus) error {
 	if err := bus.Subscribe(events.EventTaskCreated, l.HandleTaskCreated); err != nil {
 		return err
 	}
+	if err := bus.Subscribe(events.EventTaskMoved, l.HandleTaskMoved); err != nil {
+		return err
+	}
 
 	return nil
 }
 
-// HandleTaskCompleted executes rules triggered by task completion (e.g., Done & Archive).
+// HandleTaskCompleted executes rules triggered by task completion.
 func (l *EventListener) HandleTaskCompleted(ctx context.Context, event events.Event) error {
-	if event == nil || event.IsFromAutomation() || events.IsAutomationTriggered(ctx) {
+	if event == nil || !events.CanExecuteAutomation(ctx) {
 		return nil
 	}
 
@@ -66,32 +69,47 @@ func (l *EventListener) HandleTaskCompleted(ctx context.Context, event events.Ev
 	}
 
 	autoCtx := events.WithAutomationTrigger(ctx)
-	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskCompleted)
-	if err != nil || len(rules) == 0 {
-		return err
-	}
-
 	taskCtx := domainAutomation.TaskContext{
 		IsCompleted: true,
 		ProjectID:   taskEvt.ProjectID,
 		ColumnID:    taskEvt.ColumnID,
 	}
 
-	for _, rule := range rules {
-		match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-		if err != nil || !match {
-			continue
+	// 1. Workspace-level completion rules (e.g. Done & Archive)
+	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskCompleted)
+	if err == nil {
+		for _, rule := range rules {
+			match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
+			if err != nil || !match {
+				continue
+			}
+			l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
 		}
+	}
 
-		l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+	// 2. Column-level completion rules (TASK_COMPLETED_IN_COLUMN)
+	if taskEvt.ColumnID != nil {
+		colRules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskCompletedInColumn)
+		if err == nil {
+			for _, rule := range colRules {
+				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
+					continue
+				}
+				match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
+				if err != nil || !match {
+					continue
+				}
+				l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+			}
+		}
 	}
 
 	return nil
 }
 
-// HandleTaskUpdated executes rules triggered by task modifications (Auto-Focus, Inbox Zero).
+// HandleTaskUpdated executes rules triggered by task modifications.
 func (l *EventListener) HandleTaskUpdated(ctx context.Context, event events.Event) error {
-	if event == nil || event.IsFromAutomation() || events.IsAutomationTriggered(ctx) {
+	if event == nil || !events.CanExecuteAutomation(ctx) {
 		return nil
 	}
 
@@ -101,11 +119,6 @@ func (l *EventListener) HandleTaskUpdated(ctx context.Context, event events.Even
 	}
 
 	autoCtx := events.WithAutomationTrigger(ctx)
-	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskUpdated)
-	if err != nil || len(rules) == 0 {
-		return err
-	}
-
 	taskCtx := domainAutomation.TaskContext{
 		IsCompleted:       taskEvt.IsCompleted,
 		HasDueDate:        taskEvt.DueDate != nil,
@@ -116,21 +129,57 @@ func (l *EventListener) HandleTaskUpdated(ctx context.Context, event events.Even
 		PreviousColumnID:  taskEvt.PreviousColumnID,
 	}
 
-	for _, rule := range rules {
-		match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-		if err != nil || !match {
-			continue
+	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskUpdated)
+	if err == nil {
+		for _, rule := range rules {
+			match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
+			if err != nil || !match {
+				continue
+			}
+			l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
 		}
+	}
 
-		l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+	// Check if task entered a new column
+	if taskEvt.ColumnID != nil && (taskEvt.PreviousColumnID == nil || *taskEvt.PreviousColumnID != *taskEvt.ColumnID) {
+		colRules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskEnteredColumn)
+		if err == nil {
+			for _, rule := range colRules {
+				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
+					continue
+				}
+				match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
+				if err != nil || !match {
+					continue
+				}
+				l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+			}
+		}
+	}
+
+	// Check if task was completed in a column
+	if taskEvt.IsCompleted && taskEvt.ColumnID != nil {
+		colRules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskCompletedInColumn)
+		if err == nil {
+			for _, rule := range colRules {
+				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
+					continue
+				}
+				match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
+				if err != nil || !match {
+					continue
+				}
+				l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+			}
+		}
 	}
 
 	return nil
 }
 
-// HandleTaskCreated checks rules that apply to newly created tasks (e.g. Auto-Focus if due date set).
+// HandleTaskCreated checks rules for newly created tasks.
 func (l *EventListener) HandleTaskCreated(ctx context.Context, event events.Event) error {
-	if event == nil || event.IsFromAutomation() || events.IsAutomationTriggered(ctx) {
+	if event == nil || !events.CanExecuteAutomation(ctx) {
 		return nil
 	}
 
@@ -140,11 +189,6 @@ func (l *EventListener) HandleTaskCreated(ctx context.Context, event events.Even
 	}
 
 	autoCtx := events.WithAutomationTrigger(ctx)
-	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskUpdated)
-	if err != nil || len(rules) == 0 {
-		return err
-	}
-
 	taskCtx := domainAutomation.TaskContext{
 		HasDueDate: taskEvt.DueDate != nil,
 		DueDate:    taskEvt.DueDate,
@@ -152,7 +196,65 @@ func (l *EventListener) HandleTaskCreated(ctx context.Context, event events.Even
 		ColumnID:   taskEvt.ColumnID,
 	}
 
+	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskUpdated)
+	if err == nil {
+		for _, rule := range rules {
+			match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
+			if err != nil || !match {
+				continue
+			}
+			l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+		}
+	}
+
+	// Task created directly in a column
+	if taskEvt.ColumnID != nil {
+		colRules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskEnteredColumn)
+		if err == nil {
+			for _, rule := range colRules {
+				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
+					continue
+				}
+				match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
+				if err != nil || !match {
+					continue
+				}
+				l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+			}
+		}
+	}
+
+	return nil
+}
+
+// HandleTaskMoved executes rules when a task is moved to another column.
+func (l *EventListener) HandleTaskMoved(ctx context.Context, event events.Event) error {
+	if event == nil || !events.CanExecuteAutomation(ctx) {
+		return nil
+	}
+
+	taskEvt, ok := event.(events.TaskMovedEvent)
+	if !ok || taskEvt.ColumnID == nil {
+		return nil
+	}
+
+	autoCtx := events.WithAutomationTrigger(ctx)
+	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskEnteredColumn)
+	if err != nil || len(rules) == 0 {
+		return err
+	}
+
+	taskCtx := domainAutomation.TaskContext{
+		ProjectID:        taskEvt.ProjectID,
+		ColumnID:         taskEvt.ColumnID,
+		PreviousColumnID: taskEvt.PreviousColumnID,
+	}
+
 	for _, rule := range rules {
+		if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
+			continue
+		}
+
 		match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
 		if err != nil || !match {
 			continue
@@ -165,7 +267,10 @@ func (l *EventListener) HandleTaskCreated(ctx context.Context, event events.Even
 }
 
 type actionPayload struct {
-	Action string `json:"action"`
+	Action         string  `json:"action"`
+	Priority       string  `json:"priority"`
+	TargetColumnID *string `json:"target_column_id"`
+	TargetColumnId *string `json:"targetColumnId"`
 }
 
 func (l *EventListener) executeAction(ctx context.Context, actionsJSON json.RawMessage, taskID, workspaceID uuid.UUID, projectID *uuid.UUID) {
@@ -194,6 +299,23 @@ func (l *EventListener) executeAction(ctx context.Context, actionsJSON json.RawM
 			todoCol, err := l.projectReader.GetFirstTodoColumn(ctx, *projectID, workspaceID)
 			if err == nil && todoCol != nil {
 				_ = l.taskModifier.MoveTaskToColumn(ctx, taskID, workspaceID, todoCol, projectID, 1000.0)
+			}
+		}
+	case "set_priority":
+		if payload.Priority != "" {
+			_ = l.taskModifier.SetTaskPriority(ctx, taskID, workspaceID, payload.Priority)
+		}
+	case "move_to_column":
+		targetStr := ""
+		if payload.TargetColumnID != nil && *payload.TargetColumnID != "" {
+			targetStr = *payload.TargetColumnID
+		} else if payload.TargetColumnId != nil && *payload.TargetColumnId != "" {
+			targetStr = *payload.TargetColumnId
+		}
+		if targetStr != "" {
+			targetColUUID, err := uuid.Parse(targetStr)
+			if err == nil && targetColUUID != uuid.Nil {
+				_ = l.taskModifier.MoveTaskToColumn(ctx, taskID, workspaceID, &targetColUUID, projectID, 1000.0)
 			}
 		}
 	}

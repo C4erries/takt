@@ -49,3 +49,4 @@
    - `sprint_055_1_deep_link_project.png` — генерация URL проекта и доски.
    - `sprint_055_2_after_reload_persistent.png` — сохранение экрана доски после F5.
    - `sprint_055_3_browser_back_history.png` — возврат к доске по кнопке браузера «Назад».
+

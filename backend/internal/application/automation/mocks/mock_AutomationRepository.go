@@ -105,6 +105,63 @@ func (_c *MockAutomationRepository_CreateAutomation_Call) RunAndReturn(run func(
 	return _c
 }
 
+// CreateColumnAutomation provides a mock function for the type MockAutomationRepository
+func (_mock *MockAutomationRepository) CreateColumnAutomation(ctx context.Context, a *automation.Automation) error {
+	ret := _mock.Called(ctx, a)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateColumnAutomation")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *automation.Automation) error); ok {
+		r0 = returnFunc(ctx, a)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockAutomationRepository_CreateColumnAutomation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateColumnAutomation'
+type MockAutomationRepository_CreateColumnAutomation_Call struct {
+	*mock.Call
+}
+
+// CreateColumnAutomation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - a *automation.Automation
+func (_e *MockAutomationRepository_Expecter) CreateColumnAutomation(ctx any, a any) *MockAutomationRepository_CreateColumnAutomation_Call {
+	return &MockAutomationRepository_CreateColumnAutomation_Call{Call: _e.mock.On("CreateColumnAutomation", ctx, a)}
+}
+
+func (_c *MockAutomationRepository_CreateColumnAutomation_Call) Run(run func(ctx context.Context, a *automation.Automation)) *MockAutomationRepository_CreateColumnAutomation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *automation.Automation
+		if args[1] != nil {
+			arg1 = args[1].(*automation.Automation)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAutomationRepository_CreateColumnAutomation_Call) Return(err error) *MockAutomationRepository_CreateColumnAutomation_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockAutomationRepository_CreateColumnAutomation_Call) RunAndReturn(run func(ctx context.Context, a *automation.Automation) error) *MockAutomationRepository_CreateColumnAutomation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAutomationByID provides a mock function for the type MockAutomationRepository
 func (_mock *MockAutomationRepository) GetAutomationByID(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*automation.Automation, error) {
 	ret := _mock.Called(ctx, id, workspaceID)
@@ -175,6 +232,80 @@ func (_c *MockAutomationRepository_GetAutomationByID_Call) Return(automation1 *a
 }
 
 func (_c *MockAutomationRepository_GetAutomationByID_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*automation.Automation, error)) *MockAutomationRepository_GetAutomationByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListAutomationsByColumn provides a mock function for the type MockAutomationRepository
+func (_mock *MockAutomationRepository) ListAutomationsByColumn(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID) ([]*automation.Automation, error) {
+	ret := _mock.Called(ctx, workspaceID, columnID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListAutomationsByColumn")
+	}
+
+	var r0 []*automation.Automation
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) ([]*automation.Automation, error)); ok {
+		return returnFunc(ctx, workspaceID, columnID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) []*automation.Automation); ok {
+		r0 = returnFunc(ctx, workspaceID, columnID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*automation.Automation)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID, columnID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAutomationRepository_ListAutomationsByColumn_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListAutomationsByColumn'
+type MockAutomationRepository_ListAutomationsByColumn_Call struct {
+	*mock.Call
+}
+
+// ListAutomationsByColumn is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+//   - columnID uuid.UUID
+func (_e *MockAutomationRepository_Expecter) ListAutomationsByColumn(ctx any, workspaceID any, columnID any) *MockAutomationRepository_ListAutomationsByColumn_Call {
+	return &MockAutomationRepository_ListAutomationsByColumn_Call{Call: _e.mock.On("ListAutomationsByColumn", ctx, workspaceID, columnID)}
+}
+
+func (_c *MockAutomationRepository_ListAutomationsByColumn_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID)) *MockAutomationRepository_ListAutomationsByColumn_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAutomationRepository_ListAutomationsByColumn_Call) Return(automations []*automation.Automation, err error) *MockAutomationRepository_ListAutomationsByColumn_Call {
+	_c.Call.Return(automations, err)
+	return _c
+}
+
+func (_c *MockAutomationRepository_ListAutomationsByColumn_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID) ([]*automation.Automation, error)) *MockAutomationRepository_ListAutomationsByColumn_Call {
 	_c.Call.Return(run)
 	return _c
 }

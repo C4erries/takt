@@ -26,23 +26,17 @@ func TestEventListener_RecursionLoopGuard(t *testing.T) {
 
 	listener := appAutomation.NewEventListener(repo, modifier, reader, nil)
 
-	// Case 1: event flagged as FromAutomation
+	// Case 1: context reached MaxAutomationDepth -> Cycle Guard prevents further execution
+	ctx := events.WithAutomationDepth(context.Background(), events.MaxAutomationDepth)
 	evt := events.TaskCompletedEvent{
 		TaskID:         taskID,
 		WorkspaceIDVal: wsID,
-		FromAutomation: true,
 	}
-	err := listener.HandleTaskCompleted(context.Background(), evt)
+	err := listener.HandleTaskCompleted(ctx, evt)
 	require.NoError(t, err)
 
-	// Case 2: context marked with WithAutomationTrigger
-	ctx := events.WithAutomationTrigger(context.Background())
-	evt2 := events.TaskCompletedEvent{
-		TaskID:         taskID,
-		WorkspaceIDVal: wsID,
-		FromAutomation: false,
-	}
-	err = listener.HandleTaskCompleted(ctx, evt2)
+	// Case 2: nil event -> safe no-op
+	err = listener.HandleTaskCompleted(context.Background(), nil)
 	require.NoError(t, err)
 }
 
@@ -217,4 +211,120 @@ func TestEventListener_InboxZero(t *testing.T) {
 	err = listener.HandleTaskUpdated(context.Background(), evt)
 	require.NoError(t, err)
 }
+
+func TestEventListener_TaskEnteredColumn_SetPriority(t *testing.T) {
+	wsID := uuid.New()
+	taskID := uuid.New()
+	projID := uuid.New()
+	colID := uuid.New()
+
+	repo := mocks.NewMockAutomationRepository(t)
+	modifier := mocks.NewMockTaskModifier(t)
+	reader := mocks.NewMockProjectReader(t)
+
+	rule, err := domainAutomation.NewColumnAutomation(
+		wsID,
+		nil,
+		colID,
+		"Auto-Urgent on Column Enter",
+		domainAutomation.TriggerTaskEnteredColumn,
+		json.RawMessage(`{}`),
+		json.RawMessage(`{"action": "set_priority", "priority": "urgent"}`),
+		true,
+	)
+	require.NoError(t, err)
+
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.MatchedBy(func(ctx context.Context) bool {
+			return events.IsAutomationTriggered(ctx) && events.GetAutomationDepth(ctx) == 1
+		}),
+		wsID,
+		domainAutomation.TriggerTaskEnteredColumn,
+	).Return([]*domainAutomation.Automation{rule}, nil).Once()
+
+	modifier.EXPECT().SetTaskPriority(
+		mock.MatchedBy(func(ctx context.Context) bool {
+			return events.IsAutomationTriggered(ctx) && events.GetAutomationDepth(ctx) == 1
+		}),
+		taskID,
+		wsID,
+		"urgent",
+	).Return(nil).Once()
+
+	listener := appAutomation.NewEventListener(repo, modifier, reader, nil)
+
+	evt := events.TaskMovedEvent{
+		TaskID:         taskID,
+		WorkspaceIDVal: wsID,
+		ProjectID:      &projID,
+		ColumnID:       &colID,
+		Position:       1500.0,
+	}
+
+	err = listener.HandleTaskMoved(context.Background(), evt)
+	require.NoError(t, err)
+}
+
+func TestEventListener_TaskCompletedInColumn_MoveToColumn(t *testing.T) {
+	wsID := uuid.New()
+	taskID := uuid.New()
+	projID := uuid.New()
+	colID := uuid.New()
+	targetColID := uuid.New()
+
+	repo := mocks.NewMockAutomationRepository(t)
+	modifier := mocks.NewMockTaskModifier(t)
+	reader := mocks.NewMockProjectReader(t)
+
+	rule, err := domainAutomation.NewColumnAutomation(
+		wsID,
+		nil,
+		colID,
+		"Move to Done on Complete",
+		domainAutomation.TriggerTaskCompletedInColumn,
+		json.RawMessage(`{}`),
+		json.RawMessage(`{"action": "move_to_column", "target_column_id": "`+targetColID.String()+`"}`),
+		true,
+	)
+	require.NoError(t, err)
+
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompleted,
+	).Return([]*domainAutomation.Automation{}, nil).Once()
+
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.MatchedBy(func(ctx context.Context) bool {
+			return events.IsAutomationTriggered(ctx) && events.GetAutomationDepth(ctx) == 1
+		}),
+		wsID,
+		domainAutomation.TriggerTaskCompletedInColumn,
+	).Return([]*domainAutomation.Automation{rule}, nil).Once()
+
+	modifier.EXPECT().MoveTaskToColumn(
+		mock.MatchedBy(func(ctx context.Context) bool {
+			return events.IsAutomationTriggered(ctx) && events.GetAutomationDepth(ctx) == 1
+		}),
+		taskID,
+		wsID,
+		&targetColID,
+		&projID,
+		1000.0,
+	).Return(nil).Once()
+
+	listener := appAutomation.NewEventListener(repo, modifier, reader, nil)
+
+	evt := events.TaskCompletedEvent{
+		TaskID:         taskID,
+		WorkspaceIDVal: wsID,
+		ProjectID:      &projID,
+		ColumnID:       &colID,
+		CompletedAt:    time.Now().UTC(),
+	}
+
+	err = listener.HandleTaskCompleted(context.Background(), evt)
+	require.NoError(t, err)
+}
+
 

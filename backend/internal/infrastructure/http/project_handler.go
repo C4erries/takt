@@ -73,6 +73,7 @@ func mapDomainColumnToGenerated(col *domainProject.Column) generated.Column {
 		Name:           col.Name,
 		Position:       col.Position,
 		StatusCategory: generated.ColumnStatusCategory(col.StatusCategory),
+		IsInbox:        col.IsInbox,
 		CreatedAt:      col.CreatedAt,
 		UpdatedAt:      col.UpdatedAt,
 	}
@@ -244,6 +245,7 @@ func (h *Handler) UpdateBoardColumn(ctx echo.Context, workspaceId openapi_types.
 		Name:           name,
 		Position:       pos,
 		StatusCategory: statusCat,
+		IsInbox:        req.IsInbox,
 	})
 	if err != nil {
 		return h.respondDomainError(ctx, err)

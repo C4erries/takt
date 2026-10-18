@@ -35,10 +35,17 @@ func mapDomainAutomationToGenerated(a *domainAutomation.Automation) generated.Au
 		actions = map[string]interface{}{}
 	}
 
+	var columnID *openapi_types.UUID
+	if a.ColumnID != nil {
+		col := *a.ColumnID
+		columnID = &col
+	}
+
 	return generated.Automation{
 		Id:             a.ID,
 		WorkspaceId:    a.WorkspaceID,
 		BoardId:        boardID,
+		ColumnId:       columnID,
 		Name:           a.Name,
 		TriggerType:    generated.AutomationTriggerType(a.TriggerType),
 		ConditionsJson: conditions,

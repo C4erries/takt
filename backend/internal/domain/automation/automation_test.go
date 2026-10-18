@@ -61,6 +61,34 @@ func TestNewAutomation(t *testing.T) {
 			},
 		},
 		{
+			name:           "valid trigger task entered column",
+			boardID:        &boardID,
+			ruleName:       "Set Urgent on Enter",
+			triggerType:    automation.TriggerTaskEnteredColumn,
+			conditionsJSON: json.RawMessage(`{}`),
+			actionsJSON:    json.RawMessage(`{"action":"set_priority","priority":"urgent"}`),
+			isEnabled:      true,
+			wantErr:        nil,
+			checkOut: func(t *testing.T, a *automation.Automation) {
+				assert.Equal(t, automation.TriggerTaskEnteredColumn, a.TriggerType)
+				assert.True(t, a.IsEnabled)
+			},
+		},
+		{
+			name:           "valid trigger task completed in column",
+			boardID:        &boardID,
+			ruleName:       "Move to Done on Complete",
+			triggerType:    automation.TriggerTaskCompletedInColumn,
+			conditionsJSON: json.RawMessage(`{}`),
+			actionsJSON:    json.RawMessage(`{"action":"move_to_column"}`),
+			isEnabled:      true,
+			wantErr:        nil,
+			checkOut: func(t *testing.T, a *automation.Automation) {
+				assert.Equal(t, automation.TriggerTaskCompletedInColumn, a.TriggerType)
+				assert.True(t, a.IsEnabled)
+			},
+		},
+		{
 			name:        "error: empty rule name",
 			ruleName:    "   ",
 			triggerType: automation.TriggerTaskCreated,
@@ -127,4 +155,86 @@ func TestAutomation_SetEnabled(t *testing.T) {
 	assert.False(t, a.IsEnabled)
 	assert.True(t, a.UpdatedAt.After(initialUpdated) || a.UpdatedAt.Equal(initialUpdated))
 }
+
+func TestNewColumnAutomation(t *testing.T) {
+	wsID := uuid.New()
+	boardID := uuid.New()
+	columnID := uuid.New()
+
+	t.Run("valid column automation", func(t *testing.T) {
+		a, err := automation.NewColumnAutomation(
+			wsID,
+			&boardID,
+			columnID,
+			"Column rule",
+			automation.TriggerTaskEnteredColumn,
+			nil,
+			nil,
+			true,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, a)
+		assert.Equal(t, &columnID, a.ColumnID)
+		assert.Equal(t, &boardID, a.BoardID)
+		assert.Equal(t, wsID, a.WorkspaceID)
+		assert.Equal(t, automation.TriggerTaskEnteredColumn, a.TriggerType)
+		assert.True(t, a.IsEnabled)
+	})
+
+	t.Run("error: nil column ID", func(t *testing.T) {
+		a, err := automation.NewColumnAutomation(
+			wsID,
+			&boardID,
+			uuid.Nil,
+			"Column rule",
+			automation.TriggerTaskEnteredColumn,
+			nil,
+			nil,
+			true,
+		)
+		require.ErrorIs(t, err, automation.ErrInvalidColumnID)
+		assert.Nil(t, a)
+	})
+
+	t.Run("error: invalid name", func(t *testing.T) {
+		a, err := automation.NewColumnAutomation(
+			wsID,
+			&boardID,
+			columnID,
+			"   ",
+			automation.TriggerTaskEnteredColumn,
+			nil,
+			nil,
+			true,
+		)
+		require.ErrorIs(t, err, automation.ErrInvalidAutomationName)
+		assert.Nil(t, a)
+	})
+}
+
+func TestAutomation_SetColumnID(t *testing.T) {
+	wsID := uuid.New()
+	colID := uuid.New()
+	a, err := automation.NewAutomation(
+		wsID,
+		nil,
+		"Test Rule",
+		automation.TriggerTaskCompleted,
+		nil,
+		nil,
+		true,
+	)
+	require.NoError(t, err)
+	assert.Nil(t, a.ColumnID)
+
+	initialUpdated := a.UpdatedAt
+
+	a.SetColumnID(&colID)
+	assert.Equal(t, &colID, a.ColumnID)
+	assert.True(t, a.UpdatedAt.After(initialUpdated) || a.UpdatedAt.Equal(initialUpdated))
+
+	a.SetColumnID(nil)
+	assert.Nil(t, a.ColumnID)
+}
+
 

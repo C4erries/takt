@@ -73,3 +73,11 @@ SET focus_order = $3,
 WHERE id = $1 AND workspace_id = $2
 RETURNING *;
 
+-- name: SetTaskPriority :one
+UPDATE tasks
+SET priority = $3,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING *;
+
+

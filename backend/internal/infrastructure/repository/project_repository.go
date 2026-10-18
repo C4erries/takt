@@ -206,6 +206,7 @@ func (r *ColumnRepository) Create(ctx context.Context, c *domainProject.Column) 
 		Name:           c.Name,
 		Position:       c.Position,
 		StatusCategory: string(c.StatusCategory),
+		IsInbox:        c.IsInbox,
 	})
 	if err != nil {
 		return err
@@ -251,6 +252,7 @@ func (r *ColumnRepository) Update(ctx context.Context, c *domainProject.Column) 
 		Name:           c.Name,
 		Position:       c.Position,
 		StatusCategory: string(c.StatusCategory),
+		IsInbox:        c.IsInbox,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -261,6 +263,11 @@ func (r *ColumnRepository) Update(ctx context.Context, c *domainProject.Column) 
 
 	c.UpdatedAt = pgToTime(row.UpdatedAt)
 	return nil
+}
+
+func (r *ColumnRepository) ResetBoardInboxColumns(ctx context.Context, boardID uuid.UUID) error {
+	q := getQuerier(ctx, r.queries)
+	return q.ResetBoardInboxColumns(ctx, uuidToPg(boardID))
 }
 
 func (r *ColumnRepository) MoveToBoard(ctx context.Context, columnID, newBoardID uuid.UUID, newPosition float64) error {

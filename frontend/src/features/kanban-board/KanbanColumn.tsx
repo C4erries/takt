@@ -1,21 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, ArrowRight, GripVertical } from 'lucide-react';
+import { Plus, MoreHorizontal, ArrowRight, GripVertical, Inbox, Check, Zap } from 'lucide-react';
 import { Badge, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Task } from '@/shared/api';
 import {
   useProjectBoardsQuery,
   useMoveColumnMutation,
+  useUpdateColumnMutation,
   type Column,
   type ColumnStatusCategory,
 } from '@/entities/project';
 import { KanbanCard } from './KanbanCard';
+import { ColumnAutomationsModal } from './ColumnAutomationsModal';
 
 export interface KanbanColumnProps {
   column: Column;
   tasks: Task[];
+  allColumns?: Column[];
   projectId?: string;
   workspaceId?: string;
   onToggleTask?: (taskId: string) => void;
@@ -26,31 +29,21 @@ export interface KanbanColumnProps {
 }
 
 const CATEGORY_STYLES: Record<ColumnStatusCategory, { dot: string; label: string }> = {
-  backlog: { dot: 'bg-muted', label: 'Бэклог' },
-  todo: { dot: 'bg-accent-solid', label: 'К выполнению' },
-  in_progress: { dot: 'bg-tag-persimmon', label: 'В работе' },
-  done: { dot: 'bg-accent-solid', label: 'Готово' },
+  backlog: { dot: 'bg-muted', label: 'Бэклог' }, todo: { dot: 'bg-accent-solid', label: 'К выполнению' },
+  in_progress: { dot: 'bg-tag-persimmon', label: 'В работе' }, done: { dot: 'bg-accent-solid', label: 'Готово' },
 };
 
 const COLUMN_COLORS = [
-  { name: 'По умолчанию', hex: null },
-  { name: 'Матча', hex: '#566B44' },
-  { name: 'Хурма', hex: '#D97746' },
-  { name: 'Деним', hex: '#4A6B82' },
-  { name: 'Солома', hex: '#B8943F' },
-  { name: 'Бамбук', hex: '#7C8E64' },
-  { name: 'Слива', hex: '#7E6B8F' },
-  { name: 'Суми', hex: '#44483E' },
+  { name: 'По умолчанию', hex: null }, { name: 'Матча', hex: '#566B44' },
+  { name: 'Хурма', hex: '#D97746' }, { name: 'Деним', hex: '#4A6B82' },
+  { name: 'Солома', hex: '#B8943F' }, { name: 'Бамбук', hex: '#7C8E64' },
+  { name: 'Слива', hex: '#7E6B8F' }, { name: 'Суми', hex: '#44483E' },
 ] as const;
-
-const STORAGE_KEY = 'takt_column_colors';
 
 function getStoredColumnColor(columnId: string): string | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const map = JSON.parse(raw);
-    return map[columnId] ?? null;
+    const raw = localStorage.getItem('takt_column_colors');
+    return raw ? JSON.parse(raw)[columnId] ?? null : null;
   } catch {
     return null;
   }
@@ -58,14 +51,10 @@ function getStoredColumnColor(columnId: string): string | null {
 
 function setStoredColumnColor(columnId: string, color: string | null): void {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem('takt_column_colors');
     const map = raw ? JSON.parse(raw) : {};
-    if (color) {
-      map[columnId] = color;
-    } else {
-      delete map[columnId];
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    if (color) map[columnId] = color; else delete map[columnId];
+    localStorage.setItem('takt_column_colors', JSON.stringify(map));
   } catch {
     // Ignored
   }
@@ -74,6 +63,7 @@ function setStoredColumnColor(columnId: string, color: string | null): void {
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   column,
   tasks,
+  allColumns,
   projectId,
   workspaceId,
   onToggleTask,
@@ -82,22 +72,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onCreateTask,
   isOverlay = false,
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-    isOver,
-  } = useSortable({
-    id: column.id,
-    data: {
-      type: 'Column',
-      column,
-    },
-    disabled: isOverlay,
-  });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
+    useSortable({
+      id: column.id,
+      data: { type: 'Column', column },
+      disabled: isOverlay,
+    });
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
@@ -108,15 +88,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const [newTitle, setNewTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAutomationsOpen, setIsAutomationsOpen] = useState(false);
   const [columnColor, setColumnColor] = useState<string | null>(() => getStoredColumnColor(column.id));
   const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const boardsQuery = useProjectBoardsQuery(workspaceId, projectId);
   const moveColumnMutation = useMoveColumnMutation(workspaceId, column.boardId);
+  const updateColumnMutation = useUpdateColumnMutation(workspaceId, column.boardId);
   const otherBoards = (boardsQuery.data ?? []).filter((b) => b.id !== column.boardId);
 
-  // Close dropdown menu on click outside
   useEffect(() => {
     if (!isMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -128,11 +109,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
 
-  // Autofocus when adding
   useEffect(() => {
-    if (isAdding) {
-      inputRef.current?.focus();
-    }
+    if (isAdding) inputRef.current?.focus();
   }, [isAdding]);
 
   const categoryConfig = CATEGORY_STYLES[column.statusCategory] || CATEGORY_STYLES.todo;
@@ -144,9 +122,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
     setIsSubmitting(true);
     try {
-      if (onCreateTask) {
-        await onCreateTask(trimmed, column.id);
-      }
+      if (onCreateTask) await onCreateTask(trimmed, column.id);
       setNewTitle('');
       inputRef.current?.focus();
     } finally {
@@ -170,12 +146,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         isOverlay && 'shadow-washi-modal ring-1 ring-accent-solid/40 rotate-1 cursor-grabbing bg-canvas/90'
       )}
     >
-      {/* 3-4px Color Accent Bar */}
+      {/* Color Accent Bar */}
       <div
         className="h-1 -mx-3 -mt-3 mb-2.5 rounded-t-xl transition-colors duration-150"
-        style={{
-          backgroundColor: columnColor || 'transparent',
-        }}
+        style={{ backgroundColor: columnColor || 'transparent' }}
       />
 
       {/* Column Header */}
@@ -186,11 +160,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           title={`Перетащить колонку ${column.name}`}
         >
           {!isOverlay && (
-            <div
-              className="text-muted/40 hover:text-muted p-0.5 -ml-1 rounded transition-colors shrink-0"
-              title="Перетащить колонку"
-              aria-label={`Перетащить колонку ${column.name}`}
-            >
+            <div className="text-muted/40 hover:text-muted p-0.5 -ml-1 rounded transition-colors shrink-0">
               <GripVertical className="w-3.5 h-3.5" />
             </div>
           )}
@@ -198,6 +168,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           <h3 className="text-xs font-semibold tracking-wide uppercase text-primary truncate">
             {column.name}
           </h3>
+          {column.isInbox && (
+            <span title="Входящая колонка проекта" className="inline-flex items-center shrink-0">
+              <Inbox className="w-3.5 h-3.5 text-accent-solid" />
+            </span>
+          )}
           <Badge variant="subtle" size="sm" className="font-mono text-[10px] px-1.5 py-0">
             {tasks.length}
           </Badge>
@@ -220,15 +195,46 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             </Button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-52 z-30 bg-surface border border-subtle rounded-xl shadow-washi p-1.5 space-y-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase">
+              <div className="absolute right-0 top-full mt-1 w-56 z-30 bg-surface border border-subtle rounded-xl shadow-washi p-1.5 space-y-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                {/* 1. Toggle Inbox Status */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    updateColumnMutation.mutate({
+                      columnId: column.id,
+                      data: { isInbox: !column.isInbox },
+                    });
+                  }}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <Inbox className={cn('w-3.5 h-3.5 shrink-0', column.isInbox ? 'text-accent-solid' : 'text-muted')} />
+                    <span className="truncate">{column.isInbox ? 'Снять статус Inbox' : 'Сделать входящей (Inbox)'}</span>
+                  </span>
+                  {column.isInbox && <Check className="w-3 h-3 text-accent-solid shrink-0 ml-1.5" />}
+                </button>
+
+                {/* 2. Column Automations */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    setIsAutomationsOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
+                >
+                  <Zap className="w-3.5 h-3.5 text-accent-solid shrink-0" />
+                  <span>Автоматизации колонки (⚡)</span>
+                </button>
+
+                {/* 3. Move to Board */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase border-t border-subtle/40 pt-1.5 mt-1">
                   Переместить на доску
                 </div>
 
                 {otherBoards.length === 0 ? (
-                  <div className="px-2 py-1.5 text-[11px] text-muted italic">
-                    Нет других досок
-                  </div>
+                  <div className="px-2 py-1 text-[11px] text-muted italic">Нет других досок</div>
                 ) : (
                   <div className="space-y-0.5">
                     {otherBoards.map((targetBoard) => (
@@ -251,7 +257,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   </div>
                 )}
 
-                {/* Column Color Picker */}
+                {/* 4. Column Color Picker */}
                 <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase border-t border-subtle/40 pt-1.5 mt-1">
                   Цвет колонки
                 </div>
@@ -282,14 +288,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         </div>
       </div>
 
-      {/* Inline Task Add row under Column Header */}
+      {/* Inline Task Add row */}
       {!isOverlay && (
         <div className="mb-2">
           {isAdding ? (
-            <form
-              onSubmit={handleQuickAdd}
-              className="p-2 rounded-xl bg-surface border border-subtle shadow-washi space-y-2 animate-in fade-in duration-100"
-            >
+            <form onSubmit={handleQuickAdd} className="p-2 rounded-xl bg-surface border border-subtle shadow-washi space-y-2 animate-in fade-in duration-100">
               <input
                 ref={inputRef}
                 type="text"
@@ -370,6 +373,17 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           )}
         </div>
       </SortableContext>
+
+      {/* Column Automations Modal */}
+      {!isOverlay && (
+        <ColumnAutomationsModal
+          isOpen={isAutomationsOpen}
+          onClose={() => setIsAutomationsOpen(false)}
+          column={column}
+          allColumns={allColumns || [column]}
+          workspaceId={workspaceId}
+        />
+      )}
     </div>
   );
 };

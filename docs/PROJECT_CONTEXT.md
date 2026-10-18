@@ -103,6 +103,7 @@ erDiagram
         string name
         int position
         string status_category "backlog | todo | in_progress | done"
+        boolean is_inbox "true for designated project inbox column"
         timestamp created_at
     }
 
@@ -139,8 +140,9 @@ erDiagram
         uuid id PK
         uuid workspace_id FK
         uuid board_id FK "nullable for global"
+        uuid column_id FK "nullable for column-level"
         string name
-        string trigger_type "task_created | task_updated | due_date_reached"
+        string trigger_type "task_created | task_updated | due_date_reached | task_entered_column | task_completed_in_column"
         jsonb conditions_json
         jsonb actions_json
         boolean is_enabled

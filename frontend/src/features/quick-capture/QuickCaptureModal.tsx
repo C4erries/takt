@@ -8,6 +8,8 @@ export interface QuickCaptureModalProps {
   onClose?: () => void;
   onSubmit?: (task: CreateInboxTaskRequest) => Promise<void>;
   enableGlobalHotkey?: boolean;
+  designatedColumnName?: string | null;
+  projectName?: string | null;
 }
 
 const PRIORITIES: { value: Priority; label: string; badgeVariant: 'subtle' | 'straw' | 'denim' | 'persimmon' }[] = [
@@ -22,6 +24,8 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   isOpen: propsIsOpen,
   onClose: propsOnClose,
   onSubmit: propsOnSubmit,
+  designatedColumnName,
+  projectName,
 }) => {
   const { isQuickCaptureOpen, setQuickCaptureOpen } = useTaskStore();
   const createTaskMutation = useCreateTaskMutation();
@@ -78,7 +82,11 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       title="Быстрый захват мысли"
-      description="Мгновенно сбросьте задачу в Inbox. Клавиши ⌘+Enter для быстрого сохранения."
+      description={
+        designatedColumnName
+          ? `Задача будет добавлена во входящую колонку «${designatedColumnName}» (${projectName || 'проект'}). ⌘+Enter для быстрого сохранения.`
+          : 'Мгновенно сбросьте задачу в Inbox. Клавиши ⌘+Enter для быстрого сохранения.'
+      }
       footer={
         <div className="w-full flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-muted font-mono">
@@ -98,7 +106,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
               isLoading={isSubmitting}
               disabled={!title.trim()}
             >
-              В Inbox
+              {designatedColumnName ? `В «${designatedColumnName}»` : 'В Inbox'}
             </Button>
           </div>
         </div>

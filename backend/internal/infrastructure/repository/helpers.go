@@ -106,10 +106,14 @@ func mapBoardRowToDomain(row sqlc.Board) *domainProject.Board {
 
 func mapColumnRowToDomain(row sqlc.Column) *domainProject.Column {
 	return &domainProject.Column{
-		ID: pgToUUID(row.ID), BoardID: pgToUUID(row.BoardID),
-		Name: row.Name, Position: row.Position,
+		ID:             pgToUUID(row.ID),
+		BoardID:        pgToUUID(row.BoardID),
+		Name:           row.Name,
+		Position:       row.Position,
 		StatusCategory: domainProject.StatusCategory(row.StatusCategory),
-		CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
+		IsInbox:        row.IsInbox,
+		CreatedAt:      pgToTime(row.CreatedAt),
+		UpdatedAt:      pgToTime(row.UpdatedAt),
 	}
 }
 

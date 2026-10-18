@@ -35,6 +35,7 @@ type UpdateColumnInput struct {
 	Name           string
 	Position       float64
 	StatusCategory domainProject.StatusCategory
+	IsInbox        *bool
 }
 
 type MoveTaskInput struct {

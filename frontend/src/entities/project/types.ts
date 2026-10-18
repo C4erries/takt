@@ -40,6 +40,7 @@ export interface Column {
   name: string;
   position: number;
   statusCategory: ColumnStatusCategory;
+  isInbox?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -55,6 +56,7 @@ export interface UpdateColumnRequest {
   name?: string;
   position?: number;
   statusCategory?: ColumnStatusCategory;
+  isInbox?: boolean;
 }
 
 export interface MoveTaskRequest {

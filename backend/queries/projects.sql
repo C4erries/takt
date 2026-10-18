@@ -65,9 +65,10 @@ INSERT INTO columns (
     board_id,
     name,
     position,
-    status_category
+    status_category,
+    is_inbox
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3, $4, $5
 )
 RETURNING *;
 
@@ -85,9 +86,16 @@ UPDATE columns
 SET name = $2,
     position = $3,
     status_category = $4,
+    is_inbox = $5,
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: ResetBoardInboxColumns :exec
+UPDATE columns
+SET is_inbox = false,
+    updated_at = NOW()
+WHERE board_id = $1 AND is_inbox = true;
 
 -- name: MoveColumnToBoard :one
 UPDATE columns

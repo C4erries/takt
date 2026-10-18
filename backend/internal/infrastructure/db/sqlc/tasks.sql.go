@@ -262,6 +262,42 @@ func (q *Queries) SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Tas
 	return i, err
 }
 
+const setTaskPriority = `-- name: SetTaskPriority :one
+UPDATE tasks
+SET priority = $3,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+`
+
+type SetTaskPriorityParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Priority    string      `json:"priority"`
+}
+
+func (q *Queries) SetTaskPriority(ctx context.Context, arg SetTaskPriorityParams) (Task, error) {
+	row := q.db.QueryRow(ctx, setTaskPriority, arg.ID, arg.WorkspaceID, arg.Priority)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.ColumnID,
+		&i.Title,
+		&i.DescriptionMarkdown,
+		&i.IsCompleted,
+		&i.CompletedAt,
+		&i.DueDate,
+		&i.Priority,
+		&i.FocusOrder,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const toggleTaskCompletion = `-- name: ToggleTaskCompletion :one
 UPDATE tasks
 SET is_completed = NOT is_completed,

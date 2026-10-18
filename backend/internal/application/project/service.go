@@ -250,11 +250,24 @@ func (s *Service) UpdateColumn(ctx context.Context, input UpdateColumnInput) (*d
 		posForUpdate = 0
 	}
 
+	inboxChanged := false
+	if input.IsInbox != nil {
+		inboxChanged = true
+		if *input.IsInbox {
+			if err := s.columnRepo.ResetBoardInboxColumns(ctx, col.BoardID); err != nil {
+				return nil, err
+			}
+		}
+		col.SetInbox(*input.IsInbox)
+	}
+
 	if input.Name != "" || posForUpdate > 0 || input.StatusCategory != "" {
 		if err := col.Update(input.Name, posForUpdate, input.StatusCategory); err != nil {
 			return nil, err
 		}
+	}
 
+	if input.Name != "" || posForUpdate > 0 || input.StatusCategory != "" || inboxChanged {
 		if err := s.columnRepo.Update(ctx, col); err != nil {
 			return nil, err
 		}

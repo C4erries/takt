@@ -315,3 +315,73 @@ func TestService_MoveTask(t *testing.T) {
 		assert.Equal(t, &colID, res.ColumnID)
 	})
 }
+
+func TestService_UpdateColumn_Inbox(t *testing.T) {
+	wsID := uuid.New()
+	projID := uuid.New()
+	boardID := uuid.New()
+	colID := uuid.New()
+
+	existingProj := &domainProject.Project{ID: projID, WorkspaceID: wsID, Name: "Проект"}
+	existingBoard := &domainProject.Board{ID: boardID, ProjectID: projID, Name: "Основная"}
+
+	t.Run("установка isInbox=true сбрасывает другие колонки на доске", func(t *testing.T) {
+		existingCol := &domainProject.Column{
+			ID:             colID,
+			BoardID:        boardID,
+			Name:           "Входящие",
+			Position:       1000.0,
+			StatusCategory: domainProject.StatusCategoryTodo,
+			IsInbox:        false,
+		}
+
+		deps := newMockDeps(t)
+		deps.columnRepo.EXPECT().GetByID(mock.Anything, colID).Return(existingCol, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID).Return(existingBoard, nil).Once()
+		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		deps.columnRepo.EXPECT().ResetBoardInboxColumns(mock.Anything, boardID).Return(nil).Once()
+		deps.columnRepo.EXPECT().Update(mock.Anything, mock.MatchedBy(func(c *domainProject.Column) bool {
+			return c.ID == colID && c.IsInbox == true
+		})).Return(nil).Once()
+
+		svc := deps.newService()
+		isInbox := true
+		col, err := svc.UpdateColumn(context.Background(), projectapp.UpdateColumnInput{
+			WorkspaceID: wsID,
+			ColumnID:    colID,
+			IsInbox:     &isInbox,
+		})
+		require.NoError(t, err)
+		assert.True(t, col.IsInbox)
+	})
+
+	t.Run("снятие isInbox=false обновляет колонку без сброса", func(t *testing.T) {
+		existingCol := &domainProject.Column{
+			ID:             colID,
+			BoardID:        boardID,
+			Name:           "Входящие",
+			Position:       1000.0,
+			StatusCategory: domainProject.StatusCategoryTodo,
+			IsInbox:        true,
+		}
+
+		deps := newMockDeps(t)
+		deps.columnRepo.EXPECT().GetByID(mock.Anything, colID).Return(existingCol, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID).Return(existingBoard, nil).Once()
+		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		deps.columnRepo.EXPECT().Update(mock.Anything, mock.MatchedBy(func(c *domainProject.Column) bool {
+			return c.ID == colID && c.IsInbox == false
+		})).Return(nil).Once()
+
+		svc := deps.newService()
+		isInbox := false
+		col, err := svc.UpdateColumn(context.Background(), projectapp.UpdateColumnInput{
+			WorkspaceID: wsID,
+			ColumnID:    colID,
+			IsInbox:     &isInbox,
+		})
+		require.NoError(t, err)
+		assert.False(t, col.IsInbox)
+	})
+}
+

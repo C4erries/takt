@@ -130,3 +130,26 @@ func TestAutomationTriggerContext(t *testing.T) {
 	}
 }
 
+func TestCycleGuard_DepthTracking(t *testing.T) {
+	ctx := context.Background()
+	require.Equal(t, 0, events.GetAutomationDepth(ctx))
+	require.True(t, events.CanExecuteAutomation(ctx))
+
+	ctx1 := events.WithAutomationTrigger(ctx)
+	require.Equal(t, 1, events.GetAutomationDepth(ctx1))
+	require.True(t, events.CanExecuteAutomation(ctx1))
+
+	ctx2 := events.WithAutomationTrigger(ctx1)
+	require.Equal(t, 2, events.GetAutomationDepth(ctx2))
+	require.True(t, events.CanExecuteAutomation(ctx2))
+
+	ctx3 := events.WithAutomationTrigger(ctx2)
+	require.Equal(t, 3, events.GetAutomationDepth(ctx3))
+	require.False(t, events.CanExecuteAutomation(ctx3))
+
+	ctxDepth4 := events.WithAutomationDepth(context.Background(), 4)
+	require.Equal(t, 4, events.GetAutomationDepth(ctxDepth4))
+	require.False(t, events.CanExecuteAutomation(ctxDepth4))
+}
+
+

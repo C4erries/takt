@@ -31,6 +31,8 @@ SET name = $3,
     actions_json = $6,
     is_enabled = $7,
     rule_definition = $8,
+    board_id = $9,
+    column_id = $10,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
 RETURNING *;

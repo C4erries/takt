@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -95,14 +96,20 @@ func mapDomainRuleDefinitionToGenerated(d *domainAutomation.RuleDefinition) *gen
 			Params: &p,
 		})
 	}
+	var logicalOp *generated.RuleDefinitionLogicalOperator
+	if d.LogicalOperator != "" {
+		op := generated.RuleDefinitionLogicalOperator(d.LogicalOperator)
+		logicalOp = &op
+	}
 	triggerParams := d.Trigger.Params
 	return &generated.RuleDefinition{
 		Trigger: generated.Trigger{
 			Type:   generated.TriggerType(d.Trigger.Type),
 			Params: &triggerParams,
 		},
-		Conditions: &conditions,
-		Actions:    actions,
+		LogicalOperator: logicalOp,
+		Conditions:      &conditions,
+		Actions:         actions,
 	}
 }
 
@@ -113,6 +120,10 @@ func mapGeneratedRuleDefinitionToDomain(g *generated.RuleDefinition) *domainAuto
 	var params map[string]interface{}
 	if g.Trigger.Params != nil {
 		params = *g.Trigger.Params
+	}
+	var logicalOp string
+	if g.LogicalOperator != nil {
+		logicalOp = string(*g.LogicalOperator)
 	}
 	var conditions []domainAutomation.Condition
 	if g.Conditions != nil {
@@ -136,9 +147,10 @@ func mapGeneratedRuleDefinitionToDomain(g *generated.RuleDefinition) *domainAuto
 		})
 	}
 	return &domainAutomation.RuleDefinition{
-		Trigger:    domainAutomation.Trigger{Type: string(g.Trigger.Type), Params: params},
-		Conditions: conditions,
-		Actions:    actions,
+		Trigger:         domainAutomation.Trigger{Type: string(g.Trigger.Type), Params: params},
+		LogicalOperator: logicalOp,
+		Conditions:      conditions,
+		Actions:         actions,
 	}
 }
 
@@ -225,9 +237,20 @@ func (h *Handler) UpdateAutomation(c echo.Context, wsID, autoID openapi_types.UU
 	if !h.checkAccessAndService(c, wsID) {
 		return nil
 	}
-	var req generated.UpdateAutomationRequest
-	if err := c.Bind(&req); err != nil {
+	bodyBytes, err := io.ReadAll(c.Request().Body)
+	if err != nil {
 		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
+	}
+	var req generated.UpdateAutomationRequest
+	if err := json.Unmarshal(bodyBytes, &req); err != nil {
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
+	}
+	var raw map[string]interface{}
+	_ = json.Unmarshal(bodyBytes, &raw)
+
+	var clearCol bool
+	if _, ok := raw["columnId"]; ok && req.ColumnId == nil {
+		clearCol = true
 	}
 
 	domRuleDef := mapGeneratedRuleDefinitionToDomain(req.RuleDefinition)
@@ -256,6 +279,7 @@ func (h *Handler) UpdateAutomation(c echo.Context, wsID, autoID openapi_types.UU
 		WorkspaceID:    wsID,
 		BoardID:        req.BoardId,
 		ColumnID:       req.ColumnId,
+		ClearColumnID:  clearCol,
 		Name:           req.Name,
 		TriggerType:    triggerType,
 		ConditionsJSON: condBytes,

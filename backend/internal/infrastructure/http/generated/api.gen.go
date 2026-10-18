@@ -259,6 +259,24 @@ func (e CreateInboxTaskRequestPriority) Valid() bool {
 	}
 }
 
+// Defines values for RuleDefinitionLogicalOperator.
+const (
+	And RuleDefinitionLogicalOperator = "and"
+	Or  RuleDefinitionLogicalOperator = "or"
+)
+
+// Valid indicates whether the value is a known member of the RuleDefinitionLogicalOperator enum.
+func (e RuleDefinitionLogicalOperator) Valid() bool {
+	switch e {
+	case And:
+		return true
+	case Or:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TaskPriority.
 const (
 	TaskPriorityHigh   TaskPriority = "high"
@@ -790,8 +808,14 @@ type RegisterRequest struct {
 type RuleDefinition struct {
 	Actions    []Action     `json:"actions"`
 	Conditions *[]Condition `json:"conditions,omitempty"`
-	Trigger    Trigger      `json:"trigger"`
+
+	// LogicalOperator Example: and
+	LogicalOperator *RuleDefinitionLogicalOperator `json:"logicalOperator,omitempty"`
+	Trigger         Trigger                        `json:"trigger"`
 }
+
+// RuleDefinitionLogicalOperator Example: and
+type RuleDefinitionLogicalOperator string
 
 // SearchResponse defines model for SearchResponse.
 type SearchResponse struct {

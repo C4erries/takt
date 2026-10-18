@@ -83,6 +83,7 @@ export function useRuleBuilder({
   const [triggerField, setTriggerField] = useState<string>('priority');
 
   const [conditions, setConditions] = useState<AutomationCondition[]>([]);
+  const [logicalOperator, setLogicalOperator] = useState<'and' | 'or'>('and');
   const [actions, setActions] = useState<AutomationAction[]>([
     { type: 'set_priority', params: { priority: 'high' } },
   ]);
@@ -154,14 +155,14 @@ export function useRuleBuilder({
     }
 
     const trigger: AutomationTrigger = { type: triggerType, params: triggerParams };
-    const ruleDefinition: RuleDefinition = { trigger, conditions, actions };
+    const ruleDefinition: RuleDefinition = { trigger, conditions, logicalOperator, actions };
 
     try {
       const created = await createMutation.mutateAsync({
         name: ruleName.trim(),
         triggerType,
         columnId: triggerColumnId || null,
-        conditionsJson: { conditions },
+        conditionsJson: { conditions, logical_operator: logicalOperator },
         actionsJson: { actions },
         isEnabled: true,
         ruleDefinition,
@@ -186,6 +187,8 @@ export function useRuleBuilder({
     triggerField,
     setTriggerField,
     conditions,
+    logicalOperator,
+    setLogicalOperator,
     handleAddCondition,
     handleRemoveCondition,
     handleUpdateCondition,

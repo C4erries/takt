@@ -150,6 +150,11 @@ RuleDefinition:
   properties:
     trigger:
       $ref: '#/Trigger'
+    logicalOperator:
+      type: string
+      enum: [and, or]
+      default: and
+      example: "and"
     conditions:
       type: array
       items:

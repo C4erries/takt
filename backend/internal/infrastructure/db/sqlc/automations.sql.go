@@ -449,6 +449,8 @@ SET name = $3,
     actions_json = $6,
     is_enabled = $7,
     rule_definition = $8,
+    board_id = $9,
+    column_id = $10,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
 RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition
@@ -463,6 +465,8 @@ type UpdateAutomationParams struct {
 	ActionsJson    []byte      `json:"actions_json"`
 	IsEnabled      bool        `json:"is_enabled"`
 	RuleDefinition []byte      `json:"rule_definition"`
+	BoardID        pgtype.UUID `json:"board_id"`
+	ColumnID       pgtype.UUID `json:"column_id"`
 }
 
 func (q *Queries) UpdateAutomation(ctx context.Context, arg UpdateAutomationParams) (Automation, error) {
@@ -475,6 +479,8 @@ func (q *Queries) UpdateAutomation(ctx context.Context, arg UpdateAutomationPara
 		arg.ActionsJson,
 		arg.IsEnabled,
 		arg.RuleDefinition,
+		arg.BoardID,
+		arg.ColumnID,
 	)
 	var i Automation
 	err := row.Scan(

@@ -62,16 +62,20 @@ func getRuleBytes(r *domainAutomation.RuleDefinition) []byte {
 	return []byte("{}")
 }
 
+func toDomainAutomations(rows []sqlc.Automation) []*domainAutomation.Automation {
+	res := make([]*domainAutomation.Automation, len(rows))
+	for i, row := range rows {
+		res[i] = toDomainAutomation(row)
+	}
+	return res
+}
+
 func (r *AutomationRepository) ListWorkspaceAutomations(ctx context.Context, wsID uuid.UUID) ([]*domainAutomation.Automation, error) {
 	rows, err := getQuerier(ctx, r.queries).ListWorkspaceAutomations(ctx, uuidToPg(wsID))
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*domainAutomation.Automation, len(rows))
-	for i, row := range rows {
-		result[i] = toDomainAutomation(row)
-	}
-	return result, nil
+	return toDomainAutomations(rows), nil
 }
 
 func (r *AutomationRepository) GetAutomationByID(ctx context.Context, id, wsID uuid.UUID) (*domainAutomation.Automation, error) {
@@ -133,6 +137,8 @@ func (r *AutomationRepository) UpdateAutomation(ctx context.Context, a *domainAu
 		ActionsJson:    a.ActionsJSON,
 		IsEnabled:      a.IsEnabled,
 		RuleDefinition: getRuleBytes(a.RuleDefinition),
+		BoardID:        uuidPtrToPg(a.BoardID),
+		ColumnID:       uuidPtrToPg(a.ColumnID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -140,6 +146,8 @@ func (r *AutomationRepository) UpdateAutomation(ctx context.Context, a *domainAu
 		}
 		return err
 	}
+	a.BoardID = pgToUUIDPtr(row.BoardID)
+	a.ColumnID = pgToUUIDPtr(row.ColumnID)
 	a.UpdatedAt = pgToTime(row.UpdatedAt)
 	return nil
 }
@@ -159,11 +167,7 @@ func (r *AutomationRepository) ListEnabledAutomationsByTrigger(ctx context.Conte
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*domainAutomation.Automation, len(rows))
-	for i, row := range rows {
-		result[i] = toDomainAutomation(row)
-	}
-	return result, nil
+	return toDomainAutomations(rows), nil
 }
 
 func (r *AutomationRepository) ListAutomationsByColumn(ctx context.Context, wsID, colID uuid.UUID) ([]*domainAutomation.Automation, error) {
@@ -174,11 +178,7 @@ func (r *AutomationRepository) ListAutomationsByColumn(ctx context.Context, wsID
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*domainAutomation.Automation, len(rows))
-	for i, row := range rows {
-		result[i] = toDomainAutomation(row)
-	}
-	return result, nil
+	return toDomainAutomations(rows), nil
 }
 
 func (r *AutomationRepository) ListAllEnabledTimerAutomations(ctx context.Context) ([]*domainAutomation.Automation, error) {
@@ -186,11 +186,7 @@ func (r *AutomationRepository) ListAllEnabledTimerAutomations(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*domainAutomation.Automation, len(rows))
-	for i, row := range rows {
-		result[i] = toDomainAutomation(row)
-	}
-	return result, nil
+	return toDomainAutomations(rows), nil
 }
 
 func (r *AutomationRepository) CreateColumnAutomation(ctx context.Context, a *domainAutomation.Automation) error {
@@ -357,13 +353,17 @@ func (r *AutomationRepository) ListTasksByColumn(ctx context.Context, wsID, colI
 
 // ProjectReader implementation
 
-func (r *AutomationRepository) GetFirstTodoColumn(ctx context.Context, prjID, wsID uuid.UUID) (*uuid.UUID, error) {
+func (r *AutomationRepository) getBoardColumns(ctx context.Context, prjID uuid.UUID) ([]sqlc.Column, error) {
 	q := getQuerier(ctx, r.queries)
 	boards, err := q.ListBoardsByProject(ctx, uuidToPg(prjID))
 	if err != nil || len(boards) == 0 {
 		return nil, err
 	}
-	cols, err := q.ListColumnsByBoard(ctx, boards[0].ID)
+	return q.ListColumnsByBoard(ctx, boards[0].ID)
+}
+
+func (r *AutomationRepository) GetFirstTodoColumn(ctx context.Context, prjID, wsID uuid.UUID) (*uuid.UUID, error) {
+	cols, err := r.getBoardColumns(ctx, prjID)
 	if err != nil || len(cols) == 0 {
 		return nil, err
 	}
@@ -378,12 +378,7 @@ func (r *AutomationRepository) GetFirstTodoColumn(ctx context.Context, prjID, ws
 }
 
 func (r *AutomationRepository) GetDoneColumn(ctx context.Context, prjID, wsID uuid.UUID) (*uuid.UUID, error) {
-	q := getQuerier(ctx, r.queries)
-	boards, err := q.ListBoardsByProject(ctx, uuidToPg(prjID))
-	if err != nil || len(boards) == 0 {
-		return nil, err
-	}
-	cols, err := q.ListColumnsByBoard(ctx, boards[0].ID)
+	cols, err := r.getBoardColumns(ctx, prjID)
 	if err != nil || len(cols) == 0 {
 		return nil, err
 	}

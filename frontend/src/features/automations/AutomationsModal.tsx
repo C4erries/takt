@@ -82,7 +82,7 @@ export const AutomationsModal: React.FC<AutomationsModalProps> = ({
           <div className="flex items-center justify-between p-3 rounded-xl bg-accent-surface/40 border border-subtle text-xs text-primary">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-accent-solid shrink-0" />
-              <span>Шина EventBus с защитой Cycle Guard (глубина ≤ 3).</span>
+              <span>Правила срабатывают мгновенно и защищены от зацикливания.</span>
             </div>
             <Button
               variant="outline"

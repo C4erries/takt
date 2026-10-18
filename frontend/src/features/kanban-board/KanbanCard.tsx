@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, AlertCircle, Clock, Calendar } from 'lucide-react';
 import { Checkbox, Badge } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Task, Priority } from '@/shared/api';
@@ -15,12 +15,58 @@ export interface KanbanCardProps {
 }
 
 const PRIORITY_BADGES: Record<Priority, { label: string; variant: 'persimmon' | 'denim' | 'straw' | 'matcha' | 'subtle' } | null> = {
-  urgent: { label: 'Срочно', variant: 'persimmon' },
-  high: { label: 'Высокий', variant: 'denim' },
+  urgent: { label: 'Срочно', variant: 'denim' },
+  high: { label: 'Высокий', variant: 'persimmon' },
   medium: { label: 'Средний', variant: 'straw' },
   low: { label: 'Низкий', variant: 'subtle' },
   none: null,
 };
+
+const PRIORITY_STYLES: Record<Priority, string> = {
+  urgent: 'border-l-4 border-l-accent-denim',
+  high: 'border-l-4 border-l-accent-persimmon',
+  medium: 'border-l-4 border-l-accent-straw',
+  low: 'border-l-4 border-l-accent-bamboo',
+  none: 'border-l-transparent',
+};
+
+function getDueDateInfo(dueDateStr?: string | null): {
+  isOverdue: boolean;
+  isSoon: boolean;
+  text: string;
+} | null {
+  if (!dueDateStr) return null;
+  const due = new Date(dueDateStr);
+  if (isNaN(due.getTime())) return null;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfTomorrow = new Date(startOfToday.getTime() + 48 * 60 * 60 * 1000);
+  const dueMidnight = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+
+  if (dueMidnight.getTime() < startOfToday.getTime()) {
+    return {
+      isOverdue: true,
+      isSoon: false,
+      text: due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
+    };
+  }
+
+  if (due.getTime() <= endOfTomorrow.getTime()) {
+    const isToday = dueMidnight.getTime() === startOfToday.getTime();
+    return {
+      isOverdue: false,
+      isSoon: true,
+      text: isToday ? 'Сегодня' : 'Завтра',
+    };
+  }
+
+  return {
+    isOverdue: false,
+    isSoon: false,
+    text: due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
+  };
+}
 
 export const KanbanCard: React.FC<KanbanCardProps> = ({
   task,
@@ -51,6 +97,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   };
 
   const priorityBadge = PRIORITY_BADGES[task.priority];
+  const priorityStyle = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.none;
+  const dueDateInfo = getDueDateInfo(task.dueDate);
 
   return (
     <div
@@ -60,7 +108,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       onClick={() => onSelect?.(task.id)}
       className={cn(
         'group relative bg-surface border border-subtle rounded-lg p-3 select-none transition-shadow duration-150',
-        'hover:border-subtle hover:shadow-washi',
+        priorityStyle,
+        'hover:shadow-washi',
         isSelected && 'ring-1 ring-accent-solid/30 bg-accent-surface/30',
         isDragging && 'opacity-30 border-dashed border-subtle/80 shadow-none',
         isOverlay && 'shadow-washi-modal ring-1 ring-accent-solid/40 rotate-1 cursor-grabbing bg-surface',
@@ -102,13 +151,27 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                 {priorityBadge.label}
               </Badge>
             )}
-            {task.dueDate && (
-              <span className="font-mono text-[10px] text-muted">
-                {new Date(task.dueDate).toLocaleDateString('ru-RU', {
-                  day: 'numeric',
-                  month: 'short',
-                })}
-              </span>
+            {dueDateInfo && (
+              <div
+                className={cn(
+                  'flex items-center gap-1 font-mono text-[10px] px-1.5 py-0.5 rounded border',
+                  dueDateInfo.isOverdue
+                    ? 'bg-tag-persimmon/40 text-accent-persimmon border-accent-persimmon/40 font-medium'
+                    : dueDateInfo.isSoon
+                    ? 'bg-tag-straw/50 text-accent-straw border-accent-straw/40 font-medium'
+                    : 'text-muted border-subtle/60 bg-canvas/40'
+                )}
+                title={dueDateInfo.isOverdue ? 'Срок истек!' : dueDateInfo.isSoon ? 'Приближается срок' : 'Дедлайн'}
+              >
+                {dueDateInfo.isOverdue ? (
+                  <AlertCircle className="w-3 h-3 text-accent-persimmon shrink-0" />
+                ) : dueDateInfo.isSoon ? (
+                  <Clock className="w-3 h-3 text-accent-straw shrink-0" />
+                ) : (
+                  <Calendar className="w-3 h-3 text-muted shrink-0" />
+                )}
+                <span>{dueDateInfo.text}</span>
+              </div>
             )}
           </div>
         </div>

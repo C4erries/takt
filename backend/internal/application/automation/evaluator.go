@@ -26,9 +26,22 @@ func NewEvaluator(taskModifier TaskModifier, projectReader ProjectReader) *Evalu
 	}
 }
 
-// EvaluateConditions evaluates all conditions with AND logic.
-// Returns true if all conditions pass or if conditions slice is empty.
-func (e *Evaluator) EvaluateConditions(conditions []domainAutomation.Condition, task *TaskInfo) bool {
+// EvaluateConditions evaluates conditions using the specified logical operator ("and" or "or").
+// If logicalOp is LogicOr ("or"), it returns true if any condition matches.
+// If logicalOp is LogicAnd ("and") or empty, it returns true only if all conditions match.
+// Empty conditions always returns true regardless of logicalOp.
+func (e *Evaluator) EvaluateConditions(logicalOp string, conditions []domainAutomation.Condition, task *TaskInfo) bool {
+	if len(conditions) == 0 {
+		return true
+	}
+	if logicalOp == domainAutomation.LogicOr {
+		for _, c := range conditions {
+			if e.evaluateCondition(c, task) {
+				return true
+			}
+		}
+		return false
+	}
 	for _, c := range conditions {
 		if !e.evaluateCondition(c, task) {
 			return false
@@ -209,7 +222,7 @@ func (e *Evaluator) ExecuteRule(ctx context.Context, rule *domainAutomation.Rule
 		return nil
 	}
 
-	if !e.EvaluateConditions(rule.Conditions, task) {
+	if !e.EvaluateConditions(rule.LogicalOperator, rule.Conditions, task) {
 		return nil
 	}
 

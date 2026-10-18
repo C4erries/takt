@@ -121,6 +121,8 @@ export const TriggerSection: React.FC<TriggerSectionProps> = ({
 
 export interface ConditionsSectionProps {
   conditions: AutomationCondition[];
+  logicalOperator?: 'and' | 'or';
+  onLogicalOperatorChange?: (op: 'and' | 'or') => void;
   onAdd: () => void;
   onRemove: (idx: number) => void;
   onUpdate: (idx: number, patch: Partial<AutomationCondition>) => void;
@@ -128,33 +130,60 @@ export interface ConditionsSectionProps {
 
 export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
   conditions,
+  logicalOperator = 'and',
+  onLogicalOperatorChange,
   onAdd,
   onRemove,
   onUpdate,
 }) => (
   <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2.5">
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between flex-wrap gap-2">
       <div className="flex items-center gap-2">
         <span className="w-5 h-5 rounded-full bg-accent-surface text-primary text-[10px] font-bold flex items-center justify-center shrink-0 border border-subtle">
           2
         </span>
         <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-          ЕСЛИ (Условия AND)
+          ЕСЛИ (Условия {logicalOperator === 'or' ? 'ИЛИ' : 'И'})
         </span>
         <Badge variant="subtle" size="sm" className="font-mono text-[10px]">{conditions.length}/5</Badge>
       </div>
-      {conditions.length < 5 && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onAdd}
-          leftIcon={<Plus className="w-3.5 h-3.5" />}
-          className="text-[11px] h-7 px-2"
-        >
-          Добавить условие
-        </Button>
-      )}
+
+      <div className="flex items-center gap-2">
+        {conditions.length > 1 && onLogicalOperatorChange && (
+          <div className="flex items-center bg-canvas p-0.5 rounded-lg border border-subtle">
+            <button
+              type="button"
+              onClick={() => onLogicalOperatorChange('and')}
+              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                logicalOperator === 'and' ? 'bg-accent-solid text-white' : 'text-muted hover:text-primary'
+              }`}
+            >
+              Все (И)
+            </button>
+            <button
+              type="button"
+              onClick={() => onLogicalOperatorChange('or')}
+              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                logicalOperator === 'or' ? 'bg-accent-solid text-white' : 'text-muted hover:text-primary'
+              }`}
+            >
+              Хотя бы одно (ИЛИ)
+            </button>
+          </div>
+        )}
+        {conditions.length < 5 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onAdd}
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+            className="text-[11px] h-7 px-2"
+          >
+            Добавить
+          </Button>
+        )}
+      </div>
     </div>
 
     {conditions.length === 0 ? (
@@ -165,8 +194,8 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
       <div className="space-y-2">
         {conditions.map((cond, index) => (
           <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-subtle text-xs">
-            <span className="text-[10px] font-mono text-muted shrink-0 w-6">
-              {index === 0 ? 'IF' : 'AND'}
+            <span className="text-[10px] font-mono text-muted shrink-0 w-8">
+              {index === 0 ? 'ЕСЛИ' : (logicalOperator === 'or' ? 'ИЛИ' : 'И')}
             </span>
             <select
               value={cond.field}

@@ -169,6 +169,46 @@ func TestRuleDefinition_Validate(t *testing.T) {
 			},
 			wantErr: automation.ErrInvalidActionType,
 		},
+		{
+			name: "valid logical operator: empty",
+			rule: &automation.RuleDefinition{
+				Trigger:         validTrigger,
+				LogicalOperator: "",
+				Conditions:      []automation.Condition{validCondition},
+				Actions:         []automation.Action{validAction},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "valid logical operator: and",
+			rule: &automation.RuleDefinition{
+				Trigger:         validTrigger,
+				LogicalOperator: automation.LogicAnd,
+				Conditions:      []automation.Condition{validCondition},
+				Actions:         []automation.Action{validAction},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "valid logical operator: or",
+			rule: &automation.RuleDefinition{
+				Trigger:         validTrigger,
+				LogicalOperator: automation.LogicOr,
+				Conditions:      []automation.Condition{validCondition},
+				Actions:         []automation.Action{validAction},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "invalid logical operator: unknown string",
+			rule: &automation.RuleDefinition{
+				Trigger:         validTrigger,
+				LogicalOperator: "xor",
+				Conditions:      []automation.Condition{validCondition},
+				Actions:         []automation.Action{validAction},
+			},
+			wantErr: automation.ErrInvalidLogicalOperator,
+		},
 	}
 
 	for _, tt := range tests {
@@ -239,6 +279,18 @@ func TestRuleDefinition_JSONSerialization(t *testing.T) {
 	invalidRuleJSON := []byte(`{"trigger":{"type":"unknown"},"actions":[{"type":"move_to_column"}]}`)
 	_, err = automation.RuleDefinitionFromJSON(invalidRuleJSON)
 	require.ErrorIs(t, err, automation.ErrInvalidTriggerType)
+
+	// Test logicalOperator parsing with camelCase
+	camelCaseJSON := []byte(`{"trigger":{"type":"task_entered_column"},"logicalOperator":"or","conditions":[],"actions":[{"type":"archive_task"}]}`)
+	camelParsed, err := automation.RuleDefinitionFromJSON(camelCaseJSON)
+	require.NoError(t, err)
+	assert.Equal(t, automation.LogicOr, camelParsed.LogicalOperator)
+
+	// Test logical_operator parsing with snake_case
+	snakeCaseJSON := []byte(`{"trigger":{"type":"task_entered_column"},"logical_operator":"and","conditions":[],"actions":[{"type":"archive_task"}]}`)
+	snakeParsed, err := automation.RuleDefinitionFromJSON(snakeCaseJSON)
+	require.NoError(t, err)
+	assert.Equal(t, automation.LogicAnd, snakeParsed.LogicalOperator)
 }
 
 func TestNewRuleAutomation(t *testing.T) {

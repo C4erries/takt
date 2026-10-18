@@ -30,6 +30,10 @@ export default {
         'tag-persimmon': 'var(--tag-persimmon)',
         'tag-denim': 'var(--tag-denim)',
         'tag-straw': 'var(--tag-straw)',
+        'accent-denim': 'var(--accent-denim)',
+        'accent-persimmon': 'var(--accent-persimmon)',
+        'accent-straw': 'var(--accent-straw)',
+        'accent-bamboo': 'var(--accent-bamboo)',
       },
       fontFamily: {
         serif: ['Newsreader', 'Georgia', 'serif'],

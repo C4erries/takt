@@ -53,6 +53,7 @@ export interface AutomationAction {
 export interface RuleDefinition {
   trigger: AutomationTrigger;
   conditions?: AutomationCondition[];
+  logicalOperator?: 'and' | 'or';
   actions: AutomationAction[];
 }
 

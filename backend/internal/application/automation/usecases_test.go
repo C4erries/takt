@@ -174,3 +174,78 @@ func TestService_SeedDefaultAutomations(t *testing.T) {
 	}
 }
 
+func TestService_UpdateAutomation(t *testing.T) {
+	wsID := uuid.New()
+	ruleID := uuid.New()
+	existingColID := uuid.New()
+	newColID := uuid.New()
+
+	rule, _ := domainAutomation.NewAutomation(wsID, nil, "Original Name", domainAutomation.TriggerTaskCompleted, nil, nil, true)
+	rule.ID = ruleID
+	rule.ColumnID = &existingColID
+
+	t.Run("binds rule to new column", func(t *testing.T) {
+		repo := mocks.NewMockAutomationRepository(t)
+		copied := *rule
+		repo.EXPECT().GetAutomationByID(mock.Anything, ruleID, wsID).Return(&copied, nil).Once()
+		repo.EXPECT().UpdateAutomation(mock.Anything, mock.MatchedBy(func(a *domainAutomation.Automation) bool {
+			return a.ColumnID != nil && *a.ColumnID == newColID
+		})).Return(nil).Once()
+
+		svc := appAutomation.NewService(repo)
+		updated, err := svc.UpdateAutomation(context.Background(), appAutomation.UpdateAutomationInput{
+			AutomationID: ruleID,
+			WorkspaceID:  wsID,
+			ColumnID:     &newColID,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, updated)
+		assert.Equal(t, &newColID, updated.ColumnID)
+	})
+
+	t.Run("unbinds rule from column when ClearColumnID is true", func(t *testing.T) {
+		repo := mocks.NewMockAutomationRepository(t)
+		copied := *rule
+		repo.EXPECT().GetAutomationByID(mock.Anything, ruleID, wsID).Return(&copied, nil).Once()
+		repo.EXPECT().UpdateAutomation(mock.Anything, mock.MatchedBy(func(a *domainAutomation.Automation) bool {
+			return a.ColumnID == nil
+		})).Return(nil).Once()
+
+		svc := appAutomation.NewService(repo)
+		updated, err := svc.UpdateAutomation(context.Background(), appAutomation.UpdateAutomationInput{
+			AutomationID:  ruleID,
+			WorkspaceID:   wsID,
+			ClearColumnID: true,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, updated)
+		assert.Nil(t, updated.ColumnID)
+	})
+
+	t.Run("updates rule definition with logical operator", func(t *testing.T) {
+		repo := mocks.NewMockAutomationRepository(t)
+		copied := *rule
+		repo.EXPECT().GetAutomationByID(mock.Anything, ruleID, wsID).Return(&copied, nil).Once()
+		repo.EXPECT().UpdateAutomation(mock.Anything, mock.MatchedBy(func(a *domainAutomation.Automation) bool {
+			return a.RuleDefinition != nil && a.RuleDefinition.LogicalOperator == domainAutomation.LogicOr
+		})).Return(nil).Once()
+
+		ruleDef := &domainAutomation.RuleDefinition{
+			Trigger:         domainAutomation.Trigger{Type: domainAutomation.TriggerTaskEnteredColumn},
+			LogicalOperator: domainAutomation.LogicOr,
+			Conditions:      []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "urgent"}},
+			Actions:         []domainAutomation.Action{{Type: domainAutomation.ActionArchiveTask}},
+		}
+
+		svc := appAutomation.NewService(repo)
+		updated, err := svc.UpdateAutomation(context.Background(), appAutomation.UpdateAutomationInput{
+			AutomationID:   ruleID,
+			WorkspaceID:    wsID,
+			RuleDefinition: ruleDef,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, updated)
+		assert.Equal(t, domainAutomation.LogicOr, updated.RuleDefinition.LogicalOperator)
+	})
+}
+

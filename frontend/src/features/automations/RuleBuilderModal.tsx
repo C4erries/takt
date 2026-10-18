@@ -41,6 +41,8 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
     triggerField,
     setTriggerField,
     conditions,
+    logicalOperator,
+    setLogicalOperator,
     handleAddCondition,
     handleRemoveCondition,
     handleUpdateCondition,
@@ -64,7 +66,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Конструктор правил автоматизации"
-      description="Линейное правило «КОГДА → ЕСЛИ → ТО» в стиле японской канцелярии Washi"
+      description="Настройте условия и действия для автоматического управления задачами"
       className="max-w-2xl"
     >
       <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
@@ -100,6 +102,8 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
         {/* STEP 2: IF */}
         <ConditionsSection
           conditions={conditions}
+          logicalOperator={logicalOperator}
+          onLogicalOperatorChange={setLogicalOperator}
           onAdd={handleAddCondition}
           onRemove={handleRemoveCondition}
           onUpdate={handleUpdateCondition}

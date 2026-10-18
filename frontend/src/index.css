@@ -22,6 +22,12 @@
   --tag-persimmon: #EBD5C3;     /* Persimmon / warm peach (@home) */
   --tag-denim: #CFD8E0;         /* Indigo denim / muted grey-blue (project) */
   --tag-straw: #EAE4CC;         /* Rice straw (time / estimates) */
+
+  /* Priority Accent Borders */
+  --accent-denim: #5A738E;      /* Indigo denim ink for urgent */
+  --accent-persimmon: #C85A32;  /* Terracotta / persimmon for high */
+  --accent-straw: #B88E2F;      /* Amber straw for medium */
+  --accent-bamboo: #40C057;     /* Bamboo sage green for low */
 }
 
 @layer base {

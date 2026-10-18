@@ -91,7 +91,9 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
 
               {conditions.length > 0 && (
                 <>
-                  <span className="text-muted text-[10px] uppercase">ЕСЛИ</span>
+                  <span className="text-muted text-[10px] uppercase">
+                    ЕСЛИ {automation.ruleDefinition?.logicalOperator === 'or' ? '(ИЛИ)' : ''}
+                  </span>
                   {conditions.map((c, i) => (
                     <span
                       key={i}

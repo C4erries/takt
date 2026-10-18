@@ -35,4 +35,7 @@ var (
 
 	// ErrInvalidConditionOperator indicates that a condition operator is unsupported or unknown.
 	ErrInvalidConditionOperator = errors.New("invalid condition operator")
+
+	// ErrInvalidLogicalOperator indicates that the logical operator is unsupported (must be "and" or "or").
+	ErrInvalidLogicalOperator = errors.New("invalid logical operator")
 )

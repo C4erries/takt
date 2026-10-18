@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAuthToken } from '@/shared/api';
-import type { Automation, CreateAutomationRequest } from './types';
+import type { Automation, CreateAutomationRequest, UpdateAutomationRequest } from './types';
 import { automationsApi } from './api';
 
 const CUSTOM_AUTOMATIONS_STORAGE_KEY = 'takt_custom_automations';
@@ -276,3 +276,53 @@ export const useDeleteAutomationMutation = (workspaceId?: string) => {
     },
   });
 };
+
+export interface UpdateAutomationVariables {
+  automationId: string;
+  data: UpdateAutomationRequest;
+}
+
+export const useUpdateAutomationMutation = (workspaceId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ automationId, data }: UpdateAutomationVariables) => {
+      const customLocal = getStoredCustomAutomations();
+      const idx = customLocal.findIndex((a) => a.id === automationId);
+      if (idx >= 0) {
+        customLocal[idx] = { ...customLocal[idx], ...data, updatedAt: new Date().toISOString() };
+        saveStoredCustomAutomations(customLocal);
+      }
+
+      if (!workspaceId || !getAuthToken()) {
+        return (customLocal[idx] || { id: automationId, ...data }) as Automation;
+      }
+
+      try {
+        return await automationsApi.updateAutomation(workspaceId, automationId, data);
+      } catch {
+        return (customLocal[idx] || { id: automationId, ...data }) as Automation;
+      }
+    },
+    onMutate: async ({ automationId, data }) => {
+      const queryKey = ['automations', workspaceId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousAutomations = queryClient.getQueryData<Automation[]>(queryKey);
+
+      queryClient.setQueryData<Automation[]>(queryKey, (old = []) =>
+        old.map((item) => (item.id === automationId ? { ...item, ...data } : item))
+      );
+
+      return { previousAutomations };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousAutomations) {
+        queryClient.setQueryData(['automations', workspaceId], context.previousAutomations);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['automations', workspaceId] });
+    },
+  });
+};
+

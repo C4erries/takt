@@ -88,11 +88,11 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
         </div>
       </div>
 
-      {/* Cycle Guard Banner */}
+      {/* Protection Banner */}
       <div className="flex items-center gap-2.5 p-3 rounded-xl bg-accent-surface/40 border border-subtle text-xs text-primary">
         <ShieldCheck className="w-4 h-4 text-accent-solid shrink-0" />
         <span>
-          Движок правил исполняет триггеры с защитой от циклов (Cycle Guard, max каскад ≤ 3 шагов).
+          Правила срабатывают мгновенно и защищены от зацикливания.
         </span>
       </div>
 

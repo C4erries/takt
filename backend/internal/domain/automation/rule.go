@@ -111,6 +111,12 @@ type Condition struct {
 	Value    interface{} `json:"value,omitempty"`
 }
 
+// Logical operators for conditions evaluation
+const (
+	LogicAnd = "and"
+	LogicOr  = "or"
+)
+
 // Action represents an operation to execute when an automation rule triggers and matches.
 type Action struct {
 	Type   string                 `json:"type"`
@@ -119,17 +125,37 @@ type Action struct {
 
 // RuleDefinition represents the full Trigger-Condition-Action (TCA) specification of an automation.
 type RuleDefinition struct {
-	Trigger    Trigger     `json:"trigger"`
-	Conditions []Condition `json:"conditions"`
-	Actions    []Action    `json:"actions"`
+	Trigger         Trigger     `json:"trigger"`
+	LogicalOperator string      `json:"logical_operator,omitempty"`
+	Conditions      []Condition `json:"conditions"`
+	Actions         []Action    `json:"actions"`
+}
+
+// UnmarshalJSON supports both snake_case (logical_operator) and camelCase (logicalOperator).
+func (r *RuleDefinition) UnmarshalJSON(data []byte) error {
+	type Alias RuleDefinition
+	aux := &struct {
+		*Alias
+		LogicalOpAlt string `json:"logicalOperator"`
+	}{
+		Alias: (*Alias)(r),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if r.LogicalOperator == "" && aux.LogicalOpAlt != "" {
+		r.LogicalOperator = aux.LogicalOpAlt
+	}
+	return nil
 }
 
 // Validate verifies that the rule definition satisfies all domain invariants according to ADR-0004:
 // 1. Trigger type is a valid DSL trigger.
 // 2. Conditions count does not exceed MaxConditions (5).
 // 3. Every condition uses a recognized field and operator.
-// 4. Actions slice contains between 1 and MaxActions (5) actions.
-// 5. Every action uses a recognized action type.
+// 4. Logical operator is either empty, "and", or "or".
+// 5. Actions slice contains between 1 and MaxActions (5) actions.
+// 6. Every action uses a recognized action type.
 func (r *RuleDefinition) Validate() error {
 	if r == nil {
 		return ErrRuleDefinitionNil
@@ -137,6 +163,10 @@ func (r *RuleDefinition) Validate() error {
 
 	if !IsValidDSLTrigger(r.Trigger.Type) {
 		return ErrInvalidTriggerType
+	}
+
+	if r.LogicalOperator != "" && r.LogicalOperator != LogicAnd && r.LogicalOperator != LogicOr {
+		return ErrInvalidLogicalOperator
 	}
 
 	if len(r.Conditions) > MaxConditions {

@@ -165,6 +165,125 @@ func TestUpdateAutomation(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 	})
 
+	t.Run("binds rule to column", func(t *testing.T) {
+		e := echo.New()
+		targetCol := uuid.New()
+		body := `{"columnId":"` + targetCol.String() + `"}`
+		req := httptest.NewRequest(http.MethodPut, "/workspaces/"+wsID.String()+"/automations/"+autoID.String(), bytes.NewReader([]byte(body)))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.Set("workspace_id", wsID.String())
+
+		now := time.Now().UTC()
+		updatedRule := &domainAutomation.Automation{
+			ID:          autoID,
+			WorkspaceID: wsID,
+			ColumnID:    &targetCol,
+			Name:        "Bound Rule",
+			TriggerType: domainAutomation.TriggerTaskEnteredColumn,
+			IsEnabled:   true,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+
+		mockSvc := &mockAutomationService{
+			updateFn: func(ctx context.Context, input appAutomation.UpdateAutomationInput) (*domainAutomation.Automation, error) {
+				assert.Equal(t, &targetCol, input.ColumnID)
+				assert.False(t, input.ClearColumnID)
+				return updatedRule, nil
+			},
+		}
+
+		h := NewHandler(nil, "v1", false, nil, nil, nil, nil, mockSvc)
+		err := h.UpdateAutomation(c, wsID, autoID)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+
+	t.Run("unbinds rule from column with null columnId", func(t *testing.T) {
+		e := echo.New()
+		body := `{"columnId":null}`
+		req := httptest.NewRequest(http.MethodPut, "/workspaces/"+wsID.String()+"/automations/"+autoID.String(), bytes.NewReader([]byte(body)))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.Set("workspace_id", wsID.String())
+
+		now := time.Now().UTC()
+		updatedRule := &domainAutomation.Automation{
+			ID:          autoID,
+			WorkspaceID: wsID,
+			ColumnID:    nil,
+			Name:        "Unbound Rule",
+			TriggerType: domainAutomation.TriggerTaskEnteredColumn,
+			IsEnabled:   true,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+
+		mockSvc := &mockAutomationService{
+			updateFn: func(ctx context.Context, input appAutomation.UpdateAutomationInput) (*domainAutomation.Automation, error) {
+				assert.Nil(t, input.ColumnID)
+				assert.True(t, input.ClearColumnID)
+				return updatedRule, nil
+			},
+		}
+
+		h := NewHandler(nil, "v1", false, nil, nil, nil, nil, mockSvc)
+		err := h.UpdateAutomation(c, wsID, autoID)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+	})
+
+	t.Run("updates rule definition with logical operator OR", func(t *testing.T) {
+		e := echo.New()
+		body := `{"ruleDefinition":{"trigger":{"type":"task_entered_column"},"logicalOperator":"or","conditions":[{"field":"priority","operator":"equals","value":"urgent"}],"actions":[{"type":"archive_task"}]}}`
+		req := httptest.NewRequest(http.MethodPut, "/workspaces/"+wsID.String()+"/automations/"+autoID.String(), bytes.NewReader([]byte(body)))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.Set("workspace_id", wsID.String())
+
+		now := time.Now().UTC()
+		ruleDef := &domainAutomation.RuleDefinition{
+			Trigger:         domainAutomation.Trigger{Type: domainAutomation.TriggerTaskEnteredColumn},
+			LogicalOperator: domainAutomation.LogicOr,
+			Conditions:      []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "urgent"}},
+			Actions:         []domainAutomation.Action{{Type: domainAutomation.ActionArchiveTask}},
+		}
+		updatedRule := &domainAutomation.Automation{
+			ID:             autoID,
+			WorkspaceID:    wsID,
+			Name:           "OR Rule",
+			TriggerType:    domainAutomation.TriggerTaskEnteredColumn,
+			RuleDefinition: ruleDef,
+			IsEnabled:      true,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}
+
+		mockSvc := &mockAutomationService{
+			updateFn: func(ctx context.Context, input appAutomation.UpdateAutomationInput) (*domainAutomation.Automation, error) {
+				require.NotNil(t, input.RuleDefinition)
+				assert.Equal(t, domainAutomation.LogicOr, input.RuleDefinition.LogicalOperator)
+				return updatedRule, nil
+			},
+		}
+
+		h := NewHandler(nil, "v1", false, nil, nil, nil, nil, mockSvc)
+		err := h.UpdateAutomation(c, wsID, autoID)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, rec.Code)
+
+		var resp generated.Automation
+		err = json.Unmarshal(rec.Body.Bytes(), &resp)
+		require.NoError(t, err)
+		require.NotNil(t, resp.RuleDefinition)
+		require.NotNil(t, resp.RuleDefinition.LogicalOperator)
+		assert.Equal(t, generated.Or, *resp.RuleDefinition.LogicalOperator)
+	})
+
 	t.Run("not found returns 404", func(t *testing.T) {
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPut, "/workspaces/"+wsID.String()+"/automations/"+autoID.String(), bytes.NewReader([]byte("{}")))

@@ -41,6 +41,7 @@ type UpdateAutomationInput struct {
 	WorkspaceID    uuid.UUID
 	BoardID        *uuid.UUID
 	ColumnID       *uuid.UUID
+	ClearColumnID  bool
 	Name           *string
 	TriggerType    *string
 	ConditionsJSON json.RawMessage
@@ -171,7 +172,9 @@ func (s *Service) UpdateAutomation(ctx context.Context, input UpdateAutomationIn
 	if input.BoardID != nil {
 		rule.BoardID = input.BoardID
 	}
-	if input.ColumnID != nil {
+	if input.ClearColumnID {
+		rule.ColumnID = nil
+	} else if input.ColumnID != nil {
 		rule.ColumnID = input.ColumnID
 	}
 

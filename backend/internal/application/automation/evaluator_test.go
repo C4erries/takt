@@ -74,12 +74,20 @@ func TestEvaluator_EvaluateConditions(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		logicalOp  string
 		conditions []domainAutomation.Condition
 		task       *appAutomation.TaskInfo
 		wantMatch  bool
 	}{
 		{
 			name:       "empty conditions always match (AND logic)",
+			conditions: nil,
+			task:       baseTask,
+			wantMatch:  true,
+		},
+		{
+			name:       "empty conditions always match (OR logic)",
+			logicalOp:  domainAutomation.LogicOr,
 			conditions: nil,
 			task:       baseTask,
 			wantMatch:  true,
@@ -208,13 +216,44 @@ func TestEvaluator_EvaluateConditions(t *testing.T) {
 			task:      baseTask,
 			wantMatch: false,
 		},
+		{
+			name:      "multiple conditions with OR logic: first passes -> match",
+			logicalOp: domainAutomation.LogicOr,
+			conditions: []domainAutomation.Condition{
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "urgent"}, // passes
+				{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorGreaterThan, Value: 48}, // fails
+			},
+			task:      baseTask,
+			wantMatch: true,
+		},
+		{
+			name:      "multiple conditions with OR logic: last passes -> match",
+			logicalOp: domainAutomation.LogicOr,
+			conditions: []domainAutomation.Condition{
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "low"}, // fails
+				{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorContains, Value: "bug"},    // passes
+			},
+			task:      baseTask,
+			wantMatch: true,
+		},
+		{
+			name:      "multiple conditions with OR logic: all fail -> reject",
+			logicalOp: domainAutomation.LogicOr,
+			conditions: []domainAutomation.Condition{
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "low"},
+				{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorGreaterThan, Value: 48},
+				{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorContains, Value: "frontend"},
+			},
+			task:      baseTask,
+			wantMatch: false,
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := eval.EvaluateConditions(tt.conditions, tt.task)
+			got := eval.EvaluateConditions(tt.logicalOp, tt.conditions, tt.task)
 			assert.Equal(t, tt.wantMatch, got)
 		})
 	}
@@ -279,6 +318,50 @@ func TestEvaluator_ExecuteRule(t *testing.T) {
 		}
 
 		err := eval.ExecuteRule(ctx, rule, task)
+		require.NoError(t, err)
+		mockMod.AssertNotCalled(t, "SetTaskPriority")
+	})
+
+	t.Run("executes actions when OR condition matches at least one condition", func(t *testing.T) {
+		mockMod := new(mockTaskModifier)
+		eval := appAutomation.NewEvaluator(mockMod, nil)
+
+		mockMod.On("SetTaskPriority", mock.Anything, taskID, wsID, "urgent").Return(nil).Once()
+
+		rule := &domainAutomation.RuleDefinition{
+			Trigger:         domainAutomation.Trigger{Type: domainAutomation.TriggerTaskEnteredColumn},
+			LogicalOperator: domainAutomation.LogicOr,
+			Conditions: []domainAutomation.Condition{
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "low"},    // fails
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "medium"}, // passes
+			},
+			Actions: []domainAutomation.Action{
+				{Type: domainAutomation.ActionSetPriority, Params: map[string]interface{}{"priority": "urgent"}},
+			},
+		}
+
+		err := eval.ExecuteRule(context.Background(), rule, task)
+		require.NoError(t, err)
+		mockMod.AssertExpectations(t)
+	})
+
+	t.Run("skips actions when AND condition fails at least one condition", func(t *testing.T) {
+		mockMod := new(mockTaskModifier)
+		eval := appAutomation.NewEvaluator(mockMod, nil)
+
+		rule := &domainAutomation.RuleDefinition{
+			Trigger:         domainAutomation.Trigger{Type: domainAutomation.TriggerTaskEnteredColumn},
+			LogicalOperator: domainAutomation.LogicAnd,
+			Conditions: []domainAutomation.Condition{
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "medium"}, // passes
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "low"},    // fails
+			},
+			Actions: []domainAutomation.Action{
+				{Type: domainAutomation.ActionSetPriority, Params: map[string]interface{}{"priority": "urgent"}},
+			},
+		}
+
+		err := eval.ExecuteRule(context.Background(), rule, task)
 		require.NoError(t, err)
 		mockMod.AssertNotCalled(t, "SetTaskPriority")
 	})

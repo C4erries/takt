@@ -47,15 +47,16 @@ export const useTodayTasksQuery = (workspaceId?: string) => {
     queryKey: ['tasks', 'today', workspaceId],
     queryFn: async () => {
       if (!workspaceId || !getAuthToken()) {
-        return DEMO_TODAY_TASKS;
+        return [];
       }
       try {
         const data = await taskDetailApi.getTodayTasks(workspaceId);
-        return data.length > 0 ? data : DEMO_TODAY_TASKS;
+        return data ?? [];
       } catch {
-        return DEMO_TODAY_TASKS;
+        return [];
       }
     },
+    enabled: !!workspaceId,
   });
 };
 
@@ -125,15 +126,16 @@ export const useWorkspaceTagsQuery = (workspaceId?: string) => {
     queryKey: ['tags', workspaceId],
     queryFn: async () => {
       if (!workspaceId || !getAuthToken()) {
-        return DEMO_WORKSPACE_TAGS;
+        return [];
       }
       try {
         const data = await taskDetailApi.listWorkspaceTags(workspaceId);
-        return data.length > 0 ? data : DEMO_WORKSPACE_TAGS;
+        return data ?? [];
       } catch {
-        return DEMO_WORKSPACE_TAGS;
+        return [];
       }
     },
+    enabled: !!workspaceId,
   });
 };
 

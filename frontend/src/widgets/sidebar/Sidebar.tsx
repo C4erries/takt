@@ -271,6 +271,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Project List */}
           <div className="space-y-0.5">
+            {!isCreatingProject && projects.length === 0 && (
+              <div className="px-2 py-1.5 text-[11px] text-muted italic">
+                Нет проектов
+              </div>
+            )}
             {projects.map((proj) => {
               const isSelected = currentNav === `project:${proj.id}` && !showUiCatalog;
               return (

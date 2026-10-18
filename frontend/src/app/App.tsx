@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth, AuthModal } from '@/features/auth';
+import { useAuth, AuthModal, AuthScreen } from '@/features/auth';
 import {
   useTaskNavigation,
   useInboxTasks,
@@ -28,7 +28,16 @@ import { CommandPaletteModal } from '@/features/command-palette';
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
-  const { user, workspace, setWorkspace, login, register, logout, refresh } = useAuth();
+  const {
+    user,
+    workspace,
+    setWorkspace,
+    login,
+    register,
+    logout,
+    refresh,
+    isLoading: isAuthLoading,
+  } = useAuth();
 
   const {
     selectedTaskId,
@@ -163,6 +172,24 @@ export const App: React.FC = () => {
   const selectedTask = selectedTaskId
     ? allAvailableTasks.find((t) => t.id === selectedTaskId) ?? null
     : null;
+
+  if (isAuthLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-canvas text-muted font-serif">
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-accent-solid inline-block animate-pulse" />
+            <span className="text-2xl font-normal text-primary">Takt</span>
+          </div>
+          <div className="text-xs font-mono text-muted">Загрузка пространства...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen onLogin={login} onRegister={register} />;
+  }
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex">

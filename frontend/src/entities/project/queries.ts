@@ -11,8 +11,6 @@ import type {
 } from './types';
 import {
   DEMO_PROJECT_ID,
-  DEMO_BOARDS,
-  DEMO_PROJECTS,
   DEMO_COLUMNS,
   DEMO_PROJECT_TASKS,
   updateDemoTaskPosition,
@@ -25,15 +23,15 @@ export const useProjectsQuery = (workspaceId?: string) => {
   return useQuery<Project[], Error>({
     queryKey: ['projects', workspaceId],
     queryFn: async () => {
-      if (!workspaceId || !getAuthToken()) return DEMO_PROJECTS;
+      if (!workspaceId || !getAuthToken()) return [];
       try {
         const data = await projectApi.listProjects(workspaceId);
-        return data.length > 0 ? data : DEMO_PROJECTS;
+        return data ?? [];
       } catch {
-        return DEMO_PROJECTS;
+        return [];
       }
     },
-    enabled: true,
+    enabled: !!workspaceId,
   });
 };
 
@@ -113,15 +111,15 @@ export const useProjectBoardsQuery = (workspaceId?: string, projectId?: string) 
   return useQuery<Board[], Error>({
     queryKey: ['boards', workspaceId, projectId],
     queryFn: async () => {
-      if (!workspaceId || !projectId || !getAuthToken()) return DEMO_BOARDS;
+      if (!workspaceId || !projectId || !getAuthToken()) return [];
       try {
         const boards = await projectApi.listProjectBoards(workspaceId, projectId);
-        return boards.length > 0 ? boards : DEMO_BOARDS;
+        return boards ?? [];
       } catch {
-        return DEMO_BOARDS;
+        return [];
       }
     },
-    enabled: !!projectId,
+    enabled: !!workspaceId && !!projectId,
   });
 };
 
@@ -231,19 +229,16 @@ export const useBoardColumnsQuery = (workspaceId?: string, boardId?: string) => 
     queryKey: ['columns', workspaceId, boardId],
     queryFn: async () => {
       if (!workspaceId || !boardId || !getAuthToken()) {
-        const matching = DEMO_COLUMNS.filter((c) => c.boardId === boardId);
-        const result = matching.length > 0 ? matching : DEMO_COLUMNS;
-        return [...result].sort((a, b) => a.position - b.position);
+        return [];
       }
       try {
         const cols = await projectApi.listBoardColumns(workspaceId, boardId);
-        const result = cols.length > 0 ? cols : DEMO_COLUMNS;
-        return [...result].sort((a, b) => a.position - b.position);
+        return [...(cols ?? [])].sort((a, b) => a.position - b.position);
       } catch {
-        return [...DEMO_COLUMNS].sort((a, b) => a.position - b.position);
+        return [];
       }
     },
-    enabled: !!boardId,
+    enabled: !!workspaceId && !!boardId,
   });
 };
 
@@ -295,15 +290,15 @@ export const useProjectTasksQuery = (workspaceId?: string, projectId?: string) =
   return useQuery<Task[], Error>({
     queryKey: ['project-tasks', workspaceId, projectId],
     queryFn: async () => {
-      if (!workspaceId || !projectId || !getAuthToken()) return [...DEMO_PROJECT_TASKS];
+      if (!workspaceId || !projectId || !getAuthToken()) return [];
       try {
         const tasks = await projectApi.listProjectTasks(workspaceId, projectId);
-        return tasks.length > 0 ? tasks : [...DEMO_PROJECT_TASKS];
+        return tasks ?? [];
       } catch {
-        return [...DEMO_PROJECT_TASKS];
+        return [];
       }
     },
-    enabled: !!projectId,
+    enabled: !!workspaceId && !!projectId,
   });
 };
 

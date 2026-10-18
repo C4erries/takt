@@ -6,7 +6,6 @@ import {
   useProjectBoardsQuery,
   useProjectTasksQuery,
   useCreateBoardMutation,
-  DEMO_COLUMNS,
   projectApi,
   type Column,
 } from '@/entities/project';
@@ -50,8 +49,7 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
       queryKey: ['columns', workspaceId, b.id],
       queryFn: async (): Promise<Column[]> => {
         if (!workspaceId || !getAuthToken()) {
-          const matching = DEMO_COLUMNS.filter((c) => c.boardId === b.id);
-          return matching.length > 0 ? matching : DEMO_COLUMNS;
+          return [];
         }
         return projectApi.listBoardColumns(workspaceId, b.id);
       },

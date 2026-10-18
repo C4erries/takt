@@ -44,15 +44,12 @@ export const useInboxTasks = () => {
   return useQuery<Task[], Error>({
     queryKey: TASKS_QUERY_KEY,
     queryFn: async () => {
-      try {
-        return await tasksApi.getInbox();
-      } catch (err) {
-        if (!getAuthToken()) {
-          return ONBOARDING_TASKS;
-        }
-        throw err;
+      if (!getAuthToken()) {
+        return [];
       }
+      return await tasksApi.getInbox();
     },
+    enabled: !!getAuthToken(),
   });
 };
 

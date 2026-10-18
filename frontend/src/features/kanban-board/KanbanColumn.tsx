@@ -32,6 +32,45 @@ const CATEGORY_STYLES: Record<ColumnStatusCategory, { dot: string; label: string
   done: { dot: 'bg-accent-solid', label: 'Готово' },
 };
 
+const COLUMN_COLORS = [
+  { name: 'По умолчанию', hex: null },
+  { name: 'Матча', hex: '#566B44' },
+  { name: 'Хурма', hex: '#D97746' },
+  { name: 'Деним', hex: '#4A6B82' },
+  { name: 'Солома', hex: '#B8943F' },
+  { name: 'Бамбук', hex: '#7C8E64' },
+  { name: 'Слива', hex: '#7E6B8F' },
+  { name: 'Суми', hex: '#44483E' },
+] as const;
+
+const STORAGE_KEY = 'takt_column_colors';
+
+function getStoredColumnColor(columnId: string): string | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw);
+    return map[columnId] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredColumnColor(columnId: string, color: string | null): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    if (color) {
+      map[columnId] = color;
+    } else {
+      delete map[columnId];
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // Ignored
+  }
+}
+
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   column,
   tasks,
@@ -69,6 +108,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const [newTitle, setNewTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [columnColor, setColumnColor] = useState<string | null>(() => getStoredColumnColor(column.id));
   const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -114,6 +154,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     }
   };
 
+  const handleSelectColor = (hex: string | null) => {
+    setColumnColor(hex);
+    setStoredColumnColor(column.id, hex);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -125,6 +170,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         isOverlay && 'shadow-washi-modal ring-1 ring-accent-solid/40 rotate-1 cursor-grabbing bg-canvas/90'
       )}
     >
+      {/* 3-4px Color Accent Bar */}
+      <div
+        className="h-1 -mx-3 -mt-3 mb-2.5 rounded-t-xl transition-colors duration-150"
+        style={{
+          backgroundColor: columnColor || 'transparent',
+        }}
+      />
+
       {/* Column Header */}
       <div className="flex items-center justify-between px-1 pb-2.5 select-none">
         <div
@@ -197,6 +250,32 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     ))}
                   </div>
                 )}
+
+                {/* Column Color Picker */}
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase border-t border-subtle/40 pt-1.5 mt-1">
+                  Цвет колонки
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 px-2 py-1">
+                  {COLUMN_COLORS.map((c) => {
+                    const isSelected = c.hex === columnColor;
+                    return (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => handleSelectColor(c.hex)}
+                        title={c.name}
+                        className={cn(
+                          'w-6 h-6 rounded-full flex items-center justify-center transition-all border shadow-washi-sm',
+                          isSelected ? 'ring-2 ring-accent-solid scale-105 border-surface' : 'border-subtle/80 hover:scale-105',
+                          !c.hex && 'bg-canvas/60 text-muted'
+                        )}
+                        style={c.hex ? { backgroundColor: c.hex } : undefined}
+                      >
+                        {!c.hex && <span className="text-[10px] font-mono leading-none">✕</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

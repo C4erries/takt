@@ -7,6 +7,160 @@ export interface MarkdownNotesProps {
   onUploadImage?: (file: File) => Promise<string | null>;
 }
 
+function renderInline(text: string): React.ReactNode[] {
+  const TOKEN_REGEX =
+    /(!\[([^\]]*)\]\(([^)]+)\))|(\[([^\]]+)\]\(([^)]+)\))|(`([^`]+)`)|(\*\*([^*]+)\*\*|__([^_]+)__)|(~~([^~]+)~~)|(\*([^*]+)\*|_([^_]+)_)/g;
+  const nodes: React.ReactNode[] = [];
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = TOKEN_REGEX.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      nodes.push(text.substring(lastIdx, match.index));
+    }
+
+    if (match[1]) {
+      // Image: ![alt](url)
+      const alt = match[2];
+      const url = match[3];
+      nodes.push(
+        <span key={`img-${match.index}`} className="block my-2">
+          <img
+            src={url}
+            alt={alt || 'вложение'}
+            className="max-h-60 max-w-full rounded-lg border border-subtle object-contain bg-canvas/30 shadow-washi-sm hover:opacity-95 transition-opacity cursor-pointer"
+            loading="lazy"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(url, '_blank');
+            }}
+            title={alt ? `${alt} (нажмите для открытия)` : 'Нажмите для открытия оригинала'}
+          />
+          {alt && alt !== 'image' && (
+            <span className="block text-[10px] text-muted font-mono mt-0.5 truncate">{alt}</span>
+          )}
+        </span>
+      );
+    } else if (match[4]) {
+      // Link: [text](url)
+      const linkText = match[5];
+      const linkUrl = match[6];
+      nodes.push(
+        <a
+          key={`link-${match.index}`}
+          href={linkUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-accent-solid underline hover:opacity-80 transition-opacity"
+        >
+          {linkText}
+        </a>
+      );
+    } else if (match[7]) {
+      // Inline code: `code`
+      nodes.push(
+        <code
+          key={`code-${match.index}`}
+          className="font-mono text-[11px] px-1 py-0.5 rounded bg-canvas/60 text-primary border border-subtle/50"
+        >
+          {match[8]}
+        </code>
+      );
+    } else if (match[9]) {
+      // Bold: **text** or __text__
+      nodes.push(
+        <strong key={`b-${match.index}`} className="font-semibold text-primary">
+          {match[10] || match[11]}
+        </strong>
+      );
+    } else if (match[12]) {
+      // Strikethrough: ~~text~~
+      nodes.push(
+        <del key={`del-${match.index}`} className="line-through text-muted">
+          {match[13]}
+        </del>
+      );
+    } else if (match[14]) {
+      // Italic: *text* or _text_
+      nodes.push(
+        <em key={`em-${match.index}`} className="italic">
+          {match[15] || match[16]}
+        </em>
+      );
+    }
+
+    lastIdx = match.index + match[0].length;
+  }
+
+  if (lastIdx < text.length) {
+    nodes.push(text.substring(lastIdx));
+  }
+
+  return nodes;
+}
+
+function renderMarkdownPreview(text: string): React.ReactNode {
+  if (!text) {
+    return <span className="text-muted italic">Добавить заметку в Markdown...</span>;
+  }
+
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-1">
+      {lines.map((line, idx) => {
+        if (!line.trim()) {
+          return <div key={idx} className="h-2" />;
+        }
+        if (line.startsWith('### ')) {
+          return (
+            <h3 key={idx} className="font-semibold text-xs text-primary pt-1">
+              {renderInline(line.slice(4))}
+            </h3>
+          );
+        }
+        if (line.startsWith('## ')) {
+          return (
+            <h2 key={idx} className="font-semibold text-sm text-primary pt-1.5">
+              {renderInline(line.slice(3))}
+            </h2>
+          );
+        }
+        if (line.startsWith('# ')) {
+          return (
+            <h1 key={idx} className="font-bold text-base text-primary pt-2">
+              {renderInline(line.slice(2))}
+            </h1>
+          );
+        }
+        if (line.startsWith('> ')) {
+          return (
+            <blockquote
+              key={idx}
+              className="border-l-2 border-accent-solid/60 pl-2.5 my-1 text-muted italic"
+            >
+              {renderInline(line.slice(2))}
+            </blockquote>
+          );
+        }
+        if (line.startsWith('- ') || line.startsWith('* ')) {
+          return (
+            <div key={idx} className="flex items-start gap-1.5 my-0.5 pl-1">
+              <span className="text-accent-solid shrink-0 select-none">•</span>
+              <span className="flex-1">{renderInline(line.slice(2))}</span>
+            </div>
+          );
+        }
+        return (
+          <p key={idx} className="leading-relaxed">
+            {renderInline(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export const MarkdownNotes: React.FC<MarkdownNotesProps> = ({
   initialValue,
   onSave,
@@ -18,10 +172,12 @@ export const MarkdownNotes: React.FC<MarkdownNotesProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Critical fix: do not close editing mode or overwrite value if user is actively editing
   useEffect(() => {
-    setValue(initialValue);
-    setIsEditing(false);
-  }, [initialValue]);
+    if (!isEditing) {
+      setValue(initialValue);
+    }
+  }, [initialValue, isEditing]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
@@ -74,59 +230,10 @@ export const MarkdownNotes: React.FC<MarkdownNotesProps> = ({
         }, 0);
       }
     } catch {
-      // Игнорируем ошибку загрузки, она логируется на верхнем уровне
+      // Ignored
     } finally {
       setIsUploading(false);
     }
-  };
-
-  const renderMarkdownPreview = (text: string) => {
-    if (!text) {
-      return <span className="text-muted italic">Добавить заметку в Markdown...</span>;
-    }
-
-    const regex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-    const elements: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(text)) !== null) {
-      const [fullMatch, alt, url] = match;
-      const matchIndex = match.index;
-
-      if (matchIndex > lastIndex) {
-        elements.push(
-          <span key={`text-${lastIndex}`}>{text.substring(lastIndex, matchIndex)}</span>
-        );
-      }
-
-      elements.push(
-        <span key={`img-${matchIndex}`} className="block my-2">
-          <img
-            src={url}
-            alt={alt || 'вложение'}
-            className="max-h-60 max-w-full rounded-lg border border-subtle object-contain bg-canvas/30 shadow-washi-sm hover:opacity-95 transition-opacity"
-            loading="lazy"
-            onClick={(e) => {
-              e.stopPropagation();
-              window.open(url, '_blank');
-            }}
-            title={alt ? `${alt} (нажмите для открытия)` : 'Нажмите для открытия оригинала'}
-          />
-          {alt && alt !== 'image' && (
-            <span className="block text-[10px] text-muted font-mono mt-0.5 truncate">{alt}</span>
-          )}
-        </span>
-      );
-
-      lastIndex = matchIndex + fullMatch.length;
-    }
-
-    if (lastIndex < text.length) {
-      elements.push(<span key={`text-${lastIndex}`}>{text.substring(lastIndex)}</span>);
-    }
-
-    return <>{elements}</>;
   };
 
   return (
@@ -163,7 +270,7 @@ export const MarkdownNotes: React.FC<MarkdownNotesProps> = ({
       ) : (
         <div
           onClick={() => setIsEditing(true)}
-          className="min-h-[60px] text-xs text-primary leading-relaxed bg-canvas/30 hover:bg-canvas/50 p-2.5 rounded-lg border border-subtle/50 cursor-text transition-colors whitespace-pre-wrap break-words"
+          className="min-h-[60px] text-xs text-primary leading-relaxed bg-canvas/30 hover:bg-canvas/50 p-2.5 rounded-lg border border-subtle/50 cursor-text transition-colors break-words"
         >
           {renderMarkdownPreview(value)}
         </div>

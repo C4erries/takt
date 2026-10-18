@@ -8,6 +8,7 @@ import {
   useToggleTaskMutation,
   useDeleteTaskMutation,
   useTaskStore,
+  useUrlSync,
   TASKS_QUERY_KEY,
 } from '@/features/task-navigation';
 import { PanelLeftOpen } from 'lucide-react';
@@ -38,6 +39,9 @@ export const App: React.FC = () => {
     refresh,
     isLoading: isAuthLoading,
   } = useAuth();
+
+  // Reactive URL routing, history sync and deep link resolution
+  useUrlSync({ workspaceId: workspace?.id });
 
   const {
     selectedTaskId,

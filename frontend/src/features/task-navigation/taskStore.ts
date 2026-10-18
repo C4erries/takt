@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { parseUrl, LAST_ROUTE_KEY } from './urlParser';
 
 export type NavDestination = 'inbox' | 'today' | 'projects' | (string & {});
 
@@ -24,18 +25,39 @@ export interface TaskNavigationState {
   setSelectedDateFilter: (date: string | null) => void;
 }
 
+function getInitialRoute() {
+  if (typeof window === 'undefined') {
+    return { activeNav: 'inbox', selectedProjectId: null, activeBoardId: null, selectedTaskId: null };
+  }
+  let pathname = window.location.pathname;
+  let search = window.location.search;
+
+  if (pathname === '/' || pathname === '') {
+    const saved = localStorage.getItem(LAST_ROUTE_KEY);
+    if (saved && saved !== '/' && saved !== '') {
+      window.history.replaceState(null, '', saved);
+      pathname = window.location.pathname;
+      search = window.location.search;
+    }
+  }
+
+  return parseUrl(pathname, search);
+}
+
+const initialRoute = getInitialRoute();
+
 export const useTaskStore = create<TaskNavigationState>((set) => ({
-  selectedTaskId: null,
+  selectedTaskId: initialRoute.selectedTaskId,
   setSelectedTaskId: (selectedTaskId) => set({ selectedTaskId }),
   isQuickCaptureOpen: false,
   setQuickCaptureOpen: (isQuickCaptureOpen) => set({ isQuickCaptureOpen }),
   activeFilter: 'all',
   setActiveFilter: (activeFilter) => set({ activeFilter }),
-  activeNav: 'inbox',
+  activeNav: initialRoute.activeNav,
   setActiveNav: (activeNav) => set({ activeNav }),
-  selectedProjectId: null,
+  selectedProjectId: initialRoute.selectedProjectId,
   setSelectedProjectId: (selectedProjectId) => set({ selectedProjectId }),
-  activeBoardId: null,
+  activeBoardId: initialRoute.activeBoardId,
   setActiveBoardId: (activeBoardId) => set({ activeBoardId }),
   isBoardsPanelCollapsed:
     typeof window !== 'undefined'

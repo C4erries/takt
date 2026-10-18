@@ -67,30 +67,17 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         !isOverlay && 'cursor-grab active:cursor-grabbing'
       )}
     >
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-2">
         {/* Drag handle */}
         <div
-          className="mt-0.5 text-muted/40 group-hover:text-muted/70 p-0.5 -ml-1 rounded transition-colors"
+          className="mt-0.5 text-muted/40 group-hover:text-muted/70 p-0.5 -ml-1 rounded transition-colors shrink-0"
           title="Перетащить карточку"
         >
           <GripVertical className="w-3.5 h-3.5" />
         </div>
 
-        {/* Round 18px GTD Checkbox */}
-        <div
-          className="pt-0.5 shrink-0"
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <Checkbox
-            checked={task.isCompleted}
-            onChange={() => onToggle?.(task.id)}
-            aria-label={`Завершить задачу ${task.title}`}
-          />
-        </div>
-
         {/* Task Details */}
-        <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex-1 min-w-0 space-y-1.5 pr-1">
           <p
             className={cn(
               'text-xs font-medium leading-snug break-words transition-all duration-150',
@@ -124,6 +111,19 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               </span>
             )}
           </div>
+        </div>
+
+        {/* Round 18px GTD Checkbox on top-right */}
+        <div
+          className="pt-0.5 shrink-0 ml-auto"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <Checkbox
+            checked={task.isCompleted}
+            onChange={() => onToggle?.(task.id)}
+            aria-label={`Завершить задачу ${task.title}`}
+          />
         </div>
       </div>
     </div>

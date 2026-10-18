@@ -96,7 +96,7 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
   return (
     <aside
       className={cn(
-        'w-[230px] shrink-0 h-full flex flex-col py-3 pr-2.5 pl-3 transition-all duration-200 select-none bg-canvas/60 border-r border-subtle',
+        'w-[230px] shrink-0 h-full flex flex-col py-3 pr-2.5 pl-3 transition-all duration-200 select-none bg-transparent border-r border-subtle/60',
         className
       )}
     >

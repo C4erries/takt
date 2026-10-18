@@ -61,6 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     activeNav: storeActiveNav,
     setActiveNav: storeSetActiveNav,
     setSelectedProjectId,
+    setActiveBoardId,
   } = useTaskStore();
   const { data: inboxTasks } = useInboxTasks();
   const { data: todayTasks = [] } = useTodayTasksQuery(workspace?.id);
@@ -82,6 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const handleSelectProject = (projectId: string) => {
     setSelectedProjectId(projectId);
+    setActiveBoardId(null);
     handleNavChange(`project:${projectId}`);
   };
 
@@ -102,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`shrink-0 h-full flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out ${
+      className={`shrink-0 h-full flex flex-col justify-between py-6 select-none transition-all duration-300 ease-in-out bg-surface/85 border-r border-subtle/70 ${
         isCollapsed
           ? 'w-0 -translate-x-full overflow-hidden opacity-0 p-0 pointer-events-none'
           : 'w-60 translate-x-0 opacity-100 px-4'
@@ -174,6 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={() => {
               setSelectedProjectId(null);
+              setActiveBoardId(null);
               handleNavChange('inbox');
             }}
             className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
@@ -198,6 +201,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={() => {
               setSelectedProjectId(null);
+              setActiveBoardId(null);
               handleNavChange('today');
             }}
             className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${

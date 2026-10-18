@@ -50,6 +50,8 @@
 | **Sprint 0.5.1** | [sprint-0.5.1.md](sprint-0.5.1.md) | 2026-10-16 | `✅ Done` | Canvas-First Layout, сворачиваемый сайдбар (хоткей `[`), Slide-out Task Drawer (560px, non-modal), календарь в сайдбаре |
 | **Sprint 0.5.2** | [sprint-0.5.2.md](sprint-0.5.2.md) | 2026-10-18 | `✅ Done` | Мульти-доски WEEEK-style, Sub-Navigation Rail, DND колонок и задач, Auth Gate, зачистка моков |
 | **Sprint 0.5.3** | [sprint-0.5.3.md](sprint-0.5.3.md) | 2026-10-18 | `✅ Done` | WEEEK-Style UI/UX: 44px Navbar, динамический конструктор фильтров, карточки досок с метриками, серийное инлайн-создание задач |
+| **Sprint 0.5.4** | [sprint-0.5.4.md](sprint-0.5.4.md) | 2026-10-18 | `✅ Done` | UI/UX Elevation: чекбокс справа, фикс автосохранения и Markdown-парсер, контрастный BoardsRail, цветные линии колонок |
+| **Sprint 0.5.5** | [sprint-0.5.5.md](sprint-0.5.5.md) | 2026-10-18 | `✅ Done` | Deep Linking & URL Routing: прямые ссылки на доски и задачи, двусторонняя синхронизация, F5-safety |
 
 ---
 

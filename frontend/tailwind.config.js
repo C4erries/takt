@@ -9,6 +9,8 @@ export default {
       colors: {
         canvas: 'var(--bg-canvas)',
         'bg-canvas': 'var(--bg-canvas)',
+        'canvas-subtle': 'var(--bg-canvas-subtle)',
+        'bg-canvas-subtle': 'var(--bg-canvas-subtle)',
         surface: 'var(--bg-surface)',
         'bg-surface': 'var(--bg-surface)',
         subtle: 'var(--border-subtle)',

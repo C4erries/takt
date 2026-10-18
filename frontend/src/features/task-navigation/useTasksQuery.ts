@@ -124,17 +124,22 @@ export const useToggleTaskMutation = () => {
       await queryClient.cancelQueries({ queryKey: TASKS_QUERY_KEY });
       const previousTasks = queryClient.getQueryData<Task[]>(TASKS_QUERY_KEY);
 
-      queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (old = []) =>
-        old.map((task) =>
-          task.id === taskId
-            ? {
-                ...task,
-                isCompleted: !task.isCompleted,
-                completedAt: !task.isCompleted ? new Date().toISOString() : null,
-              }
-            : task
-        )
-      );
+      const toggleInList = (old: Task[] | undefined) =>
+        old
+          ? old.map((task) =>
+              task.id === taskId
+                ? {
+                    ...task,
+                    isCompleted: !task.isCompleted,
+                    completedAt: !task.isCompleted ? new Date().toISOString() : null,
+                  }
+                : task
+            )
+          : [];
+
+      queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, toggleInList);
+      queryClient.setQueriesData<Task[]>({ queryKey: ['project-tasks'] }, toggleInList);
+      queryClient.setQueriesData<Task[]>({ queryKey: ['tasks', 'today'] }, toggleInList);
 
       return { previousTasks };
     },
@@ -146,6 +151,8 @@ export const useToggleTaskMutation = () => {
     onSettled: () => {
       if (getAuthToken()) {
         queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['tasks', 'today'] });
       }
     },
   });
@@ -165,9 +172,12 @@ export const useDeleteTaskMutation = () => {
       await queryClient.cancelQueries({ queryKey: TASKS_QUERY_KEY });
       const previousTasks = queryClient.getQueryData<Task[]>(TASKS_QUERY_KEY);
 
-      queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (old = []) =>
-        old.filter((task) => task.id !== taskId)
-      );
+      const filterInList = (old: Task[] | undefined) =>
+        old ? old.filter((task) => task.id !== taskId) : [];
+
+      queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, filterInList);
+      queryClient.setQueriesData<Task[]>({ queryKey: ['project-tasks'] }, filterInList);
+      queryClient.setQueriesData<Task[]>({ queryKey: ['tasks', 'today'] }, filterInList);
 
       return { previousTasks };
     },
@@ -179,6 +189,8 @@ export const useDeleteTaskMutation = () => {
     onSettled: () => {
       if (getAuthToken()) {
         queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['tasks', 'today'] });
       }
     },
   });

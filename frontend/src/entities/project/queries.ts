@@ -73,6 +73,14 @@ export const useCreateProjectMutation = (workspaceId?: string) => {
         queryClient.setQueryData(['projects', workspaceId], context.previousProjects);
       }
     },
+    onSuccess: (created) => {
+      if (workspaceId && created) {
+        queryClient.setQueryData<Project[]>(['projects', workspaceId], (old = []) => [
+          ...old.filter((p) => !p.id.startsWith('temp-') && p.id !== created.id),
+          created,
+        ]);
+      }
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', workspaceId] });
     },

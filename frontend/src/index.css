@@ -5,8 +5,9 @@
 :root {
   /* Surfaces and Canvas */
   --bg-canvas: #E8E5DA;         /* Dry bamboo / unbleached linen (base window background) */
+  --bg-canvas-subtle: #DBD5C8;  /* Soft, natural darker shade of base canvas for boards rail */
   --bg-surface: #F7F5EE;        /* Washi rice paper (central sheet, inspector cards) */
-  --border-subtle: #DCD7C8;     /* Subtle rice fiber (1px dividers) */
+  --border-subtle: #D0CBBF;     /* Subtle rice fiber (1px dividers) */
 
   /* Text and Inks */
   --text-primary: #21241E;      /* Sumi ink with soft warm undertone */
@@ -73,4 +74,10 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+@layer utilities {
+  .bg-canvas-subtle {
+    background-color: var(--bg-canvas-subtle);
+  }
 }

@@ -165,6 +165,50 @@ func (q *Queries) GetTaskTags(ctx context.Context, taskID pgtype.UUID) ([]Tag, e
 	return items, nil
 }
 
+const listTagsForTasks = `-- name: ListTagsForTasks :many
+SELECT tt.task_id, t.id, t.workspace_id, t.name, t.color_hex, t.created_at
+FROM tags t
+JOIN task_tags tt ON t.id = tt.tag_id
+WHERE tt.task_id = ANY($1::uuid[])
+ORDER BY t.name ASC
+`
+
+type ListTagsForTasksRow struct {
+	TaskID      pgtype.UUID        `json:"task_id"`
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	Name        string             `json:"name"`
+	ColorHex    string             `json:"color_hex"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ListTagsForTasks(ctx context.Context, dollar_1 []pgtype.UUID) ([]ListTagsForTasksRow, error) {
+	rows, err := q.db.Query(ctx, listTagsForTasks, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTagsForTasksRow{}
+	for rows.Next() {
+		var i ListTagsForTasksRow
+		if err := rows.Scan(
+			&i.TaskID,
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.ColorHex,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWorkspaceTags = `-- name: ListWorkspaceTags :many
 SELECT id, workspace_id, name, color_hex, created_at FROM tags
 WHERE workspace_id = $1

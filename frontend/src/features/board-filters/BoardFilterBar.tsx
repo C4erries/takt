@@ -22,7 +22,7 @@ import { isFilterActive } from './filterUtils';
 import { FilterChips } from './FilterChips';
 
 const PRIORITIES: { value: Priority; label: string }[] = [
-  { value: 'urgent', label: 'Срочно' },
+  { value: 'pending', label: 'В ожидании' },
   { value: 'high', label: 'Высокий' },
   { value: 'medium', label: 'Средний' },
   { value: 'low', label: 'Низкий' },
@@ -267,7 +267,7 @@ export const BoardFilterBar: React.FC<BoardFilterBarProps> = ({
                         onClick={() => toggleTag(tag.id)}
                         className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors"
                       >
-                        <span className="truncate">#{tag.name}</span>
+                        <span className="truncate">{tag.name}</span>
                         {filters.tagIds.includes(tag.id) && (
                           <Check className="w-3.5 h-3.5 text-accent-solid" />
                         )}

@@ -12,7 +12,7 @@ import {
   Pencil,
   Copy,
 } from 'lucide-react';
-import { Modal, Button, Badge } from '@/shared/components/ui';
+import { Modal, Button } from '@/shared/components/ui';
 import type { Column } from '@/entities/project';
 import type { Priority } from '@/shared/api';
 import {
@@ -60,12 +60,19 @@ export function saveStoredColumnAutomationConfig(colId: string, cfg: ColumnAutom
 }
 
 const PRIORITIES = [
-  { value: 'none' as const, label: 'Обычный', badgeVariant: 'subtle' as const },
-  { value: 'low' as const, label: 'Низкий', badgeVariant: 'subtle' as const },
-  { value: 'medium' as const, label: 'Средний', badgeVariant: 'straw' as const },
-  { value: 'high' as const, label: 'Высокий', badgeVariant: 'denim' as const },
-  { value: 'urgent' as const, label: 'Срочный', badgeVariant: 'persimmon' as const },
+  { value: 'none' as const, label: 'Обычный' }, { value: 'low' as const, label: 'Низкий' },
+  { value: 'medium' as const, label: 'Средний' }, { value: 'high' as const, label: 'Высокий' },
+  { value: 'pending' as const, label: 'В ожидании' },
 ];
+
+const PRIORITY_ACTIVE_STYLES: Record<string, string> = {
+  pending: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  urgent: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  high: 'bg-[#D97746]/15 text-[#D97746] border-[#D97746]/40',
+  medium: 'bg-[#B8943F]/15 text-[#B8943F] border-[#B8943F]/40',
+  low: 'bg-[#566B44]/15 text-[#566B44] border-[#566B44]/40',
+  none: 'bg-surface text-primary border-subtle',
+};
 
 export const ColumnAutomationsModal: React.FC<ColumnAutomationsModalProps> = ({
   isOpen,
@@ -78,9 +85,7 @@ export const ColumnAutomationsModal: React.FC<ColumnAutomationsModalProps> = ({
   const defaultTargetId =
     otherColumns.find((c) => c.statusCategory === 'done')?.id ?? otherColumns[0]?.id ?? null;
 
-  const [config, setConfig] = useState<ColumnAutomationConfig>(() =>
-    getStoredColumnAutomationConfig(column.id, defaultTargetId)
-  );
+  const [config, setConfig] = useState<ColumnAutomationConfig>(() => getStoredColumnAutomationConfig(column.id, defaultTargetId));
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [isAttachOpen, setIsAttachOpen] = useState(false);
   const [detailRule, setDetailRule] = useState<Automation | null>(null);
@@ -178,16 +183,24 @@ export const ColumnAutomationsModal: React.FC<ColumnAutomationsModalProps> = ({
             {config.enterPriorityEnabled && (
               <div className="pt-2 border-t border-subtle/50 flex flex-wrap gap-1.5 items-center">
                 <span className="text-[11px] font-mono uppercase text-muted mr-1">Приоритет:</span>
-                {PRIORITIES.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => handleUpdate({ enterPriority: p.value })}
-                    className={cn('rounded-full transition-all', config.enterPriority === p.value ? 'ring-2 ring-accent-solid scale-105' : 'opacity-60 hover:opacity-100')}
-                  >
-                    <Badge variant={p.badgeVariant} size="sm">{p.label}</Badge>
-                  </button>
-                ))}
+                {PRIORITIES.map((p) => {
+                  const isSelected = config.enterPriority === p.value || (p.value === 'pending' && config.enterPriority === 'urgent');
+                  return (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => handleUpdate({ enterPriority: p.value })}
+                      className={cn(
+                        'text-xs px-2.5 py-0.5 rounded-full border transition-all',
+                        isSelected
+                          ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm`
+                          : 'border-subtle/60 text-muted hover:text-primary hover:bg-canvas/50'
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

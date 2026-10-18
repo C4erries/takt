@@ -49,6 +49,16 @@ export const useUrlSync = ({ workspaceId }: UseUrlSyncOptions = {}) => {
           activeBoardId: route.activeBoardId,
           selectedTaskId: route.selectedTaskId,
         });
+        if (!route.selectedProjectId) {
+          initialProjectCheckedRef.current = true;
+        }
+      } else {
+        initialProjectCheckedRef.current = true;
+      }
+    } else {
+      const route = parseUrl(pathname, search);
+      if (!route.selectedProjectId) {
+        initialProjectCheckedRef.current = true;
       }
     }
 

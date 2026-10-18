@@ -252,11 +252,12 @@ func (e CreateColumnRequestStatusCategory) Valid() bool {
 
 // Defines values for CreateInboxTaskRequestPriority.
 const (
-	CreateInboxTaskRequestPriorityHigh   CreateInboxTaskRequestPriority = "high"
-	CreateInboxTaskRequestPriorityLow    CreateInboxTaskRequestPriority = "low"
-	CreateInboxTaskRequestPriorityMedium CreateInboxTaskRequestPriority = "medium"
-	CreateInboxTaskRequestPriorityNone   CreateInboxTaskRequestPriority = "none"
-	CreateInboxTaskRequestPriorityUrgent CreateInboxTaskRequestPriority = "urgent"
+	CreateInboxTaskRequestPriorityHigh    CreateInboxTaskRequestPriority = "high"
+	CreateInboxTaskRequestPriorityLow     CreateInboxTaskRequestPriority = "low"
+	CreateInboxTaskRequestPriorityMedium  CreateInboxTaskRequestPriority = "medium"
+	CreateInboxTaskRequestPriorityNone    CreateInboxTaskRequestPriority = "none"
+	CreateInboxTaskRequestPriorityPending CreateInboxTaskRequestPriority = "pending"
+	CreateInboxTaskRequestPriorityUrgent  CreateInboxTaskRequestPriority = "urgent"
 )
 
 // Valid indicates whether the value is a known member of the CreateInboxTaskRequestPriority enum.
@@ -269,6 +270,8 @@ func (e CreateInboxTaskRequestPriority) Valid() bool {
 	case CreateInboxTaskRequestPriorityMedium:
 		return true
 	case CreateInboxTaskRequestPriorityNone:
+		return true
+	case CreateInboxTaskRequestPriorityPending:
 		return true
 	case CreateInboxTaskRequestPriorityUrgent:
 		return true
@@ -297,11 +300,12 @@ func (e RuleDefinitionLogicalOperator) Valid() bool {
 
 // Defines values for TaskPriority.
 const (
-	TaskPriorityHigh   TaskPriority = "high"
-	TaskPriorityLow    TaskPriority = "low"
-	TaskPriorityMedium TaskPriority = "medium"
-	TaskPriorityNone   TaskPriority = "none"
-	TaskPriorityUrgent TaskPriority = "urgent"
+	TaskPriorityHigh    TaskPriority = "high"
+	TaskPriorityLow     TaskPriority = "low"
+	TaskPriorityMedium  TaskPriority = "medium"
+	TaskPriorityNone    TaskPriority = "none"
+	TaskPriorityPending TaskPriority = "pending"
+	TaskPriorityUrgent  TaskPriority = "urgent"
 )
 
 // Valid indicates whether the value is a known member of the TaskPriority enum.
@@ -314,6 +318,8 @@ func (e TaskPriority) Valid() bool {
 	case TaskPriorityMedium:
 		return true
 	case TaskPriorityNone:
+		return true
+	case TaskPriorityPending:
 		return true
 	case TaskPriorityUrgent:
 		return true
@@ -414,11 +420,12 @@ func (e UpdateColumnRequestStatusCategory) Valid() bool {
 
 // Defines values for UpdateTaskRequestPriority.
 const (
-	UpdateTaskRequestPriorityHigh   UpdateTaskRequestPriority = "high"
-	UpdateTaskRequestPriorityLow    UpdateTaskRequestPriority = "low"
-	UpdateTaskRequestPriorityMedium UpdateTaskRequestPriority = "medium"
-	UpdateTaskRequestPriorityNone   UpdateTaskRequestPriority = "none"
-	UpdateTaskRequestPriorityUrgent UpdateTaskRequestPriority = "urgent"
+	UpdateTaskRequestPriorityHigh    UpdateTaskRequestPriority = "high"
+	UpdateTaskRequestPriorityLow     UpdateTaskRequestPriority = "low"
+	UpdateTaskRequestPriorityMedium  UpdateTaskRequestPriority = "medium"
+	UpdateTaskRequestPriorityNone    UpdateTaskRequestPriority = "none"
+	UpdateTaskRequestPriorityPending UpdateTaskRequestPriority = "pending"
+	UpdateTaskRequestPriorityUrgent  UpdateTaskRequestPriority = "urgent"
 )
 
 // Valid indicates whether the value is a known member of the UpdateTaskRequestPriority enum.
@@ -431,6 +438,8 @@ func (e UpdateTaskRequestPriority) Valid() bool {
 	case UpdateTaskRequestPriorityMedium:
 		return true
 	case UpdateTaskRequestPriorityNone:
+		return true
+	case UpdateTaskRequestPriorityPending:
 		return true
 	case UpdateTaskRequestPriorityUrgent:
 		return true
@@ -516,7 +525,9 @@ func (e HealthStatus) Valid() bool {
 
 // Action defines model for Action.
 type Action struct {
-	// Params Example: {"target_column_id":"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"}
+	// Params Parameters for the action (e.g., for set_priority: { priority: 'pending' })
+	//
+	// Example: {"target_column_id":"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"}
 	Params *map[string]interface{} `json:"params,omitempty"`
 
 	// Type Example: move_to_column
@@ -655,7 +666,7 @@ type Condition struct {
 	// Operator Example: equals
 	Operator ConditionOperator `json:"operator"`
 
-	// Value Value to compare against
+	// Value Value to compare against (e.g., for priority: 'none', 'low', 'medium', 'high', 'pending', 'urgent')
 	Value interface{} `json:"value,omitempty"`
 }
 

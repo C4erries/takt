@@ -137,6 +137,28 @@ func TestService_UpdateTask(t *testing.T) {
 			},
 		},
 		{
+			name: "успешная очистка дедлайна (ClearDueDate)",
+			input: taskapp.UpdateTaskInput{
+				TaskID:       taskID,
+				WorkspaceID:  wsID,
+				ClearDueDate: true,
+			},
+			setupTaskRepo: func(m *mocks.MockTaskRepository) {
+				existing, _ := domainTask.NewInboxTask(wsID, "Task with DueDate", "", domainTask.PriorityNone, &now, 0)
+				existing.ID = taskID
+				m.EXPECT().GetByID(mock.Anything, taskID, wsID).Return(existing, nil).Once()
+				m.EXPECT().Update(mock.Anything, mock.MatchedBy(func(t *domainTask.Task) bool {
+					return t.ID == taskID && t.DueDate == nil
+				})).Return(nil).Once()
+			},
+			setupTagRepo: func(m *mocks.MockTagRepository) {
+				m.EXPECT().GetTaskTags(mock.Anything, taskID).Return([]*domainTask.Tag{}, nil).Once()
+			},
+			checkOut: func(t *testing.T, task *domainTask.Task) {
+				assert.Nil(t, task.DueDate)
+			},
+		},
+		{
 			name: "ошибка: пустой заголовок при обновлении",
 			input: taskapp.UpdateTaskInput{
 				TaskID:      taskID,

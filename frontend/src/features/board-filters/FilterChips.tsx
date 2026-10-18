@@ -4,7 +4,8 @@ import type { Priority, Tag } from '@/shared/api';
 import type { BoardFilterState, DeadlineFilter } from './types';
 
 const PRIORITIES: Record<Priority, string> = {
-  urgent: 'Срочно',
+  pending: 'В ожидании',
+  urgent: 'В ожидании',
   high: 'Высокий',
   medium: 'Средний',
   low: 'Низкий',
@@ -88,7 +89,7 @@ export const FilterChips: React.FC<FilterChipsProps> = ({
             className="inline-flex items-center gap-1 bg-surface border border-subtle/90 text-primary text-xs px-2.5 py-1 rounded-full shadow-washi-sm animate-in fade-in"
           >
             <span className="text-muted">Тег:</span>
-            <span className="font-medium">#{tag?.name || tagId}</span>
+            <span className="font-medium">{tag?.name || tagId}</span>
             <button
               type="button"
               onClick={() => onRemoveTag(tagId)}

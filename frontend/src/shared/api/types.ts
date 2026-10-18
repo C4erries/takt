@@ -1,4 +1,4 @@
-export type Priority = 'none' | 'low' | 'medium' | 'high' | 'urgent';
+export type Priority = 'none' | 'low' | 'medium' | 'high' | 'pending' | 'urgent';
 
 export interface User {
   id: string;

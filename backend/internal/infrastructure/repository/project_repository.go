@@ -341,8 +341,7 @@ func (r *TaskMoveRepository) MoveTaskToColumnAndPosition(
 }
 
 func (r *TaskMoveRepository) ResetProjectTasksToInbox(ctx context.Context, projectID, workspaceID uuid.UUID) error {
-	q := getQuerier(ctx, r.queries)
-	return q.ResetProjectTasksToInbox(ctx, sqlc.ResetProjectTasksToInboxParams{
+	return getQuerier(ctx, r.queries).ResetProjectTasksToInbox(ctx, sqlc.ResetProjectTasksToInboxParams{
 		ProjectID:   uuidToPg(projectID),
 		WorkspaceID: uuidToPg(workspaceID),
 	})
@@ -362,6 +361,9 @@ func (r *TaskMoveRepository) ListTasksByProject(ctx context.Context, projectID, 
 	for _, row := range rows {
 		res = append(res, mapTaskRowToDomain(row))
 	}
+	if err := loadTagsForTasks(ctx, q, res); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
@@ -378,6 +380,9 @@ func (r *TaskMoveRepository) ListTasksByColumn(ctx context.Context, columnID, wo
 	res := make([]*domainTask.Task, 0, len(rows))
 	for _, row := range rows {
 		res = append(res, mapTaskRowToDomain(row))
+	}
+	if err := loadTagsForTasks(ctx, q, res); err != nil {
+		return nil, err
 	}
 	return res, nil
 }

@@ -295,43 +295,55 @@ func TestHandler_GetTodayTasks_Success(t *testing.T) {
 }
 
 func TestHandler_UpdateTask_Success(t *testing.T) {
-	wsID := uuid.New()
-	taskID := uuid.New()
-	now := time.Now().UTC()
+	wsID, taskID, now := uuid.New(), uuid.New(), time.Now().UTC()
+	var capturedInput taskApp.UpdateTaskInput
 
 	mockSvc := &mockTaskService{
 		updateFn: func(ctx context.Context, input taskApp.UpdateTaskInput) (*domainTask.Task, error) {
+			capturedInput = input
 			title := "Updated Task"
 			if input.Title != nil {
 				title = *input.Title
 			}
 			return &domainTask.Task{
-				ID:          input.TaskID,
-				WorkspaceID: input.WorkspaceID,
-				Title:       title,
-				Priority:    domainTask.PriorityHigh,
-				CreatedAt:   now,
-				UpdatedAt:   now,
+				ID: input.TaskID, WorkspaceID: input.WorkspaceID, Title: title,
+				Priority: domainTask.PriorityHigh, CreatedAt: now, UpdatedAt: now,
 			}, nil
 		},
 	}
 
 	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
 
-	payload := `{"title":"Updated Task","priority":"high"}`
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPatch, "/api/v1/workspaces/"+wsID.String()+"/tasks/"+taskID.String(), bytes.NewReader([]byte(payload)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	t.Run("basic update", func(t *testing.T) {
+		payload := `{"title":"Updated Task","priority":"high"}`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPatch, "/api/v1/workspaces/"+wsID.String()+"/tasks/"+taskID.String(), bytes.NewReader([]byte(payload)))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
 
-	require.NoError(t, handler.UpdateTask(c, wsID, taskID))
-	assert.Equal(t, http.StatusOK, rec.Code)
+		require.NoError(t, handler.UpdateTask(c, wsID, taskID))
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.False(t, capturedInput.ClearDueDate)
 
-	var task generated.Task
-	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &task))
-	assert.Equal(t, "Updated Task", task.Title)
-	assert.Equal(t, "high", string(task.Priority))
+		var task generated.Task
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &task))
+		assert.Equal(t, "Updated Task", task.Title)
+		assert.Equal(t, "high", string(task.Priority))
+	})
+
+	t.Run("clear due date with null", func(t *testing.T) {
+		payload := `{"dueDate":null}`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPatch, "/api/v1/workspaces/"+wsID.String()+"/tasks/"+taskID.String(), bytes.NewReader([]byte(payload)))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		require.NoError(t, handler.UpdateTask(c, wsID, taskID))
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.True(t, capturedInput.ClearDueDate)
+	})
 }
 
 func TestHandler_SetTaskFocus_Success(t *testing.T) {

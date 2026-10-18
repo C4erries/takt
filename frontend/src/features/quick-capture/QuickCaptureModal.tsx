@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Modal, Input, Button, Badge } from '@/shared/components/ui';
+import { Modal, Input, Button } from '@/shared/components/ui';
+import { cn } from '@/shared/lib/cn';
 import type { Priority, CreateInboxTaskRequest } from '@/shared/api';
 import { useTaskStore, useCreateTaskMutation } from '@/features/task-navigation';
 
@@ -12,13 +13,22 @@ export interface QuickCaptureModalProps {
   projectName?: string | null;
 }
 
-const PRIORITIES: { value: Priority; label: string; badgeVariant: 'subtle' | 'straw' | 'denim' | 'persimmon' }[] = [
-  { value: 'none', label: 'Обычный', badgeVariant: 'subtle' },
-  { value: 'low', label: 'Низкий', badgeVariant: 'subtle' },
-  { value: 'medium', label: 'Средний', badgeVariant: 'straw' },
-  { value: 'high', label: 'Высокий', badgeVariant: 'denim' },
-  { value: 'urgent', label: 'Срочный', badgeVariant: 'persimmon' },
+const PRIORITIES: { value: Priority; label: string }[] = [
+  { value: 'none', label: 'Обычный' },
+  { value: 'low', label: 'Низкий' },
+  { value: 'medium', label: 'Средний' },
+  { value: 'high', label: 'Высокий' },
+  { value: 'pending', label: 'В ожидании' },
 ];
+
+const PRIORITY_ACTIVE_STYLES: Record<string, string> = {
+  pending: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  urgent: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  high: 'bg-[#D97746]/15 text-[#D97746] border-[#D97746]/40',
+  medium: 'bg-[#B8943F]/15 text-[#B8943F] border-[#B8943F]/40',
+  low: 'bg-[#566B44]/15 text-[#566B44] border-[#566B44]/40',
+  none: 'bg-surface text-primary border-subtle',
+};
 
 export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   isOpen: propsIsOpen,
@@ -129,19 +139,22 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
           <label className="block text-xs uppercase tracking-wider text-muted font-mono mb-1.5">
             Приоритет
           </label>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             {PRIORITIES.map((p) => {
-              const isSelected = priority === p.value;
+              const isSelected = priority === p.value || (p.value === 'pending' && priority === 'urgent');
               return (
                 <button
                   key={p.value}
                   type="button"
                   onClick={() => setPriority(p.value)}
-                  className={`rounded-full transition-transform ${isSelected ? 'scale-105 ring-2 ring-accent-solid ring-offset-1' : 'opacity-70 hover:opacity-100'}`}
+                  className={cn(
+                    'text-xs px-2.5 py-1 rounded-full border transition-all',
+                    isSelected
+                      ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm`
+                      : 'border-subtle/60 text-muted hover:text-primary hover:bg-canvas/50'
+                  )}
                 >
-                  <Badge variant={p.badgeVariant} size="sm">
-                    {p.label}
-                  </Badge>
+                  {p.label}
                 </button>
               );
             })}

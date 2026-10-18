@@ -105,7 +105,7 @@ export const DEMO_PROJECT_TASKS: Task[] = [
     title: 'Интегрировать @dnd-kit/core с тактильным Washi-дизайном',
     descriptionMarkdown: 'Ощущение японской канцелярии Midori MD при перетаскивании карточек',
     isCompleted: false,
-    priority: 'urgent',
+    priority: 'pending',
     position: 1000.0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

@@ -48,3 +48,10 @@ SELECT * FROM tags
 WHERE workspace_id = $1 AND LOWER(name) = LOWER($2)
 LIMIT 1;
 
+-- name: ListTagsForTasks :many
+SELECT tt.task_id, t.id, t.workspace_id, t.name, t.color_hex, t.created_at
+FROM tags t
+JOIN task_tags tt ON t.id = tt.tag_id
+WHERE tt.task_id = ANY($1::uuid[])
+ORDER BY t.name ASC;
+

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -7,6 +7,7 @@ import {
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { Skeleton, EmptyState, ErrorBanner, Button } from '@/shared/components/ui';
 import { LayoutGrid, Plus } from 'lucide-react';
+import { cn } from '@/shared/lib/cn';
 import {
   useProjectBoardsQuery,
   useBoardColumnsQuery,
@@ -64,6 +65,46 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [newColumnName, setNewColumnName] = useState('');
   const [isSubmittingColumn, setIsSubmittingColumn] = useState(false);
   const newColumnInputRef = useRef<HTMLInputElement>(null);
+
+  // Middle-mouse drag pan (D-071-4)
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef<{ startX: number; scrollLeft: number } | null>(null);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button === 1 && scrollContainerRef.current) {
+      e.preventDefault();
+      setIsPanning(true);
+      panStartRef.current = {
+        startX: e.clientX,
+        scrollLeft: scrollContainerRef.current.scrollLeft,
+      };
+    }
+  };
+
+  useEffect(() => {
+    if (!isPanning) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!panStartRef.current || !scrollContainerRef.current) return;
+      const dx = e.clientX - panStartRef.current.startX;
+      scrollContainerRef.current.scrollLeft = panStartRef.current.scrollLeft - dx;
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (e.button === 1 || e.buttons === 0) {
+        setIsPanning(false);
+        panStartRef.current = null;
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isPanning]);
 
   const handleCreateColumn = async () => {
     const trimmed = newColumnName.trim();
@@ -229,7 +270,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         items={columns.map((c) => c.id)}
         strategy={horizontalListSortingStrategy}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 h-full min-h-[360px] items-start">
+        <div
+          ref={scrollContainerRef}
+          onMouseDown={handleMouseDown}
+          className={cn(
+            'flex gap-4 overflow-x-auto pb-4 h-full min-h-[360px] items-start',
+            isPanning && 'cursor-grabbing select-none'
+          )}
+        >
           {columns.map((column) => {
             const columnTasks = tasks
               .filter((t) => t.columnId === column.id)

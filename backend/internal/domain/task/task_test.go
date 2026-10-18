@@ -73,3 +73,43 @@ func TestTask_Toggle(t *testing.T) {
 		t.Errorf("expected completedAt to be cleared")
 	}
 }
+
+func TestNewInboxTask_PendingPriority(t *testing.T) {
+	wsID := uuid.New()
+	task, err := NewInboxTask(wsID, "Pending task", "", PriorityPending, nil, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if task.Priority != PriorityPending {
+		t.Errorf("expected priority %s, got %s", PriorityPending, task.Priority)
+	}
+}
+
+func TestValidatePriority(t *testing.T) {
+	tests := []struct {
+		priority Priority
+		expected bool
+	}{
+		{PriorityNone, true},
+		{PriorityLow, true},
+		{PriorityMedium, true},
+		{PriorityHigh, true},
+		{PriorityPending, true},
+		{PriorityUrgent, true},
+		{Priority(""), false},
+		{Priority("invalid"), false},
+		{Priority("PENDING"), false},
+		{Priority("unknown"), false},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.priority), func(t *testing.T) {
+			if got := ValidatePriority(tt.priority); got != tt.expected {
+				t.Errorf("ValidatePriority(%q) = %v; want %v", tt.priority, got, tt.expected)
+			}
+			if got := tt.priority.IsValid(); got != tt.expected {
+				t.Errorf("Priority(%q).IsValid() = %v; want %v", tt.priority, got, tt.expected)
+			}
+		})
+	}
+}

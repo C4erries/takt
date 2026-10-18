@@ -51,7 +51,7 @@ Task:
       example: null
     priority:
       type: string
-      enum: [none, low, medium, high, urgent]
+      enum: [none, low, medium, high, pending, urgent]
       example: "none"
     focusOrder:
       type: integer
@@ -90,7 +90,7 @@ CreateInboxTaskRequest:
       example: ""
     priority:
       type: string
-      enum: [none, low, medium, high, urgent]
+      enum: [none, low, medium, high, pending, urgent]
       default: "none"
       example: "none"
     dueDate:
@@ -117,7 +117,7 @@ UpdateTaskRequest:
       example: "2026-10-15"
     priority:
       type: string
-      enum: [none, low, medium, high, urgent]
+      enum: [none, low, medium, high, pending, urgent]
       example: "high"
     focusOrder:
       type: integer

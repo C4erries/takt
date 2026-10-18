@@ -50,3 +50,4 @@
    - `sprint_065b_1_operator_matrix_filtering.png` — фильтрация операторов времени (только =, >, <) и авто-сброс.
    - `sprint_065b_2_tag_autocomplete_conditions_actions.png` — выпадающий список подсказок тегов и опция «Создать тег».
    - `sprint_065b_3_created_rule_in_column.png` — созданное правило мгновенно появилось в кастомном списке колонки.
+

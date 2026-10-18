@@ -2,6 +2,7 @@ import type { Task, Priority } from '@/shared/api';
 import type { BoardFilterState } from './types';
 
 const PRIORITY_WEIGHTS: Record<Priority, number> = {
+  pending: 5,
   urgent: 5,
   high: 4,
   medium: 3,

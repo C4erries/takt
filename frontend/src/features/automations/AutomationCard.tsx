@@ -197,3 +197,4 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
     </div>
   );
 };
+

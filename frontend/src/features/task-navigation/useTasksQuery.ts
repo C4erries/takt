@@ -33,7 +33,7 @@ export const ONBOARDING_TASKS: Task[] = [
     title: 'Нажми C в любом месте экрана для мгновенного сброса мысли (Quick Capture)',
     descriptionMarkdown: 'Горячая клавиша C открывает всплывающее окно быстрого захвата.',
     isCompleted: false,
-    priority: 'urgent',
+    priority: 'pending',
     position: 2,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

@@ -122,7 +122,7 @@ Condition:
       example: "equals"
     value:
       nullable: true
-      description: Value to compare against
+      description: "Value to compare against (e.g., for priority: 'none', 'low', 'medium', 'high', 'pending', 'urgent')"
 
 Action:
   type: object
@@ -146,6 +146,7 @@ Action:
       type: object
       additionalProperties: true
       default: {}
+      description: "Parameters for the action (e.g., for set_priority: { priority: 'pending' })"
       example: { "target_column_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f" }
 
 RuleDefinition:

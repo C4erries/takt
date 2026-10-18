@@ -67,6 +67,7 @@ type Querier interface {
 	ListColumnsByBoard(ctx context.Context, boardID pgtype.UUID) ([]Column, error)
 	ListEnabledAutomationsByTrigger(ctx context.Context, arg ListEnabledAutomationsByTriggerParams) ([]Automation, error)
 	ListProjectsByWorkspace(ctx context.Context, workspaceID pgtype.UUID) ([]Project, error)
+	ListTagsForTasks(ctx context.Context, dollar_1 []pgtype.UUID) ([]ListTagsForTasksRow, error)
 	ListTasksByColumn(ctx context.Context, arg ListTasksByColumnParams) ([]Task, error)
 	ListTasksByProject(ctx context.Context, arg ListTasksByProjectParams) ([]Task, error)
 	ListWorkspaceAutomations(ctx context.Context, workspaceID pgtype.UUID) ([]Automation, error)

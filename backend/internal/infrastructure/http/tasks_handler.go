@@ -1,7 +1,10 @@
 package http
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -216,6 +219,12 @@ func (h *Handler) GetTodayTasks(c echo.Context, workspaceId openapi_types.UUID) 
 }
 
 func (h *Handler) UpdateTask(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error {
+	var bodyBytes []byte
+	if c.Request().Body != nil {
+		bodyBytes, _ = io.ReadAll(c.Request().Body)
+		c.Request().Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	}
+
 	var req generated.UpdateTaskJSONRequestBody
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, generated.Error{
@@ -232,6 +241,17 @@ func (h *Handler) UpdateTask(c echo.Context, workspaceId openapi_types.UUID, tas
 		FocusOrder:          req.FocusOrder,
 		ProjectID:           req.ProjectId,
 		ColumnID:            req.ColumnId,
+	}
+
+	if len(bodyBytes) > 0 {
+		var rawMap map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &rawMap); err == nil {
+			if val, exists := rawMap["dueDate"]; exists && val == nil {
+				input.ClearDueDate = true
+			} else if val, exists := rawMap["due_date"]; exists && val == nil {
+				input.ClearDueDate = true
+			}
+		}
 	}
 
 	if req.DueDate != nil {

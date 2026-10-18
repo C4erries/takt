@@ -15,6 +15,7 @@ import {
   CONDITION_OPERATORS,
   ACTION_TYPES,
   PRIORITIES,
+  PRIORITY_ACTIVE_STYLES,
   DUE_DATE_STATUS_OPTIONS,
   FIELD_OPERATORS_MAP,
 } from './useRuleBuilder';
@@ -122,7 +123,7 @@ const TagAutocomplete: React.FC<{
         <div className="absolute left-0 top-full mt-1 w-full max-h-36 overflow-y-auto bg-surface border border-subtle rounded-lg shadow-washi-sm z-50 p-1 text-xs space-y-0.5">
           {filtered.map((t) => (
             <button key={t.id} type="button" onClick={() => { onChange(t.name); setQuery(t.name); setIsOpen(false); }} className="w-full text-left px-2 py-1 rounded hover:bg-canvas text-primary transition-colors flex items-center justify-between">
-              <span>#{t.name}</span>
+              <span>{t.name}</span>
             </button>
           ))}
           {filtered.length === 0 && !allowCreate && <p className="px-2 py-1 text-[11px] text-muted italic">Теги не найдены</p>}
@@ -187,7 +188,7 @@ const ConditionValuePicker: React.FC<{
       return (
         <div className="flex items-center gap-1 flex-wrap flex-1">
           {PRIORITIES.map((p) => (
-            <button key={p.value} type="button" onClick={() => toggle(p.value)} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', selected.includes(p.value) ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>
+            <button key={p.value} type="button" onClick={() => toggle(p.value)} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', selected.includes(p.value) ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>
               {selected.includes(p.value) ? `✓ ${p.label}` : p.label}
             </button>
           ))}

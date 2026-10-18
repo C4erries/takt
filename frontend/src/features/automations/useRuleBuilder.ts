@@ -78,12 +78,21 @@ export const ACTION_TYPES: { type: AutomationActionType; label: string; desc: st
 ];
 
 export const PRIORITIES = [
-  { value: 'urgent', label: 'Срочный' },
+  { value: 'pending', label: 'В ожидании' },
   { value: 'high', label: 'Высокий' },
   { value: 'medium', label: 'Средний' },
   { value: 'low', label: 'Низкий' },
   { value: 'none', label: 'Обычный' },
 ];
+
+export const PRIORITY_ACTIVE_STYLES: Record<string, string> = {
+  pending: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  urgent: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  high: 'bg-[#D97746]/15 text-[#D97746] border-[#D97746]/40',
+  medium: 'bg-[#B8943F]/15 text-[#B8943F] border-[#B8943F]/40',
+  low: 'bg-[#566B44]/15 text-[#566B44] border-[#566B44]/40',
+  none: 'bg-surface text-primary border-subtle',
+};
 
 export const DUE_DATE_STATUS_OPTIONS = [
   { value: 'overdue', label: 'Просрочен' },

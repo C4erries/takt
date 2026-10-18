@@ -13,10 +13,11 @@ export interface TaskRowProps {
 
 const getPriorityBadge = (priority: Priority) => {
   switch (priority) {
+    case 'pending':
     case 'urgent':
-      return <Badge variant="persimmon" size="sm">Срочно</Badge>;
+      return <Badge variant="denim" size="sm">В ожидании</Badge>;
     case 'high':
-      return <Badge variant="denim" size="sm">Высокий</Badge>;
+      return <Badge variant="persimmon" size="sm">Высокий</Badge>;
     case 'medium':
       return <Badge variant="straw" size="sm">Средний</Badge>;
     case 'low':

@@ -10,16 +10,21 @@ import (
 type Priority string
 
 const (
-	PriorityNone   Priority = "none"
-	PriorityLow    Priority = "low"
-	PriorityMedium Priority = "medium"
-	PriorityHigh   Priority = "high"
-	PriorityUrgent Priority = "urgent"
+	PriorityNone    Priority = "none"
+	PriorityLow     Priority = "low"
+	PriorityMedium  Priority = "medium"
+	PriorityHigh    Priority = "high"
+	PriorityPending Priority = "pending"
+	PriorityUrgent  Priority = "urgent"
 )
 
 func (p Priority) IsValid() bool {
+	return ValidatePriority(p)
+}
+
+func ValidatePriority(p Priority) bool {
 	switch p {
-	case PriorityNone, PriorityLow, PriorityMedium, PriorityHigh, PriorityUrgent:
+	case PriorityNone, PriorityLow, PriorityMedium, PriorityHigh, PriorityPending, PriorityUrgent:
 		return true
 	default:
 		return false

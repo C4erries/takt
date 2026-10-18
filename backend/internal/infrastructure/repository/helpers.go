@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	domainProject "takt/internal/domain/project"
+	domainTask "takt/internal/domain/task"
 	"takt/internal/infrastructure/db"
 	"takt/internal/infrastructure/db/sqlc"
 )
@@ -115,5 +116,34 @@ func mapColumnRowToDomain(row sqlc.Column) *domainProject.Column {
 		CreatedAt:      pgToTime(row.CreatedAt),
 		UpdatedAt:      pgToTime(row.UpdatedAt),
 	}
+}
+
+func loadTagsForTasks(ctx context.Context, q *sqlc.Queries, tasks []*domainTask.Task) error {
+	if len(tasks) == 0 {
+		return nil
+	}
+	taskIDs := make([]pgtype.UUID, len(tasks))
+	taskMap := make(map[uuid.UUID]*domainTask.Task, len(tasks))
+	for i, t := range tasks {
+		taskIDs[i] = uuidToPg(t.ID)
+		taskMap[t.ID] = t
+	}
+	rows, err := q.ListTagsForTasks(ctx, taskIDs)
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		tID := pgToUUID(row.TaskID)
+		if t, ok := taskMap[tID]; ok {
+			t.Tags = append(t.Tags, &domainTask.Tag{
+				ID:          pgToUUID(row.ID),
+				WorkspaceID: pgToUUID(row.WorkspaceID),
+				Name:        row.Name,
+				ColorHex:    row.ColorHex,
+				CreatedAt:   pgToTime(row.CreatedAt),
+			})
+		}
+	}
+	return nil
 }
 

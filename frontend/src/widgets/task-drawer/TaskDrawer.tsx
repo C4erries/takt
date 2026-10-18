@@ -7,14 +7,10 @@ import {
   Trash2,
   FolderClosed,
 } from 'lucide-react';
-import type { Priority, Tag, Task } from '@/shared/api';
+import type { Priority, Task } from '@/shared/api';
 import {
   useUpdateTaskMutation,
   useSetTaskFocusMutation,
-  useWorkspaceTagsQuery,
-  useCreateTagMutation,
-  useAddTagToTaskMutation,
-  useRemoveTagFromTaskMutation,
 } from '@/entities/task';
 import {
   useProjectsQuery,
@@ -25,14 +21,27 @@ import {
 import { useUploadAttachmentMutation } from '@/entities/attachment';
 import { MarkdownNotes, TaskAttachments } from '@/widgets/task-inspector';
 import { Button, Input } from '@/shared/components/ui';
+import { cn } from '@/shared/lib/cn';
 import { QuickActionBar } from './QuickActionBar';
+import { TaskTagSection } from './TaskTagSection';
 import type { TaskDrawerProps } from './types';
 
 const PRIORITIES: { value: Priority; label: string }[] = [
-  { value: 'none', label: 'Обычный' }, { value: 'low', label: 'Низкий' },
-  { value: 'medium', label: 'Средний' }, { value: 'high', label: 'Высокий' },
-  { value: 'urgent', label: 'Срочно' },
+  { value: 'none', label: 'Обычный' },
+  { value: 'low', label: 'Низкий' },
+  { value: 'medium', label: 'Средний' },
+  { value: 'high', label: 'Высокий' },
+  { value: 'pending', label: 'В ожидании' },
 ];
+
+const PRIORITY_ACTIVE_STYLES: Record<string, string> = {
+  pending: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  urgent: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  high: 'bg-[#D97746]/15 text-[#D97746] border-[#D97746]/40',
+  medium: 'bg-[#B8943F]/15 text-[#B8943F] border-[#B8943F]/40',
+  low: 'bg-[#566B44]/15 text-[#566B44] border-[#566B44]/40',
+  none: 'bg-surface text-primary border-subtle',
+};
 
 export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   task,
@@ -51,10 +60,6 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
   const updateTaskMutation = useUpdateTaskMutation(workspaceId);
   const setFocusMutation = useSetTaskFocusMutation(workspaceId);
-  const { data: allTags = [] } = useWorkspaceTagsQuery(workspaceId);
-  const createTagMutation = useCreateTagMutation(workspaceId);
-  const addTagMutation = useAddTagToTaskMutation(workspaceId);
-  const removeTagMutation = useRemoveTagFromTaskMutation(workspaceId);
   const { data: projects = [] } = useProjectsQuery(workspaceId);
 
   const boardsQuery = useProjectBoardsQuery(workspaceId, currentTask?.projectId ?? undefined);
@@ -68,7 +73,6 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   const [title, setTitle] = useState(currentTask?.title ?? '');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -102,23 +106,6 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
     if (trimmed && trimmed !== currentTask.title) {
       updateTaskMutation.mutate({ taskId: currentTask.id, data: { title: trimmed } });
     }
-  };
-
-  const handleCreateAndAttachTag = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentTask) return;
-    const clean = newTagName.trim().replace(/^@/, '');
-    if (!clean) return;
-
-    const existing = allTags.find((t) => t.name.toLowerCase() === clean.toLowerCase());
-    if (existing) {
-      await addTagMutation.mutateAsync({ taskId: currentTask.id, tag: existing });
-    } else {
-      const created = await createTagMutation.mutateAsync({ name: clean, colorHex: 'matcha' });
-      await addTagMutation.mutateAsync({ taskId: currentTask.id, tag: created });
-    }
-    setNewTagName('');
-    setIsAddingTag(false);
   };
 
   const handleUploadImageForNotes = async (file: File): Promise<string | null> => {
@@ -270,51 +257,25 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
               onColumnChange={handleColumnChange}
             />
 
-            {/* Tag form when adding tag */}
-            {isAddingTag && (
-              <form onSubmit={handleCreateAndAttachTag} className="flex items-center gap-2 pt-1">
-                <Input
-                  autoFocus
-                  placeholder="@контекст..."
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  className="text-xs bg-canvas/40 border-subtle h-8"
-                />
-                <Button type="submit" size="sm" variant="solid" className="h-8 text-xs px-3">
-                  Добавить
-                </Button>
-              </form>
-            )}
+            {/* Tags section with autocomplete and color palette */}
+            <TaskTagSection
+              taskId={currentTask.id}
+              tags={currentTask.tags}
+              workspaceId={workspaceId}
+              isAddingTag={isAddingTag}
+              onToggleAddingTag={() => setIsAddingTag((prev) => !prev)}
+            />
 
-            {/* Tags row */}
-            {currentTask.tags && currentTask.tags.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {currentTask.tags.map((tag: Tag) => (
-                  <span
-                    key={tag.id}
-                    className="inline-flex items-center gap-1 bg-accent-surface text-primary text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-subtle"
-                  >
-                    #{tag.name}
-                    <button
-                      type="button"
-                      onClick={() => removeTagMutation.mutate({ taskId: currentTask.id, tag })}
-                      className="hover:text-muted"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Priority row */}
+            {/* Priority row with self-colored active selection (D-071-3) */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-mono uppercase tracking-wider text-muted">
                 Приоритет
               </label>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {PRIORITIES.map((p) => {
-                  const active = currentTask.priority === p.value;
+                  const active =
+                    currentTask.priority === p.value ||
+                    (p.value === 'pending' && currentTask.priority === 'urgent');
                   return (
                     <button
                       key={p.value}
@@ -322,11 +283,12 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                       onClick={() =>
                         updateTaskMutation.mutate({ taskId: currentTask.id, data: { priority: p.value } })
                       }
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                      className={cn(
+                        'text-xs px-2.5 py-1 rounded-full border transition-all',
                         active
-                          ? 'bg-accent-surface border-accent-solid/50 font-medium text-primary shadow-washi-sm'
+                          ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm`
                           : 'border-subtle/60 text-muted hover:text-primary hover:bg-canvas/50'
-                      }`}
+                      )}
                     >
                       {p.label}
                     </button>

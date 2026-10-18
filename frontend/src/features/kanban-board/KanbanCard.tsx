@@ -15,7 +15,8 @@ export interface KanbanCardProps {
 }
 
 const PRIORITY_BADGES: Record<Priority, { label: string; variant: 'persimmon' | 'denim' | 'straw' | 'matcha' | 'subtle' } | null> = {
-  urgent: { label: 'Срочно', variant: 'denim' },
+  pending: { label: 'В ожидании', variant: 'denim' },
+  urgent: { label: 'В ожидании', variant: 'denim' },
   high: { label: 'Высокий', variant: 'persimmon' },
   medium: { label: 'Средний', variant: 'straw' },
   low: { label: 'Низкий', variant: 'subtle' },
@@ -23,6 +24,7 @@ const PRIORITY_BADGES: Record<Priority, { label: string; variant: 'persimmon' | 
 };
 
 const PRIORITY_STYLES: Record<Priority, string> = {
+  pending: 'border-l-4 border-l-accent-denim',
   urgent: 'border-l-4 border-l-accent-denim',
   high: 'border-l-4 border-l-accent-persimmon',
   medium: 'border-l-4 border-l-accent-straw',
@@ -171,6 +173,24 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                   <Calendar className="w-3 h-3 text-muted shrink-0" />
                 )}
                 <span>{dueDateInfo.text}</span>
+              </div>
+            )}
+            {task.tags && task.tags.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                {task.tags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 bg-canvas/60 text-muted rounded-full border border-subtle"
+                  >
+                    {tag.colorHex && (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: tag.colorHex }}
+                      />
+                    )}
+                    <span>{tag.name}</span>
+                  </span>
+                ))}
               </div>
             )}
           </div>

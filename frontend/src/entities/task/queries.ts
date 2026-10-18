@@ -18,7 +18,7 @@ export const DEMO_TODAY_TASKS: Task[] = [
     title: 'Подготовить релиз Bento-инспектора и матричного календаря',
     descriptionMarkdown: 'Собрать воедино Editorial Split-Toggle и сетку месяца в стиле Hobonichi Techo.',
     isCompleted: false,
-    priority: 'urgent',
+    priority: 'pending',
     focusOrder: 1,
     position: 1000.0,
     dueDate: new Date().toISOString().split('T')[0],

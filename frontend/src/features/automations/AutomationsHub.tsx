@@ -240,3 +240,4 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
     </div>
   );
 };
+

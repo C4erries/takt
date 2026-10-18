@@ -1,15 +1,20 @@
 import React, { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { FolderClosed, Plus, Filter } from 'lucide-react';
 import { ViewToggle, KanbanBoard } from '@/features/kanban-board';
 import { useTaskStore } from '@/features/task-navigation';
 import {
   useProjectsQuery,
   useProjectBoardsQuery,
+  useBoardColumnsQuery,
   useProjectTasksQuery,
+  projectApi,
+  DEMO_PROJECT_TASKS,
 } from '@/entities/project';
 import { useToggleTaskMutation, useDeleteTaskMutation } from '@/features/task-navigation';
 import { BoardFilterBar, filterAndSortTasks, initialFilterState } from '@/features/board-filters';
 import type { BoardFilterState } from '@/features/board-filters';
+import { getAuthToken, tasksApi, type Task } from '@/shared/api';
 import { TaskRow } from './TaskRow';
 import { Skeleton, EmptyState, ErrorBanner, Input, Button } from '@/shared/components/ui';
 
@@ -28,6 +33,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
   onSelectTask,
   selectedTaskId,
 }) => {
+  const queryClient = useQueryClient();
   const { viewMode, setViewMode } = useTaskStore();
   const { data: projects = [] } = useProjectsQuery(workspaceId);
   const currentProject = projects.find((p) => p.id === projectId) ?? projects[0];
@@ -49,57 +55,124 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
 
   const [inlineTitle, setInlineTitle] = useState('');
 
-  const handleInlineSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inlineTitle.trim()) return;
-    setInlineTitle('');
+  const columnsQuery = useBoardColumnsQuery(workspaceId, activeBoard?.id);
+  const firstColumn = columnsQuery.data?.[0];
+
+  const handleCreateTaskInColumn = async (title: string, columnId: string) => {
+    if (!workspaceId || !getAuthToken()) {
+      const newTask: Task = {
+        id: `pt-${Date.now()}`,
+        workspaceId: workspaceId || 'demo-workspace',
+        projectId,
+        columnId,
+        title,
+        descriptionMarkdown: '',
+        isCompleted: false,
+        priority: 'none',
+        position: Date.now(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      DEMO_PROJECT_TASKS.push(newTask);
+      queryClient.setQueryData<Task[]>(
+        ['project-tasks', workspaceId, projectId],
+        (old = []) => [...old, newTask]
+      );
+      return;
+    }
+
+    try {
+      const created = await tasksApi.createInbox({ title });
+      if (created?.id) {
+        await projectApi.moveTask(workspaceId, created.id, {
+          columnId,
+          position: Date.now(),
+          projectId,
+        });
+        queryClient.invalidateQueries({ queryKey: ['project-tasks', workspaceId, projectId] });
+      }
+    } catch {
+      // Invalidation or error handled
+    }
   };
 
+  const handleInlineSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = inlineTitle.trim();
+    if (!trimmed) return;
+
+    if (!workspaceId || !getAuthToken()) {
+      const newTask: Task = {
+        id: `pt-${Date.now()}`,
+        workspaceId: workspaceId || 'demo-workspace',
+        projectId,
+        columnId: firstColumn?.id,
+        title: trimmed,
+        descriptionMarkdown: '',
+        isCompleted: false,
+        priority: 'none',
+        position: Date.now(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      DEMO_PROJECT_TASKS.push(newTask);
+      queryClient.setQueryData<Task[]>(
+        ['project-tasks', workspaceId, projectId],
+        (old = []) => [...old, newTask]
+      );
+      setInlineTitle('');
+      return;
+    }
+
+    try {
+      const created = await tasksApi.createInbox({ title: trimmed });
+      if (created?.id && firstColumn?.id) {
+        await projectApi.moveTask(workspaceId, created.id, {
+          columnId: firstColumn.id,
+          position: Date.now(),
+          projectId,
+        });
+        queryClient.invalidateQueries({ queryKey: ['project-tasks', workspaceId, projectId] });
+      }
+      setInlineTitle('');
+    } catch {
+      // Handled
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Project Header */}
-      <div className="p-8 pb-4 border-b border-subtle/50 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-muted">
-            <span className="w-2 h-2 rounded-full bg-accent-solid inline-block" />
-            <span>Проект · {currentProject?.name || 'Takt'}</span>
-            <span className="text-muted/40">/</span>
-            <span className="text-primary font-medium">{activeBoard?.name || 'Основная'}</span>
-          </div>
+      {/* 1. Compact Navbar (44px / h-11) */}
+      <header className="h-11 shrink-0 px-6 border-b border-subtle/60 flex items-center justify-between bg-surface/90 select-none">
+        {/* Breadcrumbs: [Project Name] / [Board Name] */}
+        <div className="flex items-center gap-2 min-w-0 text-xs">
+          <span className="w-2 h-2 rounded-full bg-accent-solid inline-block shrink-0" />
+          <span className="font-semibold text-primary truncate max-w-[200px]">
+            {currentProject?.name || 'Проект'}
+          </span>
+          <span className="text-muted/50 font-normal">/</span>
+          <span className="text-muted font-medium truncate max-w-[180px]">
+            {activeBoard?.name || 'Основная'}
+          </span>
+        </div>
 
-          {/* View Toggle */}
+        {/* View Toggle */}
+        <div className="flex items-center gap-2">
           <ViewToggle view={viewMode} onViewChange={setViewMode} />
         </div>
+      </header>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-baseline gap-2">
-              <h1 className="font-serif text-3xl font-normal tracking-tight text-primary">
-                {currentProject?.name || 'Проект'}
-              </h1>
-              {activeBoard && (
-                <span className="text-base text-muted font-sans font-normal">
-                  · {activeBoard.name}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted mt-0.5">
-              {currentProject?.description || 'Управление структурой задач и ходом выполнения'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Project Content: Kanban vs List */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {/* Board Multi-Filters & View Sorting */}
+      {/* 2. Dynamic Filters Row */}
+      <div className="px-6 py-1.5 border-b border-subtle/40 bg-surface/40">
         <BoardFilterBar
           filters={filters}
           onFilterChange={setFilters}
           workspaceId={workspaceId}
         />
+      </div>
 
+      {/* 3. Project Content Area */}
+      <div className="flex-1 overflow-y-auto p-6">
         {viewMode === 'kanban' ? (
           <KanbanBoard
             projectId={projectId}
@@ -107,6 +180,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
             workspaceId={workspaceId}
             selectedTaskId={selectedTaskId}
             onSelectTask={onSelectTask}
+            onCreateTaskInColumn={handleCreateTaskInColumn}
             filteredTasks={visibleTasks}
           />
         ) : (

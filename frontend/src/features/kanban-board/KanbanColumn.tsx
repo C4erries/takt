@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, X, MoreHorizontal, ArrowRight, GripVertical } from 'lucide-react';
-import { Badge, Button, Input } from '@/shared/components/ui';
+import { Plus, MoreHorizontal, ArrowRight, GripVertical } from 'lucide-react';
+import { Badge, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Task } from '@/shared/api';
 import {
@@ -70,6 +70,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const boardsQuery = useProjectBoardsQuery(workspaceId, projectId);
   const moveColumnMutation = useMoveColumnMutation(workspaceId, column.boardId);
@@ -87,6 +88,13 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
 
+  // Autofocus when adding
+  useEffect(() => {
+    if (isAdding) {
+      inputRef.current?.focus();
+    }
+  }, [isAdding]);
+
   const categoryConfig = CATEGORY_STYLES[column.statusCategory] || CATEGORY_STYLES.todo;
 
   const handleQuickAdd = async (e: React.FormEvent) => {
@@ -100,7 +108,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         await onCreateTask(trimmed, column.id);
       }
       setNewTitle('');
-      setIsAdding(false);
+      inputRef.current?.focus();
     } finally {
       setIsSubmitting(false);
     }
@@ -118,7 +126,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       )}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between px-1 pb-3 select-none">
+      <div className="flex items-center justify-between px-1 pb-2.5 select-none">
         <div
           {...(!isOverlay ? { ...attributes, ...listeners } : {})}
           className="flex items-center gap-2 min-w-0 cursor-grab active:cursor-grabbing flex-1 mr-1"
@@ -143,17 +151,6 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         </div>
 
         <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsAdding((prev) => !prev)}
-            className="h-6 w-6 p-0 text-muted hover:text-primary"
-            title="Добавить карточку"
-            aria-label={`Добавить задачу в ${column.name}`}
-          >
-            {isAdding ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-          </Button>
-
           <div className="relative" ref={menuRef}>
             <Button
               variant="ghost"
@@ -206,42 +203,66 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         </div>
       </div>
 
-      {/* Quick Add Form */}
-      {isAdding && (
-        <form onSubmit={handleQuickAdd} className="mb-3 space-y-2">
-          <Input
-            autoFocus
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Название карточки..."
-            disabled={isSubmitting}
-            className="text-xs bg-surface border-subtle"
-          />
-          <div className="flex items-center justify-end gap-1.5">
-            <Button
+      {/* Inline Task Add row under Column Header */}
+      {!isOverlay && (
+        <div className="mb-2">
+          {isAdding ? (
+            <form
+              onSubmit={handleQuickAdd}
+              className="p-2 rounded-xl bg-surface border border-subtle shadow-washi space-y-2 animate-in fade-in duration-100"
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                autoFocus
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setIsAdding(false);
+                    setNewTitle('');
+                  }
+                }}
+                placeholder="Название задачи... (Enter)"
+                disabled={isSubmitting}
+                className="w-full px-2.5 py-1.5 text-xs bg-canvas/40 border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
+              />
+              <div className="flex items-center justify-end gap-1.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsAdding(false);
+                    setNewTitle('');
+                  }}
+                  className="text-[11px] h-6 px-2 text-muted hover:text-primary"
+                >
+                  Отмена
+                </Button>
+                <Button
+                  type="submit"
+                  variant="solid"
+                  size="sm"
+                  isLoading={isSubmitting}
+                  disabled={!newTitle.trim()}
+                  className="text-[11px] h-6 px-2.5"
+                >
+                  Добавить
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setIsAdding(false);
-                setNewTitle('');
-              }}
-              className="text-[11px] h-7 px-2"
+              onClick={() => setIsAdding(true)}
+              className="w-full text-xs text-muted hover:text-primary hover:bg-surface/80 rounded-lg py-1.5 px-2.5 flex items-center gap-1.5 transition-colors border border-transparent hover:border-subtle/50 select-none"
             >
-              Отмена
-            </Button>
-            <Button
-              type="submit"
-              variant="solid"
-              size="sm"
-              isLoading={isSubmitting}
-              disabled={!newTitle.trim()}
-              className="text-[11px] h-7 px-2.5"
-            >
-              Создать
-            </Button>
-          </div>
-        </form>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Добавить задачу</span>
+            </button>
+          )}
+        </div>
       )}
 
       {/* Droppable Task List */}

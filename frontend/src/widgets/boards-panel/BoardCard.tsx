@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MoreHorizontal, Pencil, Trash2, Check, X } from 'lucide-react';
-import { Badge, Button } from '@/shared/components/ui';
+import { Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Board } from '@/entities/project';
 
 export interface BoardCardProps {
   board: Board;
   taskCount: number;
+  columnCount?: number;
   isActive: boolean;
   canDelete: boolean;
   onSelect: () => void;
@@ -14,9 +15,28 @@ export interface BoardCardProps {
   onDelete?: () => void;
 }
 
+function formatColumns(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 14) return `${n} колонок`;
+  if (mod10 === 1) return `${n} колонка`;
+  if (mod10 >= 2 && mod10 <= 4) return `${n} колонки`;
+  return `${n} колонок`;
+}
+
+function formatTasks(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 14) return `${n} задач`;
+  if (mod10 === 1) return `${n} задача`;
+  if (mod10 >= 2 && mod10 <= 4) return `${n} задачи`;
+  return `${n} задач`;
+}
+
 export const BoardCard: React.FC<BoardCardProps> = ({
   board,
   taskCount,
+  columnCount = 0,
   isActive,
   canDelete,
   onSelect,
@@ -67,7 +87,7 @@ export const BoardCard: React.FC<BoardCardProps> = ({
     return (
       <form
         onSubmit={handleSaveRename}
-        className="p-2 rounded-xl bg-surface border border-accent-solid/60 shadow-washi flex items-center gap-1.5"
+        className="p-2.5 rounded-xl bg-surface border border-accent-solid/60 shadow-washi flex items-center gap-1.5"
       >
         <input
           type="text"
@@ -106,37 +126,24 @@ export const BoardCard: React.FC<BoardCardProps> = ({
     <div
       onClick={onSelect}
       className={cn(
-        'group relative flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-150 cursor-pointer select-none text-xs',
+        'group relative flex flex-col justify-between p-2.5 min-h-[58px] rounded-xl border transition-all duration-150 cursor-pointer select-none text-xs',
         isActive
-          ? 'bg-surface border-subtle shadow-washi text-primary font-medium'
-          : 'border-transparent text-muted hover:text-primary hover:bg-surface/50 hover:border-subtle/40'
+          ? 'bg-surface border-accent-solid/70 shadow-washi-sm text-primary'
+          : 'border-transparent bg-surface/30 text-muted hover:text-primary hover:bg-surface/70 hover:border-subtle/50'
       )}
     >
-      <div className="flex items-center gap-2 min-w-0 pr-1">
-        <span
-          className={cn(
-            'w-1.5 h-1.5 rounded-full shrink-0 transition-colors',
-            isActive ? 'bg-accent-solid' : 'bg-muted/40 group-hover:bg-muted'
-          )}
-        />
-        <span className="truncate">{board.name}</span>
-      </div>
+      <div className="flex items-center justify-between gap-1 w-full">
+        <div className="flex items-center gap-2 min-w-0 pr-1">
+          <span
+            className={cn(
+              'w-2 h-2 rounded-full shrink-0 transition-colors',
+              isActive ? 'bg-accent-solid' : 'bg-muted/40 group-hover:bg-muted'
+            )}
+          />
+          <span className="font-medium text-sm text-primary truncate">{board.name}</span>
+        </div>
 
-      <div className="flex items-center gap-1 shrink-0">
-        <Badge
-          variant={isActive ? 'subtle' : 'subtle'}
-          size="sm"
-          className={cn(
-            'font-mono text-[10px] px-1.5 py-0 h-4.5',
-            isActive
-              ? 'bg-canvas text-primary font-semibold'
-              : 'text-muted bg-canvas/60'
-          )}
-        >
-          {taskCount}
-        </Badge>
-
-        <div className="relative" ref={menuRef}>
+        <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"
             onClick={(e) => {
@@ -187,6 +194,13 @@ export const BoardCard: React.FC<BoardCardProps> = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* Second row: board metrics */}
+      <div className="flex items-center gap-1.5 text-[11px] text-muted font-mono mt-1 pl-4">
+        <span>⊞ {formatColumns(columnCount)}</span>
+        <span className="text-muted/50">·</span>
+        <span>✓ {formatTasks(taskCount)}</span>
       </div>
     </div>
   );

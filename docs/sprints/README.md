@@ -48,6 +48,8 @@
 | **Sprint 0.4.2** | [sprint-0.4.2.md](sprint-0.4.2.md) | 2026-10-15 | `✅ Done` | Собственное S3-хранилище (MinIO dev), вложения задач, перманентные Content URLs, Ctrl+V вставка скриншотов, Pytest E2E |
 | **Sprint 0.4.3** | [sprint-0.4.3.md](sprint-0.4.3.md) | 2026-10-15 | `✅ Done` | Полнотекстовый поиск /search, палитра команд Cmd+K, панель мультифильтрации (теги AND), View Sorting, Pytest E2E |
 | **Sprint 0.5.1** | [sprint-0.5.1.md](sprint-0.5.1.md) | 2026-10-16 | `✅ Done` | Canvas-First Layout, сворачиваемый сайдбар (хоткей `[`), Slide-out Task Drawer (560px, non-modal), календарь в сайдбаре |
+| **Sprint 0.5.2** | [sprint-0.5.2.md](sprint-0.5.2.md) | 2026-10-18 | `✅ Done` | Мульти-доски WEEEK-style, Sub-Navigation Rail, DND колонок и задач, Auth Gate, зачистка моков |
+| **Sprint 0.5.3** | [sprint-0.5.3.md](sprint-0.5.3.md) | 2026-10-18 | `✅ Done` | WEEEK-Style UI/UX: 44px Navbar, динамический конструктор фильтров, карточки досок с метриками, серийное инлайн-создание задач |
 
 ---
 

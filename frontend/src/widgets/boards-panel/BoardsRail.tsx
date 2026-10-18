@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, LayoutGrid, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Check } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import { getAuthToken } from '@/shared/api';
 import {
@@ -43,7 +43,7 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
 
   const createBoardMutation = useCreateBoardMutation(workspaceId, projectId);
 
-  // Pre-fetch columns for each board to count tasks per board
+  // Pre-fetch columns for each board to count tasks and columns per board
   const columnQueries = useQueries({
     queries: boards.map((b) => ({
       queryKey: ['columns', workspaceId, b.id],
@@ -74,7 +74,6 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
     }
   };
 
-  // If collapsed, render 0-width rail with floating expand button to grant 100% canvas to kanban
   if (isCollapsed) {
     return (
       <div className="relative z-20 shrink-0">
@@ -97,91 +96,90 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
   return (
     <aside
       className={cn(
-        'w-[220px] shrink-0 h-full flex flex-col py-3 pr-2 pl-3 transition-all duration-200 select-none border-r border-subtle/50',
+        'w-[230px] shrink-0 h-full flex flex-col py-3 pr-2.5 pl-3 transition-all duration-200 select-none bg-canvas/60 border-r border-subtle',
         className
       )}
     >
       {/* Rail Header */}
-      <div className="flex items-center justify-between pb-3 px-1 border-b border-subtle/40">
+      <div className="flex items-center justify-between pb-2.5 px-1 border-b border-subtle/50">
         <div className="flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase text-muted">
           <LayoutGrid className="w-3.5 h-3.5 text-accent-solid" />
           <span>Доски</span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsCreating((prev) => !prev)}
-            className="h-6 w-6 p-0 text-muted hover:text-primary"
-            title="Добавить доску"
-            aria-label="Добавить доску"
-          >
-            {isCreating ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleCollapse}
-            className="h-6 w-6 p-0 text-muted hover:text-primary"
-            title="Свернуть панели досок (<)"
-            aria-label="Свернуть панели досок"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggleCollapse}
+          className="h-6 w-6 p-0 text-muted hover:text-primary"
+          title="Свернуть панели досок (<)"
+          aria-label="Свернуть панели досок"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </Button>
       </div>
 
-      {/* Inline Create Board Form */}
-      {isCreating && (
-        <form onSubmit={handleCreateSubmit} className="mt-2.5 p-2 rounded-xl bg-surface border border-subtle shadow-washi space-y-2">
-          <input
-            type="text"
-            autoFocus
-            value={newBoardName}
-            onChange={(e) => setNewBoardName(e.target.value)}
-            placeholder="Название доски..."
-            disabled={createBoardMutation.isPending}
-            className="w-full px-2 py-1 text-xs bg-canvas/40 border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
-          />
-          <div className="flex items-center justify-end gap-1.5">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setIsCreating(false);
-                setNewBoardName('');
-              }}
-              className="text-[11px] h-6 px-2 text-muted"
-            >
-              Отмена
-            </Button>
-            <Button
-              type="submit"
-              variant="solid"
-              size="sm"
-              disabled={!newBoardName.trim()}
-              isLoading={createBoardMutation.isPending}
-              className="text-[11px] h-6 px-2.5"
-            >
-              <Check className="w-3 h-3 mr-1" />
-              Создать
-            </Button>
-          </div>
-        </form>
-      )}
+      {/* Prominent + Добавить доску button */}
+      <div className="pt-2.5 pb-2">
+        {isCreating ? (
+          <form onSubmit={handleCreateSubmit} className="p-2 rounded-xl bg-surface border border-subtle shadow-washi space-y-2">
+            <input
+              type="text"
+              autoFocus
+              value={newBoardName}
+              onChange={(e) => setNewBoardName(e.target.value)}
+              placeholder="Название доски..."
+              disabled={createBoardMutation.isPending}
+              className="w-full px-2 py-1 text-xs bg-canvas/40 border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
+            />
+            <div className="flex items-center justify-end gap-1.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsCreating(false);
+                  setNewBoardName('');
+                }}
+                className="text-[11px] h-6 px-2 text-muted"
+              >
+                Отмена
+              </Button>
+              <Button
+                type="submit"
+                variant="solid"
+                size="sm"
+                disabled={!newBoardName.trim()}
+                isLoading={createBoardMutation.isPending}
+                className="text-[11px] h-6 px-2.5"
+              >
+                <Check className="w-3 h-3 mr-1" />
+                Создать
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button
+            variant="solid"
+            size="sm"
+            onClick={() => setIsCreating(true)}
+            className="w-full justify-center text-xs h-8 shadow-washi-sm"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
+          >
+            Добавить доску
+          </Button>
+        )}
+      </div>
 
       {/* Content: 4 States */}
-      <div className="flex-1 overflow-y-auto pt-2 space-y-1">
+      <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
         {/* State 1: Loading Skeleton */}
         {isLoading && (
           <div className="space-y-2 pt-1">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between p-2.5 rounded-xl border border-subtle/30 bg-surface/30">
-                <Skeleton variant="text" className="w-24 h-3.5" />
-                <Skeleton variant="circle" className="w-4 h-4" />
+              <div key={i} className="flex flex-col justify-between p-2.5 min-h-[58px] rounded-xl border border-subtle/40 bg-surface/40 space-y-2">
+                <Skeleton variant="text" className="w-28 h-4" />
+                <Skeleton variant="text" className="w-20 h-3" />
               </div>
             ))}
           </div>
@@ -232,6 +230,7 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
               <BoardCard
                 key={board.id}
                 board={board}
+                columnCount={boardCols.length}
                 taskCount={count}
                 isActive={isActive}
                 canDelete={boards.length > 1}

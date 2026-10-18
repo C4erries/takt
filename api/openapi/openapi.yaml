@@ -90,6 +90,8 @@ paths:
     $ref: './paths/workspaces.yaml#/acceptInvite'
   /workspaces/{workspace_id}/automations:
     $ref: './paths/automations.yaml#/automations'
+  /workspaces/{workspace_id}/automations/{automation_id}:
+    $ref: './paths/automations.yaml#/automationDetail'
   /workspaces/{workspace_id}/automations/{automation_id}/toggle:
     $ref: './paths/automations.yaml#/toggle'
   /workspaces/{workspace_id}/tasks/{task_id}/attachments:
@@ -162,6 +164,18 @@ components:
       $ref: './schemas/automation.yaml#/Automation'
     ToggleAutomationRequest:
       $ref: './schemas/automation.yaml#/ToggleAutomationRequest'
+    RuleDefinition:
+      $ref: './schemas/automation.yaml#/RuleDefinition'
+    Trigger:
+      $ref: './schemas/automation.yaml#/Trigger'
+    Condition:
+      $ref: './schemas/automation.yaml#/Condition'
+    Action:
+      $ref: './schemas/automation.yaml#/Action'
+    CreateAutomationRequest:
+      $ref: './schemas/automation.yaml#/CreateAutomationRequest'
+    UpdateAutomationRequest:
+      $ref: './schemas/automation.yaml#/UpdateAutomationRequest'
     Attachment:
       $ref: './schemas/attachment.yaml#/Attachment'
     SearchResponse:

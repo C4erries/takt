@@ -20,6 +20,9 @@ const (
 	TriggerDueDateReached        = "due_date_reached"
 	TriggerTaskEnteredColumn     = "task_entered_column"
 	TriggerTaskCompletedInColumn = "task_completed_in_column"
+	TriggerTaskFieldChanged      = "task_field_changed"
+	TriggerColumnSLATimer        = "column_sla_timer"
+	TriggerScheduledSweep        = "scheduled_sweep"
 )
 
 var validTriggers = map[string]bool{
@@ -29,6 +32,9 @@ var validTriggers = map[string]bool{
 	TriggerDueDateReached:        true,
 	TriggerTaskEnteredColumn:     true,
 	TriggerTaskCompletedInColumn: true,
+	TriggerTaskFieldChanged:      true,
+	TriggerColumnSLATimer:        true,
+	TriggerScheduledSweep:        true,
 }
 
 // IsValidTriggerType validates if the given trigger string is recognized.
@@ -47,6 +53,7 @@ type Automation struct {
 	ConditionsJSON json.RawMessage
 	ActionsJSON    json.RawMessage
 	IsEnabled      bool
+	RuleDefinition *RuleDefinition
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -104,6 +111,12 @@ func (a *Automation) SetColumnID(columnID *uuid.UUID) {
 	a.UpdatedAt = time.Now().UTC()
 }
 
+// SetRuleDefinition updates the rule definition and timestamp.
+func (a *Automation) SetRuleDefinition(def *RuleDefinition) {
+	a.RuleDefinition = def
+	a.UpdatedAt = time.Now().UTC()
+}
+
 // NewColumnAutomation creates a new valid column-scoped Automation entity.
 func NewColumnAutomation(
 	workspaceID uuid.UUID,
@@ -126,3 +139,39 @@ func NewColumnAutomation(
 	return a, nil
 }
 
+// NewRuleAutomation creates a new valid Automation entity configured with a RuleDefinition.
+func NewRuleAutomation(
+	workspaceID uuid.UUID,
+	boardID *uuid.UUID,
+	columnID *uuid.UUID,
+	name string,
+	ruleDef *RuleDefinition,
+	isEnabled bool,
+) (*Automation, error) {
+	if ruleDef == nil {
+		return nil, ErrRuleDefinitionNil
+	}
+	if err := ruleDef.Validate(); err != nil {
+		return nil, err
+	}
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" || len([]rune(trimmedName)) > MaxAutomationNameLen {
+		return nil, ErrInvalidAutomationName
+	}
+
+	now := time.Now().UTC()
+	return &Automation{
+		ID:             uuid.New(),
+		WorkspaceID:    workspaceID,
+		BoardID:        boardID,
+		ColumnID:       columnID,
+		Name:           trimmedName,
+		TriggerType:    ruleDef.Trigger.Type,
+		ConditionsJSON: json.RawMessage("{}"),
+		ActionsJSON:    json.RawMessage("{}"),
+		RuleDefinition: ruleDef,
+		IsEnabled:      isEnabled,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}, nil
+}

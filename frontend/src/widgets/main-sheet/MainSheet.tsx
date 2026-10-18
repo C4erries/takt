@@ -11,6 +11,7 @@ import { useTodayTasksQuery } from '@/entities/task';
 import { InboxView } from './InboxView';
 import { TodayView } from './TodayView';
 import { ProjectView } from './ProjectView';
+import { AutomationsHub } from '@/features/automations';
 
 export interface MainSheetProps {
   tasks?: Task[];
@@ -116,6 +117,8 @@ export const MainSheet: React.FC<MainSheetProps> = ({
           onCreateTodayTask={handleCreateTask}
           onOpenQuickCapture={handleOpenQuickCapture}
         />
+      ) : activeNav === 'automations' ? (
+        <AutomationsHub workspaceId={workspaceId} />
       ) : (
         <InboxView
           tasks={currentTasks}

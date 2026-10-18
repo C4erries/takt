@@ -30,7 +30,7 @@ import {
   DEMO_PROJECT_TASKS,
 } from '@/entities/project';
 import { tasksApi, getAuthToken, type Task, type CreateInboxTaskRequest } from '@/shared/api';
-import { AutomationsModal } from '@/features/automations-toggle';
+import { AutomationsModal } from '@/features/automations';
 import { AcceptInviteModal } from '@/features/workspace-members';
 import { CommandPaletteModal } from '@/features/command-palette';
 import { getStoredColumnAutomationConfig } from '@/features/kanban-board';
@@ -377,12 +377,9 @@ export const App: React.FC = () => {
         isOpen={isAutomationsModalOpen}
         onClose={() => setIsAutomationsModalOpen(false)}
         workspaceId={workspace?.id}
+        onNavigateToHub={() => setActiveNav('automations')}
       />
-
-      <AcceptInviteModal
-        onAccepted={() => refresh()}
-      />
-
+      <AcceptInviteModal onAccepted={() => refresh()} />
       <CommandPaletteModal
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}

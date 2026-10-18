@@ -46,6 +46,16 @@ export function parseUrl(pathname: string, search: string): ParsedRoute {
     };
   }
 
+  // 4. Match /automations
+  if (pathname === '/automations' || pathname.startsWith('/automations/')) {
+    return {
+      activeNav: 'automations',
+      selectedProjectId: null,
+      activeBoardId: null,
+      selectedTaskId,
+    };
+  }
+
   // 4. Default: /inbox or /
   return {
     activeNav: 'inbox',
@@ -75,6 +85,8 @@ export function buildUrl({
     }
   } else if (activeNav === 'today') {
     pathname = '/today';
+  } else if (activeNav === 'automations') {
+    pathname = '/automations';
   } else {
     pathname = '/inbox';
   }

@@ -1,1 +1,1 @@
-export * from './AutomationsModal';
+export * from '@/features/automations';

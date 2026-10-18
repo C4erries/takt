@@ -80,4 +80,11 @@ SET priority = $3,
 WHERE id = $1 AND workspace_id = $2
 RETURNING *;
 
+-- name: SetTaskDueDate :one
+UPDATE tasks
+SET due_date = $3,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING *;
+
 

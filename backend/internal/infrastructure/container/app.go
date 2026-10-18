@@ -61,6 +61,10 @@ func Run(ctx context.Context, cfg *config.Config) error {
 
 	serverAddr := fmt.Sprintf(":%d", cfg.Port)
 
+	if services.AutomationWorker != nil {
+		services.AutomationWorker.Start(ctx)
+	}
+
 	// Start server in background
 	serverErrCh := make(chan error, 1)
 	go func() {
@@ -77,6 +81,10 @@ func Run(ctx context.Context, cfg *config.Config) error {
 		log.Printf("[INFO] Shutdown signal received, shutting down gracefully...")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+
+		if services.AutomationWorker != nil {
+			services.AutomationWorker.Stop()
+		}
 
 		if services.EventBus != nil {
 			if err := services.EventBus.Close(shutdownCtx); err != nil {

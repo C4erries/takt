@@ -15,6 +15,7 @@ type EventListener struct {
 	taskModifier  TaskModifier
 	projectReader ProjectReader
 	evaluator     *domainAutomation.RuleEvaluator
+	dslEvaluator  *Evaluator
 }
 
 // NewEventListener constructs an automation EventListener.
@@ -32,6 +33,7 @@ func NewEventListener(
 		taskModifier:  taskModifier,
 		projectReader: projectReader,
 		evaluator:     evaluator,
+		dslEvaluator:  NewEvaluator(taskModifier, projectReader),
 	}
 }
 
@@ -74,20 +76,23 @@ func (l *EventListener) HandleTaskCompleted(ctx context.Context, event events.Ev
 		ProjectID:   taskEvt.ProjectID,
 		ColumnID:    taskEvt.ColumnID,
 	}
+	taskInfo := &TaskInfo{
+		ID:          taskEvt.TaskID,
+		WorkspaceID: event.WorkspaceID(),
+		ProjectID:   taskEvt.ProjectID,
+		ColumnID:    taskEvt.ColumnID,
+		IsCompleted: true,
+	}
 
-	// 1. Workspace-level completion rules (e.g. Done & Archive)
+	// 1. Workspace-level completion rules
 	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskCompleted)
 	if err == nil {
 		for _, rule := range rules {
-			match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-			if err != nil || !match {
-				continue
-			}
-			l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+			l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 		}
 	}
 
-	// 2. Column-level completion rules (TASK_COMPLETED_IN_COLUMN)
+	// 2. Column-level completion rules
 	if taskEvt.ColumnID != nil {
 		colRules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskCompletedInColumn)
 		if err == nil {
@@ -95,11 +100,7 @@ func (l *EventListener) HandleTaskCompleted(ctx context.Context, event events.Ev
 				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
 					continue
 				}
-				match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-				if err != nil || !match {
-					continue
-				}
-				l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+				l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 			}
 		}
 	}
@@ -128,15 +129,21 @@ func (l *EventListener) HandleTaskUpdated(ctx context.Context, event events.Even
 		PreviousProjectID: taskEvt.PreviousProjectID,
 		PreviousColumnID:  taskEvt.PreviousColumnID,
 	}
+	taskInfo := &TaskInfo{
+		ID:                taskEvt.TaskID,
+		WorkspaceID:       event.WorkspaceID(),
+		ProjectID:         taskEvt.ProjectID,
+		ColumnID:          taskEvt.ColumnID,
+		PreviousColumnID:  taskEvt.PreviousColumnID,
+		PreviousProjectID: taskEvt.PreviousProjectID,
+		IsCompleted:       taskEvt.IsCompleted,
+		DueDate:           taskEvt.DueDate,
+	}
 
 	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskUpdated)
 	if err == nil {
 		for _, rule := range rules {
-			match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-			if err != nil || !match {
-				continue
-			}
-			l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+			l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 		}
 	}
 
@@ -148,11 +155,7 @@ func (l *EventListener) HandleTaskUpdated(ctx context.Context, event events.Even
 				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
 					continue
 				}
-				match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-				if err != nil || !match {
-					continue
-				}
-				l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+				l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 			}
 		}
 	}
@@ -165,11 +168,7 @@ func (l *EventListener) HandleTaskUpdated(ctx context.Context, event events.Even
 				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
 					continue
 				}
-				match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-				if err != nil || !match {
-					continue
-				}
-				l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+				l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 			}
 		}
 	}
@@ -195,15 +194,18 @@ func (l *EventListener) HandleTaskCreated(ctx context.Context, event events.Even
 		ProjectID:  taskEvt.ProjectID,
 		ColumnID:   taskEvt.ColumnID,
 	}
+	taskInfo := &TaskInfo{
+		ID:          taskEvt.TaskID,
+		WorkspaceID: event.WorkspaceID(),
+		ProjectID:   taskEvt.ProjectID,
+		ColumnID:    taskEvt.ColumnID,
+		DueDate:     taskEvt.DueDate,
+	}
 
 	rules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskUpdated)
 	if err == nil {
 		for _, rule := range rules {
-			match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-			if err != nil || !match {
-				continue
-			}
-			l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+			l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 		}
 	}
 
@@ -215,11 +217,7 @@ func (l *EventListener) HandleTaskCreated(ctx context.Context, event events.Even
 				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
 					continue
 				}
-				match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-				if err != nil || !match {
-					continue
-				}
-				l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+				l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 			}
 		}
 	}
@@ -249,21 +247,40 @@ func (l *EventListener) HandleTaskMoved(ctx context.Context, event events.Event)
 		ColumnID:         taskEvt.ColumnID,
 		PreviousColumnID: taskEvt.PreviousColumnID,
 	}
+	taskInfo := &TaskInfo{
+		ID:               taskEvt.TaskID,
+		WorkspaceID:      event.WorkspaceID(),
+		ProjectID:        taskEvt.ProjectID,
+		ColumnID:         taskEvt.ColumnID,
+		PreviousColumnID: taskEvt.PreviousColumnID,
+	}
 
 	for _, rule := range rules {
 		if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
 			continue
 		}
-
-		match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
-		if err != nil || !match {
-			continue
-		}
-
-		l.executeAction(autoCtx, rule.ActionsJSON, taskEvt.TaskID, event.WorkspaceID(), taskEvt.ProjectID)
+		l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 	}
 
 	return nil
+}
+
+func (l *EventListener) evaluateAndExecute(
+	ctx context.Context,
+	rule *domainAutomation.Automation,
+	taskCtx domainAutomation.TaskContext,
+	taskInfo *TaskInfo,
+) {
+	if rule.RuleDefinition != nil {
+		_ = l.dslEvaluator.ExecuteRule(ctx, rule.RuleDefinition, taskInfo)
+		return
+	}
+
+	match, err := l.evaluator.Evaluate(rule.ConditionsJSON, taskCtx)
+	if err != nil || !match {
+		return
+	}
+	l.executeAction(ctx, rule.ActionsJSON, taskInfo.ID, taskInfo.WorkspaceID, taskInfo.ProjectID)
 }
 
 type actionPayload struct {

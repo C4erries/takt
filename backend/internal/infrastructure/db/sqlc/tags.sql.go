@@ -108,6 +108,30 @@ func (q *Queries) GetTagByID(ctx context.Context, arg GetTagByIDParams) (Tag, er
 	return i, err
 }
 
+const getTagByName = `-- name: GetTagByName :one
+SELECT id, workspace_id, name, color_hex, created_at FROM tags
+WHERE workspace_id = $1 AND LOWER(name) = LOWER($2)
+LIMIT 1
+`
+
+type GetTagByNameParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Lower       string      `json:"lower"`
+}
+
+func (q *Queries) GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag, error) {
+	row := q.db.QueryRow(ctx, getTagByName, arg.WorkspaceID, arg.Lower)
+	var i Tag
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.ColorHex,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getTaskTags = `-- name: GetTaskTags :many
 SELECT t.id, t.workspace_id, t.name, t.color_hex, t.created_at FROM tags t
 JOIN task_tags tt ON t.id = tt.tag_id

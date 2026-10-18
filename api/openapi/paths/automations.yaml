@@ -35,6 +35,52 @@ automations:
           application/json:
             schema:
               $ref: '../schemas/error.yaml'
+  post:
+    tags:
+      - Automations
+    summary: Create an automation rule
+    operationId: createAutomation
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/automation.yaml#/CreateAutomationRequest'
+    responses:
+      '201':
+        description: Created automation
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/automation.yaml#/Automation'
+      '400':
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
 
 toggle:
   patch:
@@ -96,3 +142,104 @@ toggle:
             schema:
               $ref: '../schemas/error.yaml'
 
+automationDetail:
+  put:
+    tags:
+      - Automations
+    summary: Update an automation rule
+    operationId: updateAutomation
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: automation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/automation.yaml#/UpdateAutomationRequest'
+    responses:
+      '200':
+        description: Updated automation
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/automation.yaml#/Automation'
+      '400':
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Automation not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+  delete:
+    tags:
+      - Automations
+    summary: Delete an automation rule
+    operationId: deleteAutomation
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: automation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Automation deleted
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Automation not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'

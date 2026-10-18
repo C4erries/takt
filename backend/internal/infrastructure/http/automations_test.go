@@ -24,6 +24,10 @@ type mockAutomationService struct {
 	listFn   func(ctx context.Context, wsID uuid.UUID) ([]*domainAutomation.Automation, error)
 	toggleFn func(ctx context.Context, wsID, autoID uuid.UUID, isEnabled bool) (*domainAutomation.Automation, error)
 	seedFn   func(ctx context.Context, wsID uuid.UUID) error
+	createFn func(ctx context.Context, input appAutomation.CreateAutomationInput) (*domainAutomation.Automation, error)
+	updateFn func(ctx context.Context, input appAutomation.UpdateAutomationInput) (*domainAutomation.Automation, error)
+	deleteFn func(ctx context.Context, wsID, autoID uuid.UUID) error
+	getFn    func(ctx context.Context, wsID, autoID uuid.UUID) (*domainAutomation.Automation, error)
 }
 
 func (m *mockAutomationService) ListAutomations(ctx context.Context, wsID uuid.UUID) ([]*domainAutomation.Automation, error) {
@@ -37,11 +41,39 @@ func (m *mockAutomationService) ListColumnAutomations(ctx context.Context, wsID,
 	return nil, nil
 }
 
+func (m *mockAutomationService) GetAutomation(ctx context.Context, wsID, autoID uuid.UUID) (*domainAutomation.Automation, error) {
+	if m.getFn != nil {
+		return m.getFn(ctx, wsID, autoID)
+	}
+	return nil, nil
+}
+
 func (m *mockAutomationService) ToggleAutomation(ctx context.Context, wsID, autoID uuid.UUID, isEnabled bool) (*domainAutomation.Automation, error) {
 	if m.toggleFn != nil {
 		return m.toggleFn(ctx, wsID, autoID, isEnabled)
 	}
 	return nil, nil
+}
+
+func (m *mockAutomationService) CreateAutomation(ctx context.Context, input appAutomation.CreateAutomationInput) (*domainAutomation.Automation, error) {
+	if m.createFn != nil {
+		return m.createFn(ctx, input)
+	}
+	return nil, nil
+}
+
+func (m *mockAutomationService) UpdateAutomation(ctx context.Context, input appAutomation.UpdateAutomationInput) (*domainAutomation.Automation, error) {
+	if m.updateFn != nil {
+		return m.updateFn(ctx, input)
+	}
+	return nil, nil
+}
+
+func (m *mockAutomationService) DeleteAutomation(ctx context.Context, wsID, autoID uuid.UUID) error {
+	if m.deleteFn != nil {
+		return m.deleteFn(ctx, wsID, autoID)
+	}
+	return nil
 }
 
 func (m *mockAutomationService) CreateColumnAutomation(ctx context.Context, input appAutomation.CreateColumnAutomationInput) (*domainAutomation.Automation, error) {
@@ -97,7 +129,7 @@ func TestListWorkspaceAutomations(t *testing.T) {
 				require.Len(t, resp, 1)
 				assert.Equal(t, autoID, resp[0].Id)
 				assert.Equal(t, "Test Auto", resp[0].Name)
-				assert.Equal(t, generated.TaskCompleted, resp[0].TriggerType)
+				assert.Equal(t, generated.AutomationTriggerTypeTaskCompleted, resp[0].TriggerType)
 				assert.True(t, resp[0].IsEnabled)
 				require.NotNil(t, resp[0].BoardId)
 				assert.Equal(t, boardID, *resp[0].BoardId)

@@ -226,6 +226,42 @@ func (q *Queries) GetTodayTasks(ctx context.Context, workspaceID pgtype.UUID) ([
 	return items, nil
 }
 
+const setTaskDueDate = `-- name: SetTaskDueDate :one
+UPDATE tasks
+SET due_date = $3,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+`
+
+type SetTaskDueDateParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	DueDate     pgtype.Date `json:"due_date"`
+}
+
+func (q *Queries) SetTaskDueDate(ctx context.Context, arg SetTaskDueDateParams) (Task, error) {
+	row := q.db.QueryRow(ctx, setTaskDueDate, arg.ID, arg.WorkspaceID, arg.DueDate)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.ColumnID,
+		&i.Title,
+		&i.DescriptionMarkdown,
+		&i.IsCompleted,
+		&i.CompletedAt,
+		&i.DueDate,
+		&i.Priority,
+		&i.FocusOrder,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const setTaskFocus = `-- name: SetTaskFocus :one
 UPDATE tasks
 SET focus_order = $3,

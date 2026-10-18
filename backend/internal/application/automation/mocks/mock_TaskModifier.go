@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	mock "github.com/stretchr/testify/mock"
@@ -45,6 +46,144 @@ type MockTaskModifier_Expecter struct {
 
 func (_m *MockTaskModifier) EXPECT() *MockTaskModifier_Expecter {
 	return &MockTaskModifier_Expecter{mock: &_m.Mock}
+}
+
+// AddTagToTask provides a mock function for the type MockTaskModifier
+func (_mock *MockTaskModifier) AddTagToTask(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, tagID *uuid.UUID, tagName string) error {
+	ret := _mock.Called(ctx, taskID, workspaceID, tagID, tagName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for AddTagToTask")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, taskID, workspaceID, tagID, tagName)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTaskModifier_AddTagToTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddTagToTask'
+type MockTaskModifier_AddTagToTask_Call struct {
+	*mock.Call
+}
+
+// AddTagToTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - workspaceID uuid.UUID
+//   - tagID *uuid.UUID
+//   - tagName string
+func (_e *MockTaskModifier_Expecter) AddTagToTask(ctx any, taskID any, workspaceID any, tagID any, tagName any) *MockTaskModifier_AddTagToTask_Call {
+	return &MockTaskModifier_AddTagToTask_Call{Call: _e.mock.On("AddTagToTask", ctx, taskID, workspaceID, tagID, tagName)}
+}
+
+func (_c *MockTaskModifier_AddTagToTask_Call) Run(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, tagID *uuid.UUID, tagName string)) *MockTaskModifier_AddTagToTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 *uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(*uuid.UUID)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskModifier_AddTagToTask_Call) Return(err error) *MockTaskModifier_AddTagToTask_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTaskModifier_AddTagToTask_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, tagID *uuid.UUID, tagName string) error) *MockTaskModifier_AddTagToTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ArchiveTask provides a mock function for the type MockTaskModifier
+func (_mock *MockTaskModifier) ArchiveTask(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID) error {
+	ret := _mock.Called(ctx, taskID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ArchiveTask")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, taskID, workspaceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTaskModifier_ArchiveTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ArchiveTask'
+type MockTaskModifier_ArchiveTask_Call struct {
+	*mock.Call
+}
+
+// ArchiveTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockTaskModifier_Expecter) ArchiveTask(ctx any, taskID any, workspaceID any) *MockTaskModifier_ArchiveTask_Call {
+	return &MockTaskModifier_ArchiveTask_Call{Call: _e.mock.On("ArchiveTask", ctx, taskID, workspaceID)}
+}
+
+func (_c *MockTaskModifier_ArchiveTask_Call) Run(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID)) *MockTaskModifier_ArchiveTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskModifier_ArchiveTask_Call) Return(err error) *MockTaskModifier_ArchiveTask_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTaskModifier_ArchiveTask_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID) error) *MockTaskModifier_ArchiveTask_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // MoveTaskToColumn provides a mock function for the type MockTaskModifier
@@ -124,6 +263,150 @@ func (_c *MockTaskModifier_MoveTaskToColumn_Call) Return(err error) *MockTaskMod
 }
 
 func (_c *MockTaskModifier_MoveTaskToColumn_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, columnID *uuid.UUID, projectID *uuid.UUID, position float64) error) *MockTaskModifier_MoveTaskToColumn_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// RemoveTagFromTask provides a mock function for the type MockTaskModifier
+func (_mock *MockTaskModifier) RemoveTagFromTask(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, tagID *uuid.UUID, tagName string) error {
+	ret := _mock.Called(ctx, taskID, workspaceID, tagID, tagName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveTagFromTask")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, string) error); ok {
+		r0 = returnFunc(ctx, taskID, workspaceID, tagID, tagName)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTaskModifier_RemoveTagFromTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'RemoveTagFromTask'
+type MockTaskModifier_RemoveTagFromTask_Call struct {
+	*mock.Call
+}
+
+// RemoveTagFromTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - workspaceID uuid.UUID
+//   - tagID *uuid.UUID
+//   - tagName string
+func (_e *MockTaskModifier_Expecter) RemoveTagFromTask(ctx any, taskID any, workspaceID any, tagID any, tagName any) *MockTaskModifier_RemoveTagFromTask_Call {
+	return &MockTaskModifier_RemoveTagFromTask_Call{Call: _e.mock.On("RemoveTagFromTask", ctx, taskID, workspaceID, tagID, tagName)}
+}
+
+func (_c *MockTaskModifier_RemoveTagFromTask_Call) Run(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, tagID *uuid.UUID, tagName string)) *MockTaskModifier_RemoveTagFromTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 *uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(*uuid.UUID)
+		}
+		var arg4 string
+		if args[4] != nil {
+			arg4 = args[4].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskModifier_RemoveTagFromTask_Call) Return(err error) *MockTaskModifier_RemoveTagFromTask_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTaskModifier_RemoveTagFromTask_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, tagID *uuid.UUID, tagName string) error) *MockTaskModifier_RemoveTagFromTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SetTaskDueDate provides a mock function for the type MockTaskModifier
+func (_mock *MockTaskModifier) SetTaskDueDate(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, dueDate *time.Time) error {
+	ret := _mock.Called(ctx, taskID, workspaceID, dueDate)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetTaskDueDate")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, *time.Time) error); ok {
+		r0 = returnFunc(ctx, taskID, workspaceID, dueDate)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTaskModifier_SetTaskDueDate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetTaskDueDate'
+type MockTaskModifier_SetTaskDueDate_Call struct {
+	*mock.Call
+}
+
+// SetTaskDueDate is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - workspaceID uuid.UUID
+//   - dueDate *time.Time
+func (_e *MockTaskModifier_Expecter) SetTaskDueDate(ctx any, taskID any, workspaceID any, dueDate any) *MockTaskModifier_SetTaskDueDate_Call {
+	return &MockTaskModifier_SetTaskDueDate_Call{Call: _e.mock.On("SetTaskDueDate", ctx, taskID, workspaceID, dueDate)}
+}
+
+func (_c *MockTaskModifier_SetTaskDueDate_Call) Run(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, dueDate *time.Time)) *MockTaskModifier_SetTaskDueDate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 *time.Time
+		if args[3] != nil {
+			arg3 = args[3].(*time.Time)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskModifier_SetTaskDueDate_Call) Return(err error) *MockTaskModifier_SetTaskDueDate_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTaskModifier_SetTaskDueDate_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, dueDate *time.Time) error) *MockTaskModifier_SetTaskDueDate_Call {
 	_c.Call.Return(run)
 	return _c
 }

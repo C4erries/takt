@@ -36,7 +36,16 @@ Automation:
       example: "Done & Archive"
     triggerType:
       type: string
-      enum: [task_completed, task_updated, task_created, due_date_reached, task_entered_column, task_completed_in_column]
+      enum:
+        - task_completed
+        - task_updated
+        - task_created
+        - due_date_reached
+        - task_entered_column
+        - task_completed_in_column
+        - task_field_changed
+        - column_sla_timer
+        - scheduled_sweep
       example: "task_completed"
     conditionsJson:
       type: object
@@ -49,6 +58,9 @@ Automation:
     isEnabled:
       type: boolean
       example: true
+    ruleDefinition:
+      $ref: '#/RuleDefinition'
+      nullable: true
     createdAt:
       type: string
       format: date-time
@@ -57,6 +69,96 @@ Automation:
       type: string
       format: date-time
       example: "2026-10-14T12:00:00Z"
+
+Trigger:
+  type: object
+  required:
+    - type
+  properties:
+    type:
+      type: string
+      enum:
+        - task_entered_column
+        - task_completed_in_column
+        - task_field_changed
+        - column_sla_timer
+        - scheduled_sweep
+      example: "task_entered_column"
+    params:
+      type: object
+      additionalProperties: true
+      default: {}
+      example: { "column_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d" }
+
+Condition:
+  type: object
+  required:
+    - field
+    - operator
+  properties:
+    field:
+      type: string
+      enum:
+        - priority
+        - is_completed
+        - due_date
+        - time_in_column_hours
+        - tags
+      example: "priority"
+    operator:
+      type: string
+      enum:
+        - equals
+        - not_equals
+        - contains
+        - not_contains
+        - is_empty
+        - is_not_empty
+        - greater_than
+        - less_than
+      example: "equals"
+    value:
+      nullable: true
+      description: Value to compare against
+
+Action:
+  type: object
+  required:
+    - type
+  properties:
+    type:
+      type: string
+      enum:
+        - move_to_column
+        - set_priority
+        - add_tag
+        - remove_tag
+        - set_due_date
+        - archive_task
+      example: "move_to_column"
+    params:
+      type: object
+      additionalProperties: true
+      default: {}
+      example: { "target_column_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f" }
+
+RuleDefinition:
+  type: object
+  required:
+    - trigger
+    - actions
+  properties:
+    trigger:
+      $ref: '#/Trigger'
+    conditions:
+      type: array
+      items:
+        $ref: '#/Condition'
+      default: []
+    actions:
+      type: array
+      items:
+        $ref: '#/Action'
 
 ToggleAutomationRequest:
   type: object
@@ -67,3 +169,101 @@ ToggleAutomationRequest:
       type: boolean
       example: true
 
+CreateAutomationRequest:
+  type: object
+  required:
+    - name
+    - triggerType
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: "Move to Done on Complete"
+    triggerType:
+      type: string
+      enum:
+        - task_completed
+        - task_updated
+        - task_created
+        - due_date_reached
+        - task_entered_column
+        - task_completed_in_column
+        - task_field_changed
+        - column_sla_timer
+        - scheduled_sweep
+      example: "task_completed_in_column"
+    boardId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    columnId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    conditionsJson:
+      type: object
+      additionalProperties: true
+      nullable: true
+      default: {}
+    actionsJson:
+      type: object
+      additionalProperties: true
+      nullable: true
+      default: {}
+    isEnabled:
+      type: boolean
+      default: true
+    ruleDefinition:
+      $ref: '#/RuleDefinition'
+      nullable: true
+
+UpdateAutomationRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 255
+      nullable: true
+      example: "Move to Done on Complete"
+    triggerType:
+      type: string
+      enum:
+        - task_completed
+        - task_updated
+        - task_created
+        - due_date_reached
+        - task_entered_column
+        - task_completed_in_column
+        - task_field_changed
+        - column_sla_timer
+        - scheduled_sweep
+      nullable: true
+      example: "task_completed_in_column"
+    boardId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    columnId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    conditionsJson:
+      type: object
+      additionalProperties: true
+      nullable: true
+    actionsJson:
+      type: object
+      additionalProperties: true
+      nullable: true
+    isEnabled:
+      type: boolean
+      nullable: true
+    ruleDefinition:
+      $ref: '#/RuleDefinition'
+      nullable: true

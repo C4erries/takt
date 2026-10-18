@@ -43,3 +43,8 @@ ORDER BY t.name ASC;
 DELETE FROM task_tags
 WHERE task_id = $1;
 
+-- name: GetTagByName :one
+SELECT * FROM tags
+WHERE workspace_id = $1 AND LOWER(name) = LOWER($2)
+LIMIT 1;
+

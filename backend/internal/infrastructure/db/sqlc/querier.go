@@ -29,6 +29,7 @@ type Querier interface {
 	CreateWorkspaceMember(ctx context.Context, arg CreateWorkspaceMemberParams) (WorkspaceMember, error)
 	DeleteAttachment(ctx context.Context, arg DeleteAttachmentParams) error
 	DeleteAttachmentsByTaskID(ctx context.Context, arg DeleteAttachmentsByTaskIDParams) error
+	DeleteAutomation(ctx context.Context, arg DeleteAutomationParams) error
 	DeleteBoard(ctx context.Context, id pgtype.UUID) error
 	DeleteColumn(ctx context.Context, id pgtype.UUID) error
 	DeleteProject(ctx context.Context, arg DeleteProjectParams) error
@@ -39,6 +40,7 @@ type Querier interface {
 	DeleteWorkspaceMember(ctx context.Context, arg DeleteWorkspaceMemberParams) error
 	GetActiveWorkspaceInvite(ctx context.Context, workspaceID pgtype.UUID) (WorkspaceInvite, error)
 	GetAttachmentByID(ctx context.Context, arg GetAttachmentByIDParams) (Attachment, error)
+	GetAutomation(ctx context.Context, arg GetAutomationParams) (Automation, error)
 	GetAutomationByID(ctx context.Context, arg GetAutomationByIDParams) (Automation, error)
 	GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, error)
 	GetColumnByID(ctx context.Context, id pgtype.UUID) (Column, error)
@@ -47,6 +49,7 @@ type Querier interface {
 	GetPersonalWorkspaceByUserID(ctx context.Context, userID pgtype.UUID) (GetPersonalWorkspaceByUserIDRow, error)
 	GetProjectByID(ctx context.Context, arg GetProjectByIDParams) (Project, error)
 	GetTagByID(ctx context.Context, arg GetTagByIDParams) (Tag, error)
+	GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag, error)
 	GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task, error)
 	GetTaskTags(ctx context.Context, taskID pgtype.UUID) ([]Tag, error)
 	GetTodayTasks(ctx context.Context, workspaceID pgtype.UUID) ([]Task, error)
@@ -56,7 +59,9 @@ type Querier interface {
 	GetWorkspaceInviteByToken(ctx context.Context, token string) (GetWorkspaceInviteByTokenRow, error)
 	GetWorkspaceMember(ctx context.Context, arg GetWorkspaceMemberParams) (WorkspaceMember, error)
 	GetWorkspacesByUserID(ctx context.Context, userID pgtype.UUID) ([]GetWorkspacesByUserIDRow, error)
+	ListAllEnabledTimerAutomations(ctx context.Context) ([]Automation, error)
 	ListAttachmentsByTaskID(ctx context.Context, arg ListAttachmentsByTaskIDParams) ([]Attachment, error)
+	ListAutomations(ctx context.Context, workspaceID pgtype.UUID) ([]Automation, error)
 	ListAutomationsByColumn(ctx context.Context, arg ListAutomationsByColumnParams) ([]Automation, error)
 	ListBoardsByProject(ctx context.Context, projectID pgtype.UUID) ([]Board, error)
 	ListColumnsByBoard(ctx context.Context, boardID pgtype.UUID) ([]Column, error)
@@ -74,10 +79,12 @@ type Querier interface {
 	ResetProjectTasksToInbox(ctx context.Context, arg ResetProjectTasksToInboxParams) error
 	SearchProjectsInWorkspace(ctx context.Context, arg SearchProjectsInWorkspaceParams) ([]Project, error)
 	SearchTasksInWorkspace(ctx context.Context, arg SearchTasksInWorkspaceParams) ([]Task, error)
+	SetTaskDueDate(ctx context.Context, arg SetTaskDueDateParams) (Task, error)
 	SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Task, error)
 	SetTaskPriority(ctx context.Context, arg SetTaskPriorityParams) (Task, error)
 	ToggleAutomation(ctx context.Context, arg ToggleAutomationParams) (Automation, error)
 	ToggleTaskCompletion(ctx context.Context, arg ToggleTaskCompletionParams) (Task, error)
+	UpdateAutomation(ctx context.Context, arg UpdateAutomationParams) (Automation, error)
 	UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error)
 	UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Column, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error)

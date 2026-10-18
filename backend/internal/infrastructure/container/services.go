@@ -22,6 +22,7 @@ type Services struct {
 	TaskService       taskApp.UseCases
 	ProjectService    projectApp.UseCases
 	AutomationService automationApp.UseCases
+	AutomationWorker  *automationApp.Worker
 	AttachmentService attachmentApp.UseCases
 	SearchService     searchApp.UseCases
 	EventBus          *eventbus.InMemoryEventBus
@@ -36,10 +37,13 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 	eventBus := eventbus.NewInMemoryEventBus()
 
 	var automationService *automationApp.Service
+	var automationWorker *automationApp.Worker
 	if repos.AutomationRepo != nil {
 		automationService = automationApp.NewService(repos.AutomationRepo)
+		evaluator := automationApp.NewEvaluator(repos.AutomationRepo, repos.AutomationRepo)
 		listener := automationApp.NewEventListener(repos.AutomationRepo, repos.AutomationRepo, repos.AutomationRepo, nil)
 		_ = listener.Register(eventBus)
+		automationWorker = automationApp.NewWorker(repos.AutomationRepo, repos.AutomationRepo, evaluator, 0)
 	}
 
 	var taskService *taskApp.Service
@@ -119,6 +123,7 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 		TaskService:       taskService,
 		ProjectService:    projectService,
 		AutomationService: automationService,
+		AutomationWorker:  automationWorker,
 		AttachmentService: attachmentService,
 		SearchService:     searchService,
 		EventBus:          eventBus,

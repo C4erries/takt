@@ -19,11 +19,12 @@ INSERT INTO automations (
     trigger_type,
     conditions_json,
     actions_json,
-    is_enabled
+    is_enabled,
+    rule_definition
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7
+    $1, $2, $3, $4, $5, $6, $7, $8
 )
-RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id
+RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition
 `
 
 type CreateAutomationParams struct {
@@ -34,6 +35,7 @@ type CreateAutomationParams struct {
 	ConditionsJson []byte      `json:"conditions_json"`
 	ActionsJson    []byte      `json:"actions_json"`
 	IsEnabled      bool        `json:"is_enabled"`
+	RuleDefinition []byte      `json:"rule_definition"`
 }
 
 func (q *Queries) CreateAutomation(ctx context.Context, arg CreateAutomationParams) (Automation, error) {
@@ -45,6 +47,7 @@ func (q *Queries) CreateAutomation(ctx context.Context, arg CreateAutomationPara
 		arg.ConditionsJson,
 		arg.ActionsJson,
 		arg.IsEnabled,
+		arg.RuleDefinition,
 	)
 	var i Automation
 	err := row.Scan(
@@ -59,6 +62,7 @@ func (q *Queries) CreateAutomation(ctx context.Context, arg CreateAutomationPara
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ColumnID,
+		&i.RuleDefinition,
 	)
 	return i, err
 }
@@ -72,11 +76,12 @@ INSERT INTO automations (
     trigger_type,
     conditions_json,
     actions_json,
-    is_enabled
+    is_enabled,
+    rule_definition
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
-RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id
+RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition
 `
 
 type CreateColumnAutomationParams struct {
@@ -88,6 +93,7 @@ type CreateColumnAutomationParams struct {
 	ConditionsJson []byte      `json:"conditions_json"`
 	ActionsJson    []byte      `json:"actions_json"`
 	IsEnabled      bool        `json:"is_enabled"`
+	RuleDefinition []byte      `json:"rule_definition"`
 }
 
 func (q *Queries) CreateColumnAutomation(ctx context.Context, arg CreateColumnAutomationParams) (Automation, error) {
@@ -100,6 +106,7 @@ func (q *Queries) CreateColumnAutomation(ctx context.Context, arg CreateColumnAu
 		arg.ConditionsJson,
 		arg.ActionsJson,
 		arg.IsEnabled,
+		arg.RuleDefinition,
 	)
 	var i Automation
 	err := row.Scan(
@@ -114,12 +121,58 @@ func (q *Queries) CreateColumnAutomation(ctx context.Context, arg CreateColumnAu
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ColumnID,
+		&i.RuleDefinition,
+	)
+	return i, err
+}
+
+const deleteAutomation = `-- name: DeleteAutomation :exec
+DELETE FROM automations
+WHERE id = $1 AND workspace_id = $2
+`
+
+type DeleteAutomationParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) DeleteAutomation(ctx context.Context, arg DeleteAutomationParams) error {
+	_, err := q.db.Exec(ctx, deleteAutomation, arg.ID, arg.WorkspaceID)
+	return err
+}
+
+const getAutomation = `-- name: GetAutomation :one
+SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition FROM automations
+WHERE id = $1 AND workspace_id = $2
+`
+
+type GetAutomationParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) GetAutomation(ctx context.Context, arg GetAutomationParams) (Automation, error) {
+	row := q.db.QueryRow(ctx, getAutomation, arg.ID, arg.WorkspaceID)
+	var i Automation
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.BoardID,
+		&i.Name,
+		&i.TriggerType,
+		&i.ConditionsJson,
+		&i.ActionsJson,
+		&i.IsEnabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ColumnID,
+		&i.RuleDefinition,
 	)
 	return i, err
 }
 
 const getAutomationByID = `-- name: GetAutomationByID :one
-SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id FROM automations
+SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition FROM automations
 WHERE id = $1 AND workspace_id = $2
 `
 
@@ -143,12 +196,90 @@ func (q *Queries) GetAutomationByID(ctx context.Context, arg GetAutomationByIDPa
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ColumnID,
+		&i.RuleDefinition,
 	)
 	return i, err
 }
 
+const listAllEnabledTimerAutomations = `-- name: ListAllEnabledTimerAutomations :many
+SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition FROM automations
+WHERE trigger_type IN ('column_sla_timer', 'scheduled_sweep') AND is_enabled = true
+`
+
+func (q *Queries) ListAllEnabledTimerAutomations(ctx context.Context) ([]Automation, error) {
+	rows, err := q.db.Query(ctx, listAllEnabledTimerAutomations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Automation{}
+	for rows.Next() {
+		var i Automation
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.BoardID,
+			&i.Name,
+			&i.TriggerType,
+			&i.ConditionsJson,
+			&i.ActionsJson,
+			&i.IsEnabled,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ColumnID,
+			&i.RuleDefinition,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAutomations = `-- name: ListAutomations :many
+SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition FROM automations
+WHERE workspace_id = $1
+ORDER BY created_at ASC
+`
+
+func (q *Queries) ListAutomations(ctx context.Context, workspaceID pgtype.UUID) ([]Automation, error) {
+	rows, err := q.db.Query(ctx, listAutomations, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Automation{}
+	for rows.Next() {
+		var i Automation
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.BoardID,
+			&i.Name,
+			&i.TriggerType,
+			&i.ConditionsJson,
+			&i.ActionsJson,
+			&i.IsEnabled,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ColumnID,
+			&i.RuleDefinition,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAutomationsByColumn = `-- name: ListAutomationsByColumn :many
-SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id FROM automations
+SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition FROM automations
 WHERE column_id = $1 AND workspace_id = $2
 ORDER BY created_at ASC
 `
@@ -179,6 +310,7 @@ func (q *Queries) ListAutomationsByColumn(ctx context.Context, arg ListAutomatio
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ColumnID,
+			&i.RuleDefinition,
 		); err != nil {
 			return nil, err
 		}
@@ -191,8 +323,10 @@ func (q *Queries) ListAutomationsByColumn(ctx context.Context, arg ListAutomatio
 }
 
 const listEnabledAutomationsByTrigger = `-- name: ListEnabledAutomationsByTrigger :many
-SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id FROM automations
-WHERE workspace_id = $1 AND trigger_type = $2 AND is_enabled = true
+SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition FROM automations
+WHERE workspace_id = $1 
+  AND (trigger_type = $2 OR ($2 = 'task_updated' AND trigger_type = 'task_field_changed'))
+  AND is_enabled = true
 ORDER BY created_at ASC
 `
 
@@ -222,6 +356,7 @@ func (q *Queries) ListEnabledAutomationsByTrigger(ctx context.Context, arg ListE
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ColumnID,
+			&i.RuleDefinition,
 		); err != nil {
 			return nil, err
 		}
@@ -234,7 +369,7 @@ func (q *Queries) ListEnabledAutomationsByTrigger(ctx context.Context, arg ListE
 }
 
 const listWorkspaceAutomations = `-- name: ListWorkspaceAutomations :many
-SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id FROM automations
+SELECT id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition FROM automations
 WHERE workspace_id = $1
 ORDER BY created_at ASC
 `
@@ -260,6 +395,7 @@ func (q *Queries) ListWorkspaceAutomations(ctx context.Context, workspaceID pgty
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ColumnID,
+			&i.RuleDefinition,
 		); err != nil {
 			return nil, err
 		}
@@ -276,7 +412,7 @@ UPDATE automations
 SET is_enabled = $3,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id
+RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition
 `
 
 type ToggleAutomationParams struct {
@@ -300,6 +436,60 @@ func (q *Queries) ToggleAutomation(ctx context.Context, arg ToggleAutomationPara
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ColumnID,
+		&i.RuleDefinition,
+	)
+	return i, err
+}
+
+const updateAutomation = `-- name: UpdateAutomation :one
+UPDATE automations
+SET name = $3,
+    trigger_type = $4,
+    conditions_json = $5,
+    actions_json = $6,
+    is_enabled = $7,
+    rule_definition = $8,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition
+`
+
+type UpdateAutomationParams struct {
+	ID             pgtype.UUID `json:"id"`
+	WorkspaceID    pgtype.UUID `json:"workspace_id"`
+	Name           string      `json:"name"`
+	TriggerType    string      `json:"trigger_type"`
+	ConditionsJson []byte      `json:"conditions_json"`
+	ActionsJson    []byte      `json:"actions_json"`
+	IsEnabled      bool        `json:"is_enabled"`
+	RuleDefinition []byte      `json:"rule_definition"`
+}
+
+func (q *Queries) UpdateAutomation(ctx context.Context, arg UpdateAutomationParams) (Automation, error) {
+	row := q.db.QueryRow(ctx, updateAutomation,
+		arg.ID,
+		arg.WorkspaceID,
+		arg.Name,
+		arg.TriggerType,
+		arg.ConditionsJson,
+		arg.ActionsJson,
+		arg.IsEnabled,
+		arg.RuleDefinition,
+	)
+	var i Automation
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.BoardID,
+		&i.Name,
+		&i.TriggerType,
+		&i.ConditionsJson,
+		&i.ActionsJson,
+		&i.IsEnabled,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ColumnID,
+		&i.RuleDefinition,
 	)
 	return i, err
 }

@@ -13,30 +13,69 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ActionType.
+const (
+	AddTag       ActionType = "add_tag"
+	ArchiveTask  ActionType = "archive_task"
+	MoveToColumn ActionType = "move_to_column"
+	RemoveTag    ActionType = "remove_tag"
+	SetDueDate   ActionType = "set_due_date"
+	SetPriority  ActionType = "set_priority"
+)
+
+// Valid indicates whether the value is a known member of the ActionType enum.
+func (e ActionType) Valid() bool {
+	switch e {
+	case AddTag:
+		return true
+	case ArchiveTask:
+		return true
+	case MoveToColumn:
+		return true
+	case RemoveTag:
+		return true
+	case SetDueDate:
+		return true
+	case SetPriority:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AutomationTriggerType.
 const (
-	DueDateReached        AutomationTriggerType = "due_date_reached"
-	TaskCompleted         AutomationTriggerType = "task_completed"
-	TaskCompletedInColumn AutomationTriggerType = "task_completed_in_column"
-	TaskCreated           AutomationTriggerType = "task_created"
-	TaskEnteredColumn     AutomationTriggerType = "task_entered_column"
-	TaskUpdated           AutomationTriggerType = "task_updated"
+	AutomationTriggerTypeColumnSlaTimer        AutomationTriggerType = "column_sla_timer"
+	AutomationTriggerTypeDueDateReached        AutomationTriggerType = "due_date_reached"
+	AutomationTriggerTypeScheduledSweep        AutomationTriggerType = "scheduled_sweep"
+	AutomationTriggerTypeTaskCompleted         AutomationTriggerType = "task_completed"
+	AutomationTriggerTypeTaskCompletedInColumn AutomationTriggerType = "task_completed_in_column"
+	AutomationTriggerTypeTaskCreated           AutomationTriggerType = "task_created"
+	AutomationTriggerTypeTaskEnteredColumn     AutomationTriggerType = "task_entered_column"
+	AutomationTriggerTypeTaskFieldChanged      AutomationTriggerType = "task_field_changed"
+	AutomationTriggerTypeTaskUpdated           AutomationTriggerType = "task_updated"
 )
 
 // Valid indicates whether the value is a known member of the AutomationTriggerType enum.
 func (e AutomationTriggerType) Valid() bool {
 	switch e {
-	case DueDateReached:
+	case AutomationTriggerTypeColumnSlaTimer:
 		return true
-	case TaskCompleted:
+	case AutomationTriggerTypeDueDateReached:
 		return true
-	case TaskCompletedInColumn:
+	case AutomationTriggerTypeScheduledSweep:
 		return true
-	case TaskCreated:
+	case AutomationTriggerTypeTaskCompleted:
 		return true
-	case TaskEnteredColumn:
+	case AutomationTriggerTypeTaskCompletedInColumn:
 		return true
-	case TaskUpdated:
+	case AutomationTriggerTypeTaskCreated:
+		return true
+	case AutomationTriggerTypeTaskEnteredColumn:
+		return true
+	case AutomationTriggerTypeTaskFieldChanged:
+		return true
+	case AutomationTriggerTypeTaskUpdated:
 		return true
 	default:
 		return false
@@ -61,6 +100,108 @@ func (e ColumnStatusCategory) Valid() bool {
 	case ColumnStatusCategoryInProgress:
 		return true
 	case ColumnStatusCategoryTodo:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConditionField.
+const (
+	DueDate           ConditionField = "due_date"
+	IsCompleted       ConditionField = "is_completed"
+	Priority          ConditionField = "priority"
+	Tags              ConditionField = "tags"
+	TimeInColumnHours ConditionField = "time_in_column_hours"
+)
+
+// Valid indicates whether the value is a known member of the ConditionField enum.
+func (e ConditionField) Valid() bool {
+	switch e {
+	case DueDate:
+		return true
+	case IsCompleted:
+		return true
+	case Priority:
+		return true
+	case Tags:
+		return true
+	case TimeInColumnHours:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConditionOperator.
+const (
+	Contains    ConditionOperator = "contains"
+	Equals      ConditionOperator = "equals"
+	GreaterThan ConditionOperator = "greater_than"
+	IsEmpty     ConditionOperator = "is_empty"
+	IsNotEmpty  ConditionOperator = "is_not_empty"
+	LessThan    ConditionOperator = "less_than"
+	NotContains ConditionOperator = "not_contains"
+	NotEquals   ConditionOperator = "not_equals"
+)
+
+// Valid indicates whether the value is a known member of the ConditionOperator enum.
+func (e ConditionOperator) Valid() bool {
+	switch e {
+	case Contains:
+		return true
+	case Equals:
+		return true
+	case GreaterThan:
+		return true
+	case IsEmpty:
+		return true
+	case IsNotEmpty:
+		return true
+	case LessThan:
+		return true
+	case NotContains:
+		return true
+	case NotEquals:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateAutomationRequestTriggerType.
+const (
+	CreateAutomationRequestTriggerTypeColumnSlaTimer        CreateAutomationRequestTriggerType = "column_sla_timer"
+	CreateAutomationRequestTriggerTypeDueDateReached        CreateAutomationRequestTriggerType = "due_date_reached"
+	CreateAutomationRequestTriggerTypeScheduledSweep        CreateAutomationRequestTriggerType = "scheduled_sweep"
+	CreateAutomationRequestTriggerTypeTaskCompleted         CreateAutomationRequestTriggerType = "task_completed"
+	CreateAutomationRequestTriggerTypeTaskCompletedInColumn CreateAutomationRequestTriggerType = "task_completed_in_column"
+	CreateAutomationRequestTriggerTypeTaskCreated           CreateAutomationRequestTriggerType = "task_created"
+	CreateAutomationRequestTriggerTypeTaskEnteredColumn     CreateAutomationRequestTriggerType = "task_entered_column"
+	CreateAutomationRequestTriggerTypeTaskFieldChanged      CreateAutomationRequestTriggerType = "task_field_changed"
+	CreateAutomationRequestTriggerTypeTaskUpdated           CreateAutomationRequestTriggerType = "task_updated"
+)
+
+// Valid indicates whether the value is a known member of the CreateAutomationRequestTriggerType enum.
+func (e CreateAutomationRequestTriggerType) Valid() bool {
+	switch e {
+	case CreateAutomationRequestTriggerTypeColumnSlaTimer:
+		return true
+	case CreateAutomationRequestTriggerTypeDueDateReached:
+		return true
+	case CreateAutomationRequestTriggerTypeScheduledSweep:
+		return true
+	case CreateAutomationRequestTriggerTypeTaskCompleted:
+		return true
+	case CreateAutomationRequestTriggerTypeTaskCompletedInColumn:
+		return true
+	case CreateAutomationRequestTriggerTypeTaskCreated:
+		return true
+	case CreateAutomationRequestTriggerTypeTaskEnteredColumn:
+		return true
+	case CreateAutomationRequestTriggerTypeTaskFieldChanged:
+		return true
+	case CreateAutomationRequestTriggerTypeTaskUpdated:
 		return true
 	default:
 		return false
@@ -139,6 +280,72 @@ func (e TaskPriority) Valid() bool {
 	case TaskPriorityNone:
 		return true
 	case TaskPriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TriggerType.
+const (
+	TriggerTypeColumnSlaTimer        TriggerType = "column_sla_timer"
+	TriggerTypeScheduledSweep        TriggerType = "scheduled_sweep"
+	TriggerTypeTaskCompletedInColumn TriggerType = "task_completed_in_column"
+	TriggerTypeTaskEnteredColumn     TriggerType = "task_entered_column"
+	TriggerTypeTaskFieldChanged      TriggerType = "task_field_changed"
+)
+
+// Valid indicates whether the value is a known member of the TriggerType enum.
+func (e TriggerType) Valid() bool {
+	switch e {
+	case TriggerTypeColumnSlaTimer:
+		return true
+	case TriggerTypeScheduledSweep:
+		return true
+	case TriggerTypeTaskCompletedInColumn:
+		return true
+	case TriggerTypeTaskEnteredColumn:
+		return true
+	case TriggerTypeTaskFieldChanged:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateAutomationRequestTriggerType.
+const (
+	UpdateAutomationRequestTriggerTypeColumnSlaTimer        UpdateAutomationRequestTriggerType = "column_sla_timer"
+	UpdateAutomationRequestTriggerTypeDueDateReached        UpdateAutomationRequestTriggerType = "due_date_reached"
+	UpdateAutomationRequestTriggerTypeScheduledSweep        UpdateAutomationRequestTriggerType = "scheduled_sweep"
+	UpdateAutomationRequestTriggerTypeTaskCompleted         UpdateAutomationRequestTriggerType = "task_completed"
+	UpdateAutomationRequestTriggerTypeTaskCompletedInColumn UpdateAutomationRequestTriggerType = "task_completed_in_column"
+	UpdateAutomationRequestTriggerTypeTaskCreated           UpdateAutomationRequestTriggerType = "task_created"
+	UpdateAutomationRequestTriggerTypeTaskEnteredColumn     UpdateAutomationRequestTriggerType = "task_entered_column"
+	UpdateAutomationRequestTriggerTypeTaskFieldChanged      UpdateAutomationRequestTriggerType = "task_field_changed"
+	UpdateAutomationRequestTriggerTypeTaskUpdated           UpdateAutomationRequestTriggerType = "task_updated"
+)
+
+// Valid indicates whether the value is a known member of the UpdateAutomationRequestTriggerType enum.
+func (e UpdateAutomationRequestTriggerType) Valid() bool {
+	switch e {
+	case UpdateAutomationRequestTriggerTypeColumnSlaTimer:
+		return true
+	case UpdateAutomationRequestTriggerTypeDueDateReached:
+		return true
+	case UpdateAutomationRequestTriggerTypeScheduledSweep:
+		return true
+	case UpdateAutomationRequestTriggerTypeTaskCompleted:
+		return true
+	case UpdateAutomationRequestTriggerTypeTaskCompletedInColumn:
+		return true
+	case UpdateAutomationRequestTriggerTypeTaskCreated:
+		return true
+	case UpdateAutomationRequestTriggerTypeTaskEnteredColumn:
+		return true
+	case UpdateAutomationRequestTriggerTypeTaskFieldChanged:
+		return true
+	case UpdateAutomationRequestTriggerTypeTaskUpdated:
 		return true
 	default:
 		return false
@@ -271,6 +478,18 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Action defines model for Action.
+type Action struct {
+	// Params Example: {"target_column_id":"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"}
+	Params *map[string]interface{} `json:"params,omitempty"`
+
+	// Type Example: move_to_column
+	Type ActionType `json:"type"`
+}
+
+// ActionType Example: move_to_column
+type ActionType string
+
 // Attachment defines model for Attachment.
 type Attachment struct {
 	// ContentType Example: image/png
@@ -328,7 +547,8 @@ type Automation struct {
 	IsEnabled bool `json:"isEnabled"`
 
 	// Name Example: Done & Archive
-	Name string `json:"name"`
+	Name           string          `json:"name"`
+	RuleDefinition *RuleDefinition `json:"ruleDefinition,omitempty"`
 
 	// TriggerType Example: task_completed
 	TriggerType AutomationTriggerType `json:"triggerType"`
@@ -390,6 +610,43 @@ type Column struct {
 
 // ColumnStatusCategory Example: todo
 type ColumnStatusCategory string
+
+// Condition defines model for Condition.
+type Condition struct {
+	// Field Example: priority
+	Field ConditionField `json:"field"`
+
+	// Operator Example: equals
+	Operator ConditionOperator `json:"operator"`
+
+	// Value Value to compare against
+	Value interface{} `json:"value,omitempty"`
+}
+
+// ConditionField Example: priority
+type ConditionField string
+
+// ConditionOperator Example: equals
+type ConditionOperator string
+
+// CreateAutomationRequest defines model for CreateAutomationRequest.
+type CreateAutomationRequest struct {
+	ActionsJson    *map[string]interface{} `json:"actionsJson,omitempty"`
+	BoardId        *openapi_types.UUID     `json:"boardId,omitempty"`
+	ColumnId       *openapi_types.UUID     `json:"columnId,omitempty"`
+	ConditionsJson *map[string]interface{} `json:"conditionsJson,omitempty"`
+	IsEnabled      *bool                   `json:"isEnabled,omitempty"`
+
+	// Name Example: Move to Done on Complete
+	Name           string          `json:"name"`
+	RuleDefinition *RuleDefinition `json:"ruleDefinition,omitempty"`
+
+	// TriggerType Example: task_completed_in_column
+	TriggerType CreateAutomationRequestTriggerType `json:"triggerType"`
+}
+
+// CreateAutomationRequestTriggerType Example: task_completed_in_column
+type CreateAutomationRequestTriggerType string
 
 // CreateColumnRequest defines model for CreateColumnRequest.
 type CreateColumnRequest struct {
@@ -529,6 +786,13 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
+// RuleDefinition defines model for RuleDefinition.
+type RuleDefinition struct {
+	Actions    []Action     `json:"actions"`
+	Conditions *[]Condition `json:"conditions,omitempty"`
+	Trigger    Trigger      `json:"trigger"`
+}
+
 // SearchResponse defines model for SearchResponse.
 type SearchResponse struct {
 	Projects []Project `json:"projects"`
@@ -604,6 +868,37 @@ type ToggleAutomationRequest struct {
 	// IsEnabled Example: true
 	IsEnabled bool `json:"is_enabled"`
 }
+
+// Trigger defines model for Trigger.
+type Trigger struct {
+	// Params Example: {"column_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"}
+	Params *map[string]interface{} `json:"params,omitempty"`
+
+	// Type Example: task_entered_column
+	Type TriggerType `json:"type"`
+}
+
+// TriggerType Example: task_entered_column
+type TriggerType string
+
+// UpdateAutomationRequest defines model for UpdateAutomationRequest.
+type UpdateAutomationRequest struct {
+	ActionsJson    *map[string]interface{} `json:"actionsJson,omitempty"`
+	BoardId        *openapi_types.UUID     `json:"boardId,omitempty"`
+	ColumnId       *openapi_types.UUID     `json:"columnId,omitempty"`
+	ConditionsJson *map[string]interface{} `json:"conditionsJson,omitempty"`
+	IsEnabled      *bool                   `json:"isEnabled,omitempty"`
+
+	// Name Example: Move to Done on Complete
+	Name           *string         `json:"name,omitempty"`
+	RuleDefinition *RuleDefinition `json:"ruleDefinition,omitempty"`
+
+	// TriggerType Example: task_completed_in_column
+	TriggerType *UpdateAutomationRequestTriggerType `json:"triggerType,omitempty"`
+}
+
+// UpdateAutomationRequestTriggerType Example: task_completed_in_column
+type UpdateAutomationRequestTriggerType string
 
 // UpdateColumnRequest defines model for UpdateColumnRequest.
 type UpdateColumnRequest struct {
@@ -836,6 +1131,12 @@ type CreateWorkspaceJSONRequestBody = CreateWorkspaceRequest
 // UpdateWorkspaceJSONRequestBody defines body for UpdateWorkspace for application/json ContentType.
 type UpdateWorkspaceJSONRequestBody = UpdateWorkspaceRequest
 
+// CreateAutomationJSONRequestBody defines body for CreateAutomation for application/json ContentType.
+type CreateAutomationJSONRequestBody = CreateAutomationRequest
+
+// UpdateAutomationJSONRequestBody defines body for UpdateAutomation for application/json ContentType.
+type UpdateAutomationJSONRequestBody = UpdateAutomationRequest
+
 // ToggleAutomationJSONRequestBody defines body for ToggleAutomation for application/json ContentType.
 type ToggleAutomationJSONRequestBody = ToggleAutomationRequest
 
@@ -922,6 +1223,15 @@ type ServerInterface interface {
 	// ListWorkspaceAutomations List all automations in a workspace
 	// (GET /workspaces/{workspace_id}/automations)
 	ListWorkspaceAutomations(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// CreateAutomation Create an automation rule
+	// (POST /workspaces/{workspace_id}/automations)
+	CreateAutomation(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// DeleteAutomation Delete an automation rule
+	// (DELETE /workspaces/{workspace_id}/automations/{automation_id})
+	DeleteAutomation(ctx echo.Context, workspaceId openapi_types.UUID, automationId openapi_types.UUID) error
+	// UpdateAutomation Update an automation rule
+	// (PUT /workspaces/{workspace_id}/automations/{automation_id})
+	UpdateAutomation(ctx echo.Context, workspaceId openapi_types.UUID, automationId openapi_types.UUID) error
 	// ToggleAutomation Toggle automation enabled status
 	// (PATCH /workspaces/{workspace_id}/automations/{automation_id}/toggle)
 	ToggleAutomation(ctx echo.Context, workspaceId openapi_types.UUID, automationId openapi_types.UUID) error
@@ -1247,6 +1557,70 @@ func (w *ServerInterfaceWrapper) ListWorkspaceAutomations(ctx echo.Context) erro
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.ListWorkspaceAutomations(ctx, workspaceId)
+	return err
+}
+
+// CreateAutomation converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateAutomation(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateAutomation(ctx, workspaceId)
+	return err
+}
+
+// DeleteAutomation converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteAutomation(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "automation_id" -------------
+	var automationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "automation_id", ctx.Param("automation_id"), &automationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter automation_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteAutomation(ctx, workspaceId, automationId)
+	return err
+}
+
+// UpdateAutomation converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateAutomation(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "automation_id" -------------
+	var automationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "automation_id", ctx.Param("automation_id"), &automationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter automation_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateAutomation(ctx, workspaceId, automationId)
 	return err
 }
 
@@ -1979,6 +2353,9 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/attachments/:attachment_id", wrapper.DeleteAttachment, options.OperationMiddlewares["deleteAttachment"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/attachments/:attachment_id/content", wrapper.GetAttachmentContent, options.OperationMiddlewares["getAttachmentContent"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/automations", wrapper.ListWorkspaceAutomations, options.OperationMiddlewares["listWorkspaceAutomations"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/automations", wrapper.CreateAutomation, options.OperationMiddlewares["createAutomation"]...)
+	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/automations/:automation_id", wrapper.DeleteAutomation, options.OperationMiddlewares["deleteAutomation"]...)
+	router.PUT(options.BaseURL+"/workspaces/:workspace_id/automations/:automation_id", wrapper.UpdateAutomation, options.OperationMiddlewares["updateAutomation"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/automations/:automation_id/toggle", wrapper.ToggleAutomation, options.OperationMiddlewares["toggleAutomation"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns", wrapper.ListBoardColumns, options.OperationMiddlewares["listBoardColumns"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns", wrapper.CreateBoardColumn, options.OperationMiddlewares["createBoardColumn"]...)

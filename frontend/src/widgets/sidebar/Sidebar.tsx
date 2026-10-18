@@ -20,6 +20,7 @@ import { MiniCalendar } from '@/widgets/mini-calendar';
 import { useTaskStore, useInboxTasks } from '@/features/task-navigation';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
 import { useTodayTasksQuery } from '@/entities/task';
+import { useAutomationsQuery } from '@/entities/automation';
 
 export interface SidebarProps {
   user: User | null;
@@ -40,43 +41,26 @@ export interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  user,
-  workspace,
-  inboxCount,
-  activeNav,
-  onNavChange,
-  onOpenQuickCapture,
-  onOpenCommandPalette,
-  isCollapsed = false,
-  onToggleCollapse,
-  onOpenAuth,
-  onLogout,
-  showUiCatalog,
-  onToggleUiCatalog,
-  onOpenAutomations,
-  onWorkspaceChange,
+  user, workspace, inboxCount, activeNav, onNavChange, onOpenQuickCapture,
+  onOpenCommandPalette, isCollapsed = false, onToggleCollapse, onOpenAuth, onLogout,
+  showUiCatalog, onToggleUiCatalog, onWorkspaceChange,
 }) => {
   const {
-    setQuickCaptureOpen,
-    activeNav: storeActiveNav,
-    setActiveNav: storeSetActiveNav,
-    setSelectedProjectId,
-    setActiveBoardId,
+    setQuickCaptureOpen, activeNav: storeActiveNav, setActiveNav: storeSetActiveNav,
+    setSelectedProjectId, setActiveBoardId,
   } = useTaskStore();
   const { data: inboxTasks } = useInboxTasks();
   const { data: todayTasks = [] } = useTodayTasksQuery(workspace?.id);
   const { data: projects = [] } = useProjectsQuery(workspace?.id);
+  const { data: automations = [] } = useAutomationsQuery(workspace?.id);
   const createProjectMutation = useCreateProjectMutation(workspace?.id);
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
 
   const todayCount = todayTasks.filter((t) => !t.isCompleted).length;
-
-  const currentInboxCount =
-    inboxCount !== undefined
-      ? inboxCount
-      : (inboxTasks?.filter((t) => !t.isCompleted).length ?? 0);
+  const activeAutomationsCount = automations.filter((a) => a.isEnabled).length;
+  const currentInboxCount = inboxCount !== undefined ? inboxCount : (inboxTasks?.filter((t) => !t.isCompleted).length ?? 0);
   const currentNav = activeNav ?? storeActiveNav;
   const handleNavChange = onNavChange ?? storeSetActiveNav;
   const handleOpenQuickCapture = onOpenQuickCapture ?? (() => setQuickCaptureOpen(true));
@@ -91,7 +75,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     e.preventDefault();
     const trimmed = newProjectName.trim();
     if (!trimmed || createProjectMutation.isPending) return;
-
     try {
       const created = await createProjectMutation.mutateAsync({ name: trimmed });
       setNewProjectName('');
@@ -220,6 +203,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </Badge>
             )}
           </button>
+
+          {/* Automations */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedProjectId(null);
+              setActiveBoardId(null);
+              handleNavChange('automations');
+            }}
+            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
+              currentNav === 'automations' && !showUiCatalog
+                ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
+                : 'text-primary hover:bg-surface/60 opacity-80'
+            }`}
+            title="Автоматизации воркспейса"
+          >
+            <span className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 stroke-[1.8] text-accent-solid" />
+              <span>Автоматизации</span>
+            </span>
+            <Badge variant="subtle" size="sm" className="font-mono text-[11px] px-1.5 py-0">
+              {activeAutomationsCount}
+            </Badge>
+          </button>
         </div>
 
         {/* Projects Section */}
@@ -309,30 +316,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <MiniCalendar workspaceId={workspace?.id} isCompact />
         </div>
 
-        {/* Automations & UI-Kit section */}
-        <div className="pt-2 border-t border-subtle/50 space-y-1">
-          <button
-            type="button"
-            onClick={onOpenAutomations}
-            className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-all duration-150 text-muted hover:text-primary hover:bg-surface/60"
-            title="Автоматизации GTD"
-          >
-            <span className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-accent-solid" />
-              <span>Автоматизации</span>
-            </span>
-            <Badge variant="subtle" size="sm" className="font-mono text-[10px] px-1.5 py-0">
-              3
-            </Badge>
-          </button>
-
+        {/* UI-Kit Showcase section */}
+        <div className="pt-2 border-t border-subtle/50">
           <button
             type="button"
             onClick={onToggleUiCatalog}
             className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-all duration-150 ${
-              showUiCatalog
-                ? 'bg-accent-surface font-medium text-primary'
-                : 'text-muted hover:text-primary hover:bg-surface/60'
+              showUiCatalog ? 'bg-accent-surface font-medium text-primary' : 'text-muted hover:text-primary hover:bg-surface/60'
             }`}
           >
             <span className="flex items-center gap-2">

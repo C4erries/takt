@@ -209,6 +209,22 @@ func TestRuleDefinition_Validate(t *testing.T) {
 			},
 			wantErr: automation.ErrInvalidLogicalOperator,
 		},
+		{
+			name: "valid Sprint 0.6.5 rule with in, not_in, due_date_status and new actions",
+			rule: &automation.RuleDefinition{
+				Trigger: validTrigger,
+				Conditions: []automation.Condition{
+					{Field: automation.ConditionFieldDueDateStatus, Operator: automation.OperatorIn, Value: []string{"overdue", "due_soon"}},
+					{Field: automation.ConditionFieldPriority, Operator: automation.OperatorNotIn, Value: []string{"low"}},
+				},
+				Actions: []automation.Action{
+					{Type: automation.ActionMarkCompleted},
+					{Type: automation.ActionMarkUncompleted},
+					{Type: automation.ActionClearDueDate},
+				},
+			},
+			wantErr: nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -224,6 +240,16 @@ func TestRuleDefinition_Validate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRuleDefinition_Sprint065_Enums(t *testing.T) {
+	t.Parallel()
+	assert.True(t, automation.IsValidConditionField(automation.ConditionFieldDueDateStatus))
+	assert.True(t, automation.IsValidConditionOperator(automation.OperatorIn))
+	assert.True(t, automation.IsValidConditionOperator(automation.OperatorNotIn))
+	assert.True(t, automation.IsValidActionType(automation.ActionMarkCompleted))
+	assert.True(t, automation.IsValidActionType(automation.ActionMarkUncompleted))
+	assert.True(t, automation.IsValidActionType(automation.ActionClearDueDate))
 }
 
 func TestRuleDefinition_JSONSerialization(t *testing.T) {

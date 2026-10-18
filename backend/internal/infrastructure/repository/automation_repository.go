@@ -249,53 +249,49 @@ func (r *AutomationRepository) SetTaskPriority(ctx context.Context, taskID, wsID
 	return err
 }
 
-func (r *AutomationRepository) AddTagToTask(ctx context.Context, taskID, wsID uuid.UUID, tagID *uuid.UUID, tagName string) error {
-	q := getQuerier(ctx, r.queries)
-	var targetTagID pgtype.UUID
+func (r *AutomationRepository) resolveTagID(ctx context.Context, wsID uuid.UUID, tagID *uuid.UUID, tagName string, create bool) (pgtype.UUID, error) {
 	if tagID != nil {
-		targetTagID = uuidToPg(*tagID)
-	} else if tagName != "" {
-		tagRow, err := q.GetTagByName(ctx, sqlc.GetTagByNameParams{
-			WorkspaceID: uuidToPg(wsID),
-			Lower:       strings.ToLower(tagName),
-		})
-		if err == nil {
-			targetTagID = tagRow.ID
-		} else {
-			newTag, err := q.CreateTag(ctx, sqlc.CreateTagParams{
-				WorkspaceID: uuidToPg(wsID),
-				Name:        tagName,
-				ColorHex:    "#6366f1",
-			})
-			if err != nil {
-				return err
-			}
-			targetTagID = newTag.ID
-		}
-	} else {
-		return nil
+		return uuidToPg(*tagID), nil
 	}
-	return q.AddTagToTask(ctx, sqlc.AddTagToTaskParams{TaskID: uuidToPg(taskID), TagID: targetTagID})
+	if tagName == "" {
+		return pgtype.UUID{}, nil
+	}
+	q := getQuerier(ctx, r.queries)
+	tagRow, err := q.GetTagByName(ctx, sqlc.GetTagByNameParams{
+		WorkspaceID: uuidToPg(wsID),
+		Lower:       strings.ToLower(tagName),
+	})
+	if err == nil {
+		return tagRow.ID, nil
+	}
+	if !create {
+		return pgtype.UUID{}, err
+	}
+	newTag, err := q.CreateTag(ctx, sqlc.CreateTagParams{
+		WorkspaceID: uuidToPg(wsID),
+		Name:        tagName,
+		ColorHex:    "#6366f1",
+	})
+	if err != nil {
+		return pgtype.UUID{}, err
+	}
+	return newTag.ID, nil
+}
+
+func (r *AutomationRepository) AddTagToTask(ctx context.Context, taskID, wsID uuid.UUID, tagID *uuid.UUID, tagName string) error {
+	tid, err := r.resolveTagID(ctx, wsID, tagID, tagName, true)
+	if err != nil || !tid.Valid {
+		return err
+	}
+	return getQuerier(ctx, r.queries).AddTagToTask(ctx, sqlc.AddTagToTaskParams{TaskID: uuidToPg(taskID), TagID: tid})
 }
 
 func (r *AutomationRepository) RemoveTagFromTask(ctx context.Context, taskID, wsID uuid.UUID, tagID *uuid.UUID, tagName string) error {
-	q := getQuerier(ctx, r.queries)
-	var targetTagID pgtype.UUID
-	if tagID != nil {
-		targetTagID = uuidToPg(*tagID)
-	} else if tagName != "" {
-		tagRow, err := q.GetTagByName(ctx, sqlc.GetTagByNameParams{
-			WorkspaceID: uuidToPg(wsID),
-			Lower:       strings.ToLower(tagName),
-		})
-		if err != nil {
-			return nil
-		}
-		targetTagID = tagRow.ID
-	} else {
+	tid, err := r.resolveTagID(ctx, wsID, tagID, tagName, false)
+	if err != nil || !tid.Valid {
 		return nil
 	}
-	return q.RemoveTagFromTask(ctx, sqlc.RemoveTagFromTaskParams{TaskID: uuidToPg(taskID), TagID: targetTagID})
+	return getQuerier(ctx, r.queries).RemoveTagFromTask(ctx, sqlc.RemoveTagFromTaskParams{TaskID: uuidToPg(taskID), TagID: tid})
 }
 
 func (r *AutomationRepository) SetTaskDueDate(ctx context.Context, taskID, wsID uuid.UUID, dueDate *time.Time) error {
@@ -307,6 +303,15 @@ func (r *AutomationRepository) SetTaskDueDate(ctx context.Context, taskID, wsID 
 		ID:          uuidToPg(taskID),
 		WorkspaceID: uuidToPg(wsID),
 		DueDate:     duePg,
+	})
+	return err
+}
+
+func (r *AutomationRepository) SetTaskCompleted(ctx context.Context, taskID, wsID uuid.UUID, isCompleted bool) error {
+	_, err := getQuerier(ctx, r.queries).SetTaskCompletion(ctx, sqlc.SetTaskCompletionParams{
+		ID:          uuidToPg(taskID),
+		WorkspaceID: uuidToPg(wsID),
+		IsCompleted: isCompleted,
 	})
 	return err
 }
@@ -332,8 +337,7 @@ func (r *AutomationRepository) ListTasksByColumn(ctx context.Context, wsID, colI
 	for i, row := range rows {
 		var due *time.Time
 		if row.DueDate.Valid {
-			t := row.DueDate.Time
-			due = &t
+			due = &row.DueDate.Time
 		}
 		result[i] = &appAutomation.TaskInfo{
 			ID:          pgToUUID(row.ID),
@@ -354,39 +358,37 @@ func (r *AutomationRepository) ListTasksByColumn(ctx context.Context, wsID, colI
 // ProjectReader implementation
 
 func (r *AutomationRepository) getBoardColumns(ctx context.Context, prjID uuid.UUID) ([]sqlc.Column, error) {
-	q := getQuerier(ctx, r.queries)
-	boards, err := q.ListBoardsByProject(ctx, uuidToPg(prjID))
+	boards, err := getQuerier(ctx, r.queries).ListBoardsByProject(ctx, uuidToPg(prjID))
 	if err != nil || len(boards) == 0 {
 		return nil, err
 	}
-	return q.ListColumnsByBoard(ctx, boards[0].ID)
+	return getQuerier(ctx, r.queries).ListColumnsByBoard(ctx, boards[0].ID)
+}
+
+func (r *AutomationRepository) findColumnByCategory(ctx context.Context, prjID uuid.UUID, cat string) (*uuid.UUID, []sqlc.Column, error) {
+	cols, err := r.getBoardColumns(ctx, prjID)
+	if err != nil || len(cols) == 0 {
+		return nil, nil, err
+	}
+	for _, c := range cols {
+		if c.StatusCategory == cat {
+			id := pgToUUID(c.ID)
+			return &id, cols, nil
+		}
+	}
+	return nil, cols, nil
 }
 
 func (r *AutomationRepository) GetFirstTodoColumn(ctx context.Context, prjID, wsID uuid.UUID) (*uuid.UUID, error) {
-	cols, err := r.getBoardColumns(ctx, prjID)
-	if err != nil || len(cols) == 0 {
-		return nil, err
-	}
-	for _, c := range cols {
-		if c.StatusCategory == "todo" {
-			id := pgToUUID(c.ID)
-			return &id, nil
-		}
+	id, cols, err := r.findColumnByCategory(ctx, prjID, "todo")
+	if id != nil || err != nil || len(cols) == 0 {
+		return id, err
 	}
 	firstID := pgToUUID(cols[0].ID)
 	return &firstID, nil
 }
 
 func (r *AutomationRepository) GetDoneColumn(ctx context.Context, prjID, wsID uuid.UUID) (*uuid.UUID, error) {
-	cols, err := r.getBoardColumns(ctx, prjID)
-	if err != nil || len(cols) == 0 {
-		return nil, err
-	}
-	for _, c := range cols {
-		if c.StatusCategory == "done" {
-			id := pgToUUID(c.ID)
-			return &id, nil
-		}
-	}
-	return nil, nil
+	id, _, err := r.findColumnByCategory(ctx, prjID, "done")
+	return id, err
 }

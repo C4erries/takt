@@ -40,6 +40,7 @@ export const CONDITION_FIELDS: { field: AutomationConditionField; label: string 
   { field: 'tags', label: 'Теги' },
   { field: 'time_in_column_hours', label: 'Время в колонке (ч)' },
   { field: 'is_completed', label: 'Завершена' },
+  { field: 'due_date_status', label: 'Статус дедлайна' },
 ];
 
 export const CONDITION_OPERATORS: { operator: AutomationConditionOperator; label: string }[] = [
@@ -51,6 +52,8 @@ export const CONDITION_OPERATORS: { operator: AutomationConditionOperator; label
   { operator: 'is_empty', label: 'пусто' },
   { operator: 'greater_than', label: 'больше чем' },
   { operator: 'less_than', label: 'меньше чем' },
+  { operator: 'in', label: 'один из' },
+  { operator: 'not_in', label: 'ни один из' },
 ];
 
 export const ACTION_TYPES: { type: AutomationActionType; label: string; desc: string }[] = [
@@ -60,6 +63,9 @@ export const ACTION_TYPES: { type: AutomationActionType; label: string; desc: st
   { type: 'remove_tag', label: 'Удалить тег', desc: 'Снять метку' },
   { type: 'set_due_date', label: 'Назначить срок', desc: 'Установить дедлайн' },
   { type: 'archive_task', label: 'Архивировать задачу', desc: 'Убрать в архив' },
+  { type: 'mark_completed', label: 'Отметить выполненной', desc: 'Установить галочку выполнения' },
+  { type: 'mark_uncompleted', label: 'Снять выполнение', desc: 'Снять галочку выполнения' },
+  { type: 'clear_due_date', label: 'Очистить дедлайн', desc: 'Сбросить дату дедлайна' },
 ];
 
 export const PRIORITIES = [
@@ -68,6 +74,13 @@ export const PRIORITIES = [
   { value: 'medium', label: 'Средний' },
   { value: 'low', label: 'Низкий' },
   { value: 'none', label: 'Обычный' },
+];
+
+export const DUE_DATE_STATUS_OPTIONS = [
+  { value: 'overdue', label: 'Просрочен' },
+  { value: 'due_soon', label: 'Горит (<= 48ч)' },
+  { value: 'on_track', label: 'В графике' },
+  { value: 'no_due_date', label: 'Без срока' },
 ];
 
 export function formatTriggerLabel(
@@ -113,14 +126,34 @@ export function formatConditionLabel(condition: AutomationCondition): string {
   const opObj = CONDITION_OPERATORS.find((o) => o.operator === condition.operator);
   const opName = opObj?.label || String(condition.operator);
 
-  let val = condition.value;
-  if (condition.field === 'priority' && typeof val === 'string') {
-    const p = PRIORITIES.find((item) => item.value === val);
-    if (p) val = p.label;
-  }
   if (condition.operator === 'is_empty' || condition.operator === 'is_not_empty') {
     return `${fieldName} ${opName}`;
   }
+
+  let val = condition.value;
+  if (condition.field === 'is_completed') {
+    const isTrue = val === true || val === 'true';
+    return condition.operator === 'equals'
+      ? `Завершена: ${isTrue ? 'Да' : 'Нет'}`
+      : `Завершена ${opName} ${isTrue ? 'Да' : 'Нет'}`;
+  }
+
+  if (condition.field === 'due_date_status' && typeof val === 'string') {
+    const st = DUE_DATE_STATUS_OPTIONS.find((s) => s.value === val);
+    val = st ? st.label : val;
+  } else if (condition.field === 'priority') {
+    if (Array.isArray(val)) {
+      val = val.map((v) => PRIORITIES.find((p) => p.value === v)?.label || v).join(', ');
+    } else if (typeof val === 'string' && val.includes(',')) {
+      val = val.split(',').map((v) => PRIORITIES.find((p) => p.value === v.trim())?.label || v.trim()).join(', ');
+    } else if (typeof val === 'string') {
+      const p = PRIORITIES.find((item) => item.value === val);
+      if (p) val = p.label;
+    }
+  } else if (Array.isArray(val)) {
+    val = val.join(', ');
+  }
+
   return `${fieldName} ${opName} ${val !== undefined && val !== '' ? `«${val}»` : ''}`.trim();
 }
 
@@ -153,6 +186,12 @@ export function formatActionLabel(
     }
     case 'archive_task':
       return 'Архивировать задачу';
+    case 'mark_completed':
+      return 'Отметить задачу выполненной';
+    case 'mark_uncompleted':
+      return 'Снять отметку выполнения';
+    case 'clear_due_date':
+      return 'Очистить дедлайн';
     default:
       return ACTION_TYPES.find((a) => a.type === action.type)?.label || String(action.type);
   }
@@ -234,11 +273,7 @@ export function useRuleBuilder({
     if (conditions.length >= 5) return;
     setConditions((prev) => [...prev, { field: 'priority', operator: 'equals', value: 'high' }]);
   };
-
-  const handleRemoveCondition = (index: number) => {
-    setConditions((prev) => prev.filter((_, i) => i !== index));
-  };
-
+  const handleRemoveCondition = (index: number) => setConditions((prev) => prev.filter((_, i) => i !== index));
   const handleUpdateCondition = (index: number, patch: Partial<AutomationCondition>) => {
     setConditions((prev) => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
   };
@@ -246,23 +281,15 @@ export function useRuleBuilder({
   const handleAddAction = () => {
     if (actions.length >= 5) return;
     const defaultTargetCol = allColumns.find((c) => c.id !== triggerColumnId)?.id ?? '';
-    setActions((prev) => [
-      ...prev,
-      { type: 'move_to_column', params: { target_column_id: defaultTargetCol } },
-    ]);
+    setActions((prev) => [...prev, { type: 'move_to_column', params: { target_column_id: defaultTargetCol } }]);
   };
-
-  const handleRemoveAction = (index: number) => {
-    setActions((prev) => prev.filter((_, i) => i !== index));
-  };
-
+  const handleRemoveAction = (index: number) => setActions((prev) => prev.filter((_, i) => i !== index));
   const handleUpdateAction = (index: number, patch: Partial<AutomationAction>) => {
     setActions((prev) => prev.map((a, i) => (i === index ? { ...a, ...patch } : a)));
   };
 
   const handleSave = async () => {
     if (!ruleName.trim() || actions.length === 0) return;
-
     const triggerParams: Record<string, unknown> = {};
     if (
       triggerType === 'task_entered_column' ||
@@ -313,28 +340,12 @@ export function useRuleBuilder({
   };
 
   return {
-    ruleName,
-    setRuleName,
-    setIsCustomName,
-    triggerType,
-    setTriggerType,
-    triggerColumnId,
-    setTriggerColumnId,
-    triggerSlaHours,
-    setTriggerSlaHours,
-    triggerField,
-    setTriggerField,
-    conditions,
-    logicalOperator,
-    setLogicalOperator,
-    handleAddCondition,
-    handleRemoveCondition,
-    handleUpdateCondition,
-    actions,
-    handleAddAction,
-    handleRemoveAction,
-    handleUpdateAction,
-    handleSave,
-    isSubmitting: createMutation.isPending || updateMutation.isPending,
+    ruleName, setRuleName, setIsCustomName,
+    triggerType, setTriggerType, triggerColumnId, setTriggerColumnId,
+    triggerSlaHours, setTriggerSlaHours, triggerField, setTriggerField,
+    conditions, logicalOperator, setLogicalOperator,
+    handleAddCondition, handleRemoveCondition, handleUpdateCondition,
+    actions, handleAddAction, handleRemoveAction, handleUpdateAction,
+    handleSave, isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
 }

@@ -226,6 +226,43 @@ func (q *Queries) GetTodayTasks(ctx context.Context, workspaceID pgtype.UUID) ([
 	return items, nil
 }
 
+const setTaskCompletion = `-- name: SetTaskCompletion :one
+UPDATE tasks
+SET is_completed = $3,
+    completed_at = CASE WHEN $3 = true THEN NOW() ELSE NULL END,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+`
+
+type SetTaskCompletionParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	IsCompleted bool        `json:"is_completed"`
+}
+
+func (q *Queries) SetTaskCompletion(ctx context.Context, arg SetTaskCompletionParams) (Task, error) {
+	row := q.db.QueryRow(ctx, setTaskCompletion, arg.ID, arg.WorkspaceID, arg.IsCompleted)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.ColumnID,
+		&i.Title,
+		&i.DescriptionMarkdown,
+		&i.IsCompleted,
+		&i.CompletedAt,
+		&i.DueDate,
+		&i.Priority,
+		&i.FocusOrder,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const setTaskDueDate = `-- name: SetTaskDueDate :one
 UPDATE tasks
 SET due_date = $3,

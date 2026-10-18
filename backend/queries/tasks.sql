@@ -87,4 +87,12 @@ SET due_date = $3,
 WHERE id = $1 AND workspace_id = $2
 RETURNING *;
 
+-- name: SetTaskCompletion :one
+UPDATE tasks
+SET is_completed = $3,
+    completed_at = CASE WHEN $3 = true THEN NOW() ELSE NULL END,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING *;
+
 

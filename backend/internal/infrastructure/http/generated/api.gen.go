@@ -15,12 +15,15 @@ import (
 
 // Defines values for ActionType.
 const (
-	AddTag       ActionType = "add_tag"
-	ArchiveTask  ActionType = "archive_task"
-	MoveToColumn ActionType = "move_to_column"
-	RemoveTag    ActionType = "remove_tag"
-	SetDueDate   ActionType = "set_due_date"
-	SetPriority  ActionType = "set_priority"
+	AddTag          ActionType = "add_tag"
+	ArchiveTask     ActionType = "archive_task"
+	ClearDueDate    ActionType = "clear_due_date"
+	MarkCompleted   ActionType = "mark_completed"
+	MarkUncompleted ActionType = "mark_uncompleted"
+	MoveToColumn    ActionType = "move_to_column"
+	RemoveTag       ActionType = "remove_tag"
+	SetDueDate      ActionType = "set_due_date"
+	SetPriority     ActionType = "set_priority"
 )
 
 // Valid indicates whether the value is a known member of the ActionType enum.
@@ -29,6 +32,12 @@ func (e ActionType) Valid() bool {
 	case AddTag:
 		return true
 	case ArchiveTask:
+		return true
+	case ClearDueDate:
+		return true
+	case MarkCompleted:
+		return true
+	case MarkUncompleted:
 		return true
 	case MoveToColumn:
 		return true
@@ -109,6 +118,7 @@ func (e ColumnStatusCategory) Valid() bool {
 // Defines values for ConditionField.
 const (
 	DueDate           ConditionField = "due_date"
+	DueDateStatus     ConditionField = "due_date_status"
 	IsCompleted       ConditionField = "is_completed"
 	Priority          ConditionField = "priority"
 	Tags              ConditionField = "tags"
@@ -119,6 +129,8 @@ const (
 func (e ConditionField) Valid() bool {
 	switch e {
 	case DueDate:
+		return true
+	case DueDateStatus:
 		return true
 	case IsCompleted:
 		return true
@@ -138,11 +150,13 @@ const (
 	Contains    ConditionOperator = "contains"
 	Equals      ConditionOperator = "equals"
 	GreaterThan ConditionOperator = "greater_than"
+	In          ConditionOperator = "in"
 	IsEmpty     ConditionOperator = "is_empty"
 	IsNotEmpty  ConditionOperator = "is_not_empty"
 	LessThan    ConditionOperator = "less_than"
 	NotContains ConditionOperator = "not_contains"
 	NotEquals   ConditionOperator = "not_equals"
+	NotIn       ConditionOperator = "not_in"
 )
 
 // Valid indicates whether the value is a known member of the ConditionOperator enum.
@@ -154,6 +168,8 @@ func (e ConditionOperator) Valid() bool {
 		return true
 	case GreaterThan:
 		return true
+	case In:
+		return true
 	case IsEmpty:
 		return true
 	case IsNotEmpty:
@@ -163,6 +179,8 @@ func (e ConditionOperator) Valid() bool {
 	case NotContains:
 		return true
 	case NotEquals:
+		return true
+	case NotIn:
 		return true
 	default:
 		return false

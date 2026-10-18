@@ -49,6 +49,11 @@ func (m *mockTaskModifier) SetTaskDueDate(ctx context.Context, taskID, wsID uuid
 	return args.Error(0)
 }
 
+func (m *mockTaskModifier) SetTaskCompleted(ctx context.Context, taskID, wsID uuid.UUID, isCompleted bool) error {
+	args := m.Called(ctx, taskID, wsID, isCompleted)
+	return args.Error(0)
+}
+
 func (m *mockTaskModifier) ArchiveTask(ctx context.Context, taskID, wsID uuid.UUID) error {
 	args := m.Called(ctx, taskID, wsID)
 	return args.Error(0)
@@ -79,123 +84,31 @@ func TestEvaluator_EvaluateConditions(t *testing.T) {
 		task       *appAutomation.TaskInfo
 		wantMatch  bool
 	}{
-		{
-			name:       "empty conditions always match (AND logic)",
-			conditions: nil,
-			task:       baseTask,
-			wantMatch:  true,
-		},
-		{
-			name:       "empty conditions always match (OR logic)",
-			logicalOp:  domainAutomation.LogicOr,
-			conditions: nil,
-			task:       baseTask,
-			wantMatch:  true,
-		},
-		{
-			name: "priority equals match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "urgent"},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "priority equals case-insensitive match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "URGENT"},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "priority not_equals match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorNotEquals, Value: "low"},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "is_completed equals false match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldIsCompleted, Operator: domainAutomation.OperatorEquals, Value: false},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "is_completed is_empty match for false",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldIsCompleted, Operator: domainAutomation.OperatorIsEmpty},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "time_in_column_hours greater_than match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorGreaterThan, Value: 24},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "time_in_column_hours less_than reject",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorLessThan, Value: 20},
-			},
-			task:      baseTask,
-			wantMatch: false,
-		},
-		{
-			name: "tags contains match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorContains, Value: "backend"},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "tags not_contains reject",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorNotContains, Value: "bug"},
-			},
-			task:      baseTask,
-			wantMatch: false,
-		},
-		{
-			name: "tags is_empty reject for non-empty tags",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorIsEmpty},
-			},
-			task:      baseTask,
-			wantMatch: false,
-		},
-		{
-			name: "due_date is_not_empty match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldDueDate, Operator: domainAutomation.OperatorIsNotEmpty},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "due_date greater_than yesterday match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldDueDate, Operator: domainAutomation.OperatorGreaterThan, Value: yesterday.Format("2006-01-02")},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
-		{
-			name: "due_date less_than tomorrow match",
-			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldDueDate, Operator: domainAutomation.OperatorLessThan, Value: tomorrow.Format("2006-01-02")},
-			},
-			task:      baseTask,
-			wantMatch: true,
-		},
+		{name: "empty conditions always match (AND logic)", conditions: nil, task: baseTask, wantMatch: true},
+		{name: "empty conditions always match (OR logic)", logicalOp: domainAutomation.LogicOr, conditions: nil, task: baseTask, wantMatch: true},
+		{name: "priority equals match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "urgent"}}, task: baseTask, wantMatch: true},
+		{name: "priority equals case-insensitive match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "URGENT"}}, task: baseTask, wantMatch: true},
+		{name: "priority not_equals match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorNotEquals, Value: "low"}}, task: baseTask, wantMatch: true},
+		{name: "priority in list match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorIn, Value: []string{"urgent", "high"}}}, task: baseTask, wantMatch: true},
+		{name: "priority not_in list match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorNotIn, Value: "low,medium"}}, task: baseTask, wantMatch: true},
+		{name: "is_completed equals false match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldIsCompleted, Operator: domainAutomation.OperatorEquals, Value: false}}, task: baseTask, wantMatch: true},
+		{name: "is_completed is_empty match for false", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldIsCompleted, Operator: domainAutomation.OperatorIsEmpty}}, task: baseTask, wantMatch: true},
+		{name: "time_in_column_hours greater_than match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorGreaterThan, Value: 24}}, task: baseTask, wantMatch: true},
+		{name: "time_in_column_hours less_than reject", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorLessThan, Value: 20}}, task: baseTask, wantMatch: false},
+		{name: "tags contains match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorContains, Value: "backend"}}, task: baseTask, wantMatch: true},
+		{name: "tags not_contains reject", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorNotContains, Value: "bug"}}, task: baseTask, wantMatch: false},
+		{name: "tags in list match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorIn, Value: []string{"frontend", "backend"}}}, task: baseTask, wantMatch: true},
+		{name: "tags not_in list match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorNotIn, Value: "infra,ops"}}, task: baseTask, wantMatch: true},
+		{name: "tags is_empty reject for non-empty tags", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorIsEmpty}}, task: baseTask, wantMatch: false},
+		{name: "due_date is_not_empty match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDate, Operator: domainAutomation.OperatorIsNotEmpty}}, task: baseTask, wantMatch: true},
+		{name: "due_date greater_than yesterday match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDate, Operator: domainAutomation.OperatorGreaterThan, Value: yesterday.Format("2006-01-02")}}, task: baseTask, wantMatch: true},
+		{name: "due_date less_than tomorrow match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDate, Operator: domainAutomation.OperatorLessThan, Value: tomorrow.Format("2006-01-02")}}, task: baseTask, wantMatch: true},
+		{name: "due_date equals today preset match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDate, Operator: domainAutomation.OperatorEquals, Value: "today"}}, task: baseTask, wantMatch: true},
+		{name: "due_date less_than tomorrow preset match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDate, Operator: domainAutomation.OperatorLessThan, Value: "tomorrow"}}, task: baseTask, wantMatch: true},
+		{name: "due_date_status due_soon match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDateStatus, Operator: domainAutomation.OperatorEquals, Value: "due_soon"}}, task: baseTask, wantMatch: true},
+		{name: "due_date_status overdue match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDateStatus, Operator: domainAutomation.OperatorEquals, Value: "overdue"}}, task: &appAutomation.TaskInfo{DueDate: &yesterday}, wantMatch: true},
+		{name: "due_date_status no_due_date match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDateStatus, Operator: domainAutomation.OperatorEquals, Value: "no_due_date"}}, task: &appAutomation.TaskInfo{DueDate: nil}, wantMatch: true},
+		{name: "due_date_status on_track match", conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldDueDateStatus, Operator: domainAutomation.OperatorEquals, Value: "on_track"}}, task: &appAutomation.TaskInfo{DueDate: func() *time.Time { f := now.AddDate(0, 0, 5); return &f }()}, wantMatch: true},
 		{
 			name: "multiple conditions with AND logic: all pass",
 			conditions: []domainAutomation.Condition{
@@ -210,7 +123,7 @@ func TestEvaluator_EvaluateConditions(t *testing.T) {
 			name: "multiple conditions with AND logic: one fails -> reject",
 			conditions: []domainAutomation.Condition{
 				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "urgent"},
-				{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorGreaterThan, Value: 48}, // fails
+				{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorGreaterThan, Value: 48},
 				{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorContains, Value: "bug"},
 			},
 			task:      baseTask,
@@ -220,8 +133,8 @@ func TestEvaluator_EvaluateConditions(t *testing.T) {
 			name:      "multiple conditions with OR logic: first passes -> match",
 			logicalOp: domainAutomation.LogicOr,
 			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "urgent"}, // passes
-				{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorGreaterThan, Value: 48}, // fails
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "urgent"},
+				{Field: domainAutomation.ConditionFieldTimeInColumnHours, Operator: domainAutomation.OperatorGreaterThan, Value: 48},
 			},
 			task:      baseTask,
 			wantMatch: true,
@@ -230,8 +143,8 @@ func TestEvaluator_EvaluateConditions(t *testing.T) {
 			name:      "multiple conditions with OR logic: last passes -> match",
 			logicalOp: domainAutomation.LogicOr,
 			conditions: []domainAutomation.Condition{
-				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "low"}, // fails
-				{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorContains, Value: "bug"},    // passes
+				{Field: domainAutomation.ConditionFieldPriority, Operator: domainAutomation.OperatorEquals, Value: "low"},
+				{Field: domainAutomation.ConditionFieldTags, Operator: domainAutomation.OperatorContains, Value: "bug"},
 			},
 			task:      baseTask,
 			wantMatch: true,
@@ -364,5 +277,27 @@ func TestEvaluator_ExecuteRule(t *testing.T) {
 		err := eval.ExecuteRule(context.Background(), rule, task)
 		require.NoError(t, err)
 		mockMod.AssertNotCalled(t, "SetTaskPriority")
+	})
+
+	t.Run("executes Sprint 0.6.5 actions: mark_completed, mark_uncompleted, clear_due_date", func(t *testing.T) {
+		mockMod := new(mockTaskModifier)
+		eval := appAutomation.NewEvaluator(mockMod, nil)
+
+		mockMod.On("SetTaskCompleted", mock.Anything, taskID, wsID, true).Return(nil).Once()
+		mockMod.On("SetTaskCompleted", mock.Anything, taskID, wsID, false).Return(nil).Once()
+		mockMod.On("SetTaskDueDate", mock.Anything, taskID, wsID, (*time.Time)(nil)).Return(nil).Once()
+
+		rule := &domainAutomation.RuleDefinition{
+			Trigger: domainAutomation.Trigger{Type: domainAutomation.TriggerTaskEnteredColumn},
+			Actions: []domainAutomation.Action{
+				{Type: domainAutomation.ActionMarkCompleted},
+				{Type: domainAutomation.ActionMarkUncompleted},
+				{Type: domainAutomation.ActionClearDueDate},
+			},
+		}
+
+		err := eval.ExecuteRule(context.Background(), rule, task)
+		require.NoError(t, err)
+		mockMod.AssertExpectations(t)
 	})
 }

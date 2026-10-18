@@ -104,6 +104,7 @@ Condition:
         - due_date
         - time_in_column_hours
         - tags
+        - due_date_status
       example: "priority"
     operator:
       type: string
@@ -116,6 +117,8 @@ Condition:
         - is_not_empty
         - greater_than
         - less_than
+        - in
+        - not_in
       example: "equals"
     value:
       nullable: true
@@ -135,6 +138,9 @@ Action:
         - remove_tag
         - set_due_date
         - archive_task
+        - mark_completed
+        - mark_uncompleted
+        - clear_due_date
       example: "move_to_column"
     params:
       type: object

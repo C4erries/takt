@@ -79,6 +79,7 @@ type Querier interface {
 	ResetProjectTasksToInbox(ctx context.Context, arg ResetProjectTasksToInboxParams) error
 	SearchProjectsInWorkspace(ctx context.Context, arg SearchProjectsInWorkspaceParams) ([]Project, error)
 	SearchTasksInWorkspace(ctx context.Context, arg SearchTasksInWorkspaceParams) ([]Task, error)
+	SetTaskCompletion(ctx context.Context, arg SetTaskCompletionParams) (Task, error)
 	SetTaskDueDate(ctx context.Context, arg SetTaskDueDateParams) (Task, error)
 	SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Task, error)
 	SetTaskPriority(ctx context.Context, arg SetTaskPriorityParams) (Task, error)

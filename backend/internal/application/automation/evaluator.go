@@ -58,6 +58,8 @@ func (e *Evaluator) evaluateCondition(c domainAutomation.Condition, task *TaskIn
 		return evaluateBoolCondition(task.IsCompleted, c.Operator, c.Value)
 	case domainAutomation.ConditionFieldDueDate:
 		return evaluateDateCondition(task.DueDate, c.Operator, c.Value)
+	case domainAutomation.ConditionFieldDueDateStatus:
+		return evaluateDueDateStatus(task.DueDate, c.Operator, c.Value)
 	case domainAutomation.ConditionFieldTimeInColumnHours:
 		return evaluateNumericCondition(task.TimeInColumnHours, c.Operator, c.Value)
 	case domainAutomation.ConditionFieldTags:
@@ -65,6 +67,21 @@ func (e *Evaluator) evaluateCondition(c domainAutomation.Condition, task *TaskIn
 	default:
 		return false
 	}
+}
+
+func evaluateDueDateStatus(dueDate *time.Time, op string, expectedVal interface{}) bool {
+	if dueDate == nil {
+		return evaluateStringCondition("no_due_date", op, expectedVal)
+	}
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	due := dueDate.UTC().Truncate(24 * time.Hour)
+	status := "on_track"
+	if due.Before(today) {
+		status = "overdue"
+	} else if !due.After(today.AddDate(0, 0, 2)) {
+		status = "due_soon"
+	}
+	return evaluateStringCondition(status, op, expectedVal)
 }
 
 func evaluateStringCondition(actual string, op string, expectedVal interface{}) bool {
@@ -82,6 +99,18 @@ func evaluateStringCondition(actual string, op string, expectedVal interface{}) 
 		return actual == ""
 	case domainAutomation.OperatorIsNotEmpty:
 		return actual != ""
+	case domainAutomation.OperatorIn, domainAutomation.OperatorNotIn:
+		in := false
+		for _, item := range toStringSlice(expectedVal) {
+			if strings.EqualFold(actual, item) {
+				in = true
+				break
+			}
+		}
+		if op == domainAutomation.OperatorIn {
+			return in
+		}
+		return !in
 	default:
 		return false
 	}
@@ -124,14 +153,25 @@ func evaluateDateCondition(actual *time.Time, op string, expectedVal interface{}
 		return false
 	}
 
-	expStr := fmt.Sprint(expectedVal)
-	parsedExp, err := time.Parse("2006-01-02", expStr)
-	if err != nil {
-		parsedExp, err = time.Parse(time.RFC3339, expStr)
+	expStr := strings.ToLower(strings.TrimSpace(fmt.Sprint(expectedVal)))
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	var expDate time.Time
+	var err error
+
+	if expStr == "today" {
+		expDate = today
+	} else if expStr == "tomorrow" {
+		expDate = today.AddDate(0, 0, 1)
+	} else {
+		parsedExp, parseErr := time.Parse("2006-01-02", expStr)
+		if parseErr != nil {
+			parsedExp, parseErr = time.Parse(time.RFC3339, expStr)
+		}
+		err = parseErr
+		expDate = parsedExp.UTC().Truncate(24 * time.Hour)
 	}
 
 	actDate := actual.UTC().Truncate(24 * time.Hour)
-	expDate := parsedExp.UTC().Truncate(24 * time.Hour)
 
 	switch op {
 	case domainAutomation.OperatorEquals:
@@ -175,20 +215,25 @@ func evaluateTagsCondition(tags []string, op string, expectedVal interface{}) bo
 		return len(tags) > 0
 	}
 
-	exp := strings.ToLower(strings.TrimSpace(fmt.Sprint(expectedVal)))
-	found := false
+	expItems := toStringSlice(expectedVal)
+	hasIntersection := false
 	for _, t := range tags {
-		if strings.EqualFold(strings.TrimSpace(t), exp) {
-			found = true
+		for _, exp := range expItems {
+			if strings.EqualFold(strings.TrimSpace(t), exp) {
+				hasIntersection = true
+				break
+			}
+		}
+		if hasIntersection {
 			break
 		}
 	}
 
 	switch op {
-	case domainAutomation.OperatorEquals, domainAutomation.OperatorContains:
-		return found
-	case domainAutomation.OperatorNotEquals, domainAutomation.OperatorNotContains:
-		return !found
+	case domainAutomation.OperatorEquals, domainAutomation.OperatorContains, domainAutomation.OperatorIn:
+		return hasIntersection
+	case domainAutomation.OperatorNotEquals, domainAutomation.OperatorNotContains, domainAutomation.OperatorNotIn:
+		return !hasIntersection
 	default:
 		return false
 	}
@@ -198,18 +243,13 @@ func toFloat(val interface{}) float64 {
 	switch v := val.(type) {
 	case float64:
 		return v
-	case float32:
-		return float64(v)
 	case int:
-		return float64(v)
-	case int64:
 		return float64(v)
 	case string:
 		f, _ := strconv.ParseFloat(v, 64)
 		return f
-	default:
-		return 0
 	}
+	return 0
 }
 
 // ExecuteRule checks Cycle Guard, evaluates conditions, and runs actions sequentially.
@@ -242,47 +282,29 @@ func (e *Evaluator) executeAction(ctx context.Context, action domainAutomation.A
 	case domainAutomation.ActionMoveToColumn:
 		targetColIDStr := extractStringParam(action.Params, "target_column_id", "targetColumnId")
 		if targetColIDStr != "" {
-			targetColUUID, err := uuid.Parse(targetColIDStr)
-			if err == nil && targetColUUID != uuid.Nil {
+			if targetColUUID, err := uuid.Parse(targetColIDStr); err == nil && targetColUUID != uuid.Nil {
 				return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, &targetColUUID, task.ProjectID, 1000.0)
 			}
 		}
 
 	case domainAutomation.ActionSetPriority:
-		priority := extractStringParam(action.Params, "priority")
-		if priority != "" {
+		if priority := extractStringParam(action.Params, "priority"); priority != "" {
 			return e.taskModifier.SetTaskPriority(ctx, task.ID, task.WorkspaceID, priority)
 		}
 
 	case domainAutomation.ActionAddTag:
-		tagIDStr := extractStringParam(action.Params, "tag_id", "tagId")
-		tagName := extractStringParam(action.Params, "name", "tag_name")
-		var tagID *uuid.UUID
-		if tagIDStr != "" {
-			if parsed, err := uuid.Parse(tagIDStr); err == nil && parsed != uuid.Nil {
-				tagID = &parsed
-			}
-		}
-		return e.taskModifier.AddTagToTask(ctx, task.ID, task.WorkspaceID, tagID, tagName)
+		tid, name := extractTagParams(action.Params)
+		return e.taskModifier.AddTagToTask(ctx, task.ID, task.WorkspaceID, tid, name)
 
 	case domainAutomation.ActionRemoveTag:
-		tagIDStr := extractStringParam(action.Params, "tag_id", "tagId")
-		tagName := extractStringParam(action.Params, "name", "tag_name")
-		var tagID *uuid.UUID
-		if tagIDStr != "" {
-			if parsed, err := uuid.Parse(tagIDStr); err == nil && parsed != uuid.Nil {
-				tagID = &parsed
-			}
-		}
-		return e.taskModifier.RemoveTagFromTask(ctx, task.ID, task.WorkspaceID, tagID, tagName)
+		tid, name := extractTagParams(action.Params)
+		return e.taskModifier.RemoveTagFromTask(ctx, task.ID, task.WorkspaceID, tid, name)
 
 	case domainAutomation.ActionSetDueDate:
 		preset := extractStringParam(action.Params, "preset")
 		offsetDays := int(toFloat(action.Params["offset_days"]))
 		var dueDate *time.Time
-		now := time.Now().UTC()
-		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-
+		today := time.Now().UTC().Truncate(24 * time.Hour)
 		switch preset {
 		case "today":
 			dueDate = &today
@@ -301,9 +323,56 @@ func (e *Evaluator) executeAction(ctx context.Context, action domainAutomation.A
 
 	case domainAutomation.ActionArchiveTask:
 		return e.taskModifier.ArchiveTask(ctx, task.ID, task.WorkspaceID)
+
+	case domainAutomation.ActionMarkCompleted:
+		return e.taskModifier.SetTaskCompleted(ctx, task.ID, task.WorkspaceID, true)
+
+	case domainAutomation.ActionMarkUncompleted:
+		return e.taskModifier.SetTaskCompleted(ctx, task.ID, task.WorkspaceID, false)
+
+	case domainAutomation.ActionClearDueDate:
+		return e.taskModifier.SetTaskDueDate(ctx, task.ID, task.WorkspaceID, nil)
 	}
 
 	return nil
+}
+
+func extractTagParams(params map[string]interface{}) (*uuid.UUID, string) {
+	tagIDStr := extractStringParam(params, "tag_id", "tagId")
+	tagName := extractStringParam(params, "name", "tag_name")
+	if tagIDStr != "" {
+		if parsed, err := uuid.Parse(tagIDStr); err == nil && parsed != uuid.Nil {
+			return &parsed, tagName
+		}
+	}
+	return nil, tagName
+}
+
+func toStringSlice(val interface{}) []string {
+	if val == nil {
+		return nil
+	}
+	switch v := val.(type) {
+	case []string:
+		return v
+	case []interface{}:
+		res := make([]string, 0, len(v))
+		for _, item := range v {
+			res = append(res, strings.TrimSpace(fmt.Sprint(item)))
+		}
+		return res
+	case string:
+		parts := strings.Split(v, ",")
+		res := make([]string, 0, len(parts))
+		for _, p := range parts {
+			if s := strings.TrimSpace(p); s != "" {
+				res = append(res, s)
+			}
+		}
+		return res
+	default:
+		return []string{strings.TrimSpace(fmt.Sprint(val))}
+	}
 }
 
 func extractStringParam(params map[string]interface{}, keys ...string) string {

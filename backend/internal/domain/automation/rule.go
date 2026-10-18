@@ -29,6 +29,7 @@ const (
 	ConditionFieldPriority          = "priority"
 	ConditionFieldIsCompleted       = "is_completed"
 	ConditionFieldDueDate           = "due_date"
+	ConditionFieldDueDateStatus     = "due_date_status"
 	ConditionFieldTimeInColumnHours = "time_in_column_hours"
 	ConditionFieldTags              = "tags"
 )
@@ -37,6 +38,7 @@ var validConditionFields = map[string]bool{
 	ConditionFieldPriority:          true,
 	ConditionFieldIsCompleted:       true,
 	ConditionFieldDueDate:           true,
+	ConditionFieldDueDateStatus:     true,
 	ConditionFieldTimeInColumnHours: true,
 	ConditionFieldTags:              true,
 }
@@ -56,6 +58,8 @@ const (
 	OperatorIsNotEmpty  = "is_not_empty"
 	OperatorGreaterThan = "greater_than"
 	OperatorLessThan    = "less_than"
+	OperatorIn          = "in"
+	OperatorNotIn       = "not_in"
 )
 
 var validConditionOperators = map[string]bool{
@@ -67,6 +71,8 @@ var validConditionOperators = map[string]bool{
 	OperatorIsNotEmpty:  true,
 	OperatorGreaterThan: true,
 	OperatorLessThan:    true,
+	OperatorIn:          true,
+	OperatorNotIn:       true,
 }
 
 // IsValidConditionOperator validates if the condition operator is recognized.
@@ -76,21 +82,27 @@ func IsValidConditionOperator(op string) bool {
 
 // Valid Action types
 const (
-	ActionMoveToColumn = "move_to_column"
-	ActionSetPriority  = "set_priority"
-	ActionAddTag       = "add_tag"
-	ActionRemoveTag    = "remove_tag"
-	ActionSetDueDate   = "set_due_date"
-	ActionArchiveTask  = "archive_task"
+	ActionMoveToColumn    = "move_to_column"
+	ActionSetPriority     = "set_priority"
+	ActionAddTag          = "add_tag"
+	ActionRemoveTag       = "remove_tag"
+	ActionSetDueDate      = "set_due_date"
+	ActionArchiveTask     = "archive_task"
+	ActionMarkCompleted   = "mark_completed"
+	ActionMarkUncompleted = "mark_uncompleted"
+	ActionClearDueDate    = "clear_due_date"
 )
 
 var validActions = map[string]bool{
-	ActionMoveToColumn: true,
-	ActionSetPriority:  true,
-	ActionAddTag:       true,
-	ActionRemoveTag:    true,
-	ActionSetDueDate:   true,
-	ActionArchiveTask:  true,
+	ActionMoveToColumn:    true,
+	ActionSetPriority:     true,
+	ActionAddTag:          true,
+	ActionRemoveTag:       true,
+	ActionSetDueDate:      true,
+	ActionArchiveTask:     true,
+	ActionMarkCompleted:   true,
+	ActionMarkUncompleted: true,
+	ActionClearDueDate:    true,
 }
 
 // IsValidActionType validates if the action type is recognized.

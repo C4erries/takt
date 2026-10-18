@@ -48,6 +48,7 @@ type TaskModifier interface {
 	AddTagToTask(ctx context.Context, taskID, workspaceID uuid.UUID, tagID *uuid.UUID, tagName string) error
 	RemoveTagFromTask(ctx context.Context, taskID, workspaceID uuid.UUID, tagID *uuid.UUID, tagName string) error
 	SetTaskDueDate(ctx context.Context, taskID, workspaceID uuid.UUID, dueDate *time.Time) error
+	SetTaskCompleted(ctx context.Context, taskID, workspaceID uuid.UUID, isCompleted bool) error
 	ArchiveTask(ctx context.Context, taskID, workspaceID uuid.UUID) error
 }
 

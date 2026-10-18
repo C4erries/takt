@@ -19,7 +19,8 @@ export type AutomationConditionField =
   | 'is_completed'
   | 'due_date'
   | 'time_in_column_hours'
-  | 'tags';
+  | 'tags'
+  | 'due_date_status';
 
 export type AutomationConditionOperator =
   | 'equals'
@@ -29,7 +30,9 @@ export type AutomationConditionOperator =
   | 'is_empty'
   | 'is_not_empty'
   | 'greater_than'
-  | 'less_than';
+  | 'less_than'
+  | 'in'
+  | 'not_in';
 
 export interface AutomationCondition {
   field: AutomationConditionField | string;
@@ -43,7 +46,10 @@ export type AutomationActionType =
   | 'add_tag'
   | 'remove_tag'
   | 'set_due_date'
-  | 'archive_task';
+  | 'archive_task'
+  | 'mark_completed'
+  | 'mark_uncompleted'
+  | 'clear_due_date';
 
 export interface AutomationAction {
   type: AutomationActionType | string;

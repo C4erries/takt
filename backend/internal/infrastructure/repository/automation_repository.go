@@ -111,6 +111,7 @@ func (r *AutomationRepository) CreateAutomation(ctx context.Context, a *domainAu
 	row, err := getQuerier(ctx, r.queries).CreateAutomation(ctx, sqlc.CreateAutomationParams{
 		WorkspaceID:    uuidToPg(a.WorkspaceID),
 		BoardID:        uuidPtrToPg(a.BoardID),
+		ColumnID:       uuidPtrToPg(a.ColumnID),
 		Name:           a.Name,
 		TriggerType:    a.TriggerType,
 		ConditionsJson: a.ConditionsJSON,

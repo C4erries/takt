@@ -56,6 +56,15 @@ export const CONDITION_OPERATORS: { operator: AutomationConditionOperator; label
   { operator: 'not_in', label: 'ни один из' },
 ];
 
+export const FIELD_OPERATORS_MAP: Record<AutomationConditionField, AutomationConditionOperator[]> = {
+  time_in_column_hours: ['greater_than', 'less_than', 'equals'],
+  is_completed: ['equals', 'not_equals'],
+  priority: ['equals', 'not_equals', 'in', 'not_in'],
+  due_date_status: ['equals', 'not_equals', 'in'],
+  due_date: ['equals', 'greater_than', 'less_than', 'is_not_empty', 'is_empty'],
+  tags: ['contains', 'not_contains', 'in', 'is_not_empty', 'is_empty'],
+};
+
 export const ACTION_TYPES: { type: AutomationActionType; label: string; desc: string }[] = [
   { type: 'move_to_column', label: 'Переместить в колонку', desc: 'Перенос в целевую колонку' },
   { type: 'set_priority', label: 'Установить приоритет', desc: 'Изменить приоритет задачи' },
@@ -275,7 +284,19 @@ export function useRuleBuilder({
   };
   const handleRemoveCondition = (index: number) => setConditions((prev) => prev.filter((_, i) => i !== index));
   const handleUpdateCondition = (index: number, patch: Partial<AutomationCondition>) => {
-    setConditions((prev) => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+    setConditions((prev) =>
+      prev.map((c, i) => {
+        if (i !== index) return c;
+        const updated = { ...c, ...patch };
+        if (patch.field && patch.field !== c.field) {
+          const validOps = FIELD_OPERATORS_MAP[patch.field as AutomationConditionField] || ['equals'];
+          if (!validOps.includes(updated.operator as AutomationConditionOperator)) {
+            updated.operator = validOps[0];
+          }
+        }
+        return updated;
+      })
+    );
   };
 
   const handleAddAction = () => {
@@ -290,15 +311,16 @@ export function useRuleBuilder({
 
   const handleSave = async () => {
     if (!ruleName.trim() || actions.length === 0) return;
+    const effectiveColumnId = prefilledColumnId || triggerColumnId || null;
     const triggerParams: Record<string, unknown> = {};
     if (
       triggerType === 'task_entered_column' ||
       triggerType === 'task_completed_in_column' ||
       triggerType === 'scheduled_sweep'
     ) {
-      if (triggerColumnId) triggerParams.column_id = triggerColumnId;
+      if (effectiveColumnId) triggerParams.column_id = effectiveColumnId;
     } else if (triggerType === 'column_sla_timer') {
-      if (triggerColumnId) triggerParams.column_id = triggerColumnId;
+      if (effectiveColumnId) triggerParams.column_id = effectiveColumnId;
       triggerParams.duration_hours = Number(triggerSlaHours) || 24;
     } else if (triggerType === 'task_field_changed') {
       triggerParams.field = triggerField;
@@ -314,7 +336,7 @@ export function useRuleBuilder({
           data: {
             name: ruleName.trim(),
             triggerType,
-            columnId: triggerColumnId || null,
+            columnId: effectiveColumnId,
             conditionsJson: { conditions, logical_operator: logicalOperator },
             actionsJson: { actions },
             ruleDefinition,
@@ -325,7 +347,7 @@ export function useRuleBuilder({
         const created = await createMutation.mutateAsync({
           name: ruleName.trim(),
           triggerType,
-          columnId: triggerColumnId || null,
+          columnId: effectiveColumnId,
           conditionsJson: { conditions, logical_operator: logicalOperator },
           actionsJson: { actions },
           isEnabled: true,

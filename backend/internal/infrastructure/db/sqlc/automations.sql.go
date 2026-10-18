@@ -15,6 +15,7 @@ const createAutomation = `-- name: CreateAutomation :one
 INSERT INTO automations (
     workspace_id,
     board_id,
+    column_id,
     name,
     trigger_type,
     conditions_json,
@@ -22,7 +23,7 @@ INSERT INTO automations (
     is_enabled,
     rule_definition
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
 RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actions_json, is_enabled, created_at, updated_at, column_id, rule_definition
 `
@@ -30,6 +31,7 @@ RETURNING id, workspace_id, board_id, name, trigger_type, conditions_json, actio
 type CreateAutomationParams struct {
 	WorkspaceID    pgtype.UUID `json:"workspace_id"`
 	BoardID        pgtype.UUID `json:"board_id"`
+	ColumnID       pgtype.UUID `json:"column_id"`
 	Name           string      `json:"name"`
 	TriggerType    string      `json:"trigger_type"`
 	ConditionsJson []byte      `json:"conditions_json"`
@@ -42,6 +44,7 @@ func (q *Queries) CreateAutomation(ctx context.Context, arg CreateAutomationPara
 	row := q.db.QueryRow(ctx, createAutomation,
 		arg.WorkspaceID,
 		arg.BoardID,
+		arg.ColumnID,
 		arg.Name,
 		arg.TriggerType,
 		arg.ConditionsJson,

@@ -41,6 +41,7 @@ RETURNING *;
 INSERT INTO automations (
     workspace_id,
     board_id,
+    column_id,
     name,
     trigger_type,
     conditions_json,
@@ -48,7 +49,7 @@ INSERT INTO automations (
     is_enabled,
     rule_definition
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
 RETURNING *;
 

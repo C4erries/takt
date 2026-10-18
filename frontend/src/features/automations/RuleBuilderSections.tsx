@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button, Input, Badge } from '@/shared/components/ui';
 import type {
@@ -16,7 +16,9 @@ import {
   ACTION_TYPES,
   PRIORITIES,
   DUE_DATE_STATUS_OPTIONS,
+  FIELD_OPERATORS_MAP,
 } from './useRuleBuilder';
+import { useWorkspaceTagsQuery } from '@/entities/task';
 import { cn } from '@/shared/lib/cn';
 
 export interface TriggerSectionProps {
@@ -32,69 +34,132 @@ export interface TriggerSectionProps {
 }
 
 export const TriggerSection: React.FC<TriggerSectionProps> = ({
-  triggerType,
-  setTriggerType,
-  triggerColumnId,
-  setTriggerColumnId,
-  triggerSlaHours,
-  setTriggerSlaHours,
-  triggerField,
-  setTriggerField,
-  allColumns,
-}) => {
-  const isColTrigger =
-    triggerType === 'task_entered_column' ||
-    triggerType === 'task_completed_in_column' ||
-    triggerType === 'column_sla_timer' ||
-    triggerType === 'scheduled_sweep';
-
-  return (
-    <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2.5">
-      <div className="flex items-center gap-2">
-        <span className="w-5 h-5 rounded-full bg-accent-solid text-white text-[10px] font-bold flex items-center justify-center shrink-0">1</span>
-        <span className="text-xs font-semibold uppercase tracking-wider text-primary">КОГДА (Триггер события)</span>
+  triggerType, setTriggerType, triggerColumnId, setTriggerColumnId,
+  triggerSlaHours, setTriggerSlaHours, triggerField, setTriggerField, allColumns,
+}) => (
+  <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2.5">
+    <div className="flex items-center gap-2">
+      <span className="w-5 h-5 rounded-full bg-accent-solid text-white text-[10px] font-bold flex items-center justify-center shrink-0">1</span>
+      <span className="text-xs font-semibold uppercase tracking-wider text-primary">КОГДА (Триггер события)</span>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="space-y-1">
+        <label className="text-[10px] font-mono text-muted">Событие:</label>
+        <select value={triggerType} onChange={(e) => setTriggerType(e.target.value as AutomationTriggerType)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
+          {TRIGGER_OPTIONS.map((t) => (<option key={t.type} value={t.type}>{t.label}</option>))}
+        </select>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {['task_entered_column', 'task_completed_in_column', 'column_sla_timer', 'scheduled_sweep'].includes(triggerType) && (
         <div className="space-y-1">
-          <label className="text-[10px] font-mono text-muted">Событие:</label>
-          <select value={triggerType} onChange={(e) => setTriggerType(e.target.value as AutomationTriggerType)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
-            {TRIGGER_OPTIONS.map((t) => (<option key={t.type} value={t.type}>{t.label}</option>))}
+          <label className="text-[10px] font-mono text-muted">В колонке:</label>
+          <select value={triggerColumnId} onChange={(e) => setTriggerColumnId(e.target.value)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
+            {allColumns.length === 0 && <option value="">Любая колонка</option>}
+            {allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
           </select>
         </div>
-        {isColTrigger && (
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono text-muted">В колонке:</label>
-            <select value={triggerColumnId} onChange={(e) => setTriggerColumnId(e.target.value)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
-              {allColumns.length === 0 && <option value="">Любая колонка</option>}
-              {allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-            </select>
+      )}
+      {triggerType === 'column_sla_timer' && (
+        <div className="space-y-1">
+          <label className="text-[10px] font-mono text-muted">Порог нахождения:</label>
+          <div className="flex items-center gap-2">
+            <Input type="number" min={1} max={720} value={triggerSlaHours} onChange={(e) => setTriggerSlaHours(Number(e.target.value) || 24)} className="text-xs bg-surface border-subtle h-8" />
+            <span className="text-xs text-muted">часов</span>
           </div>
-        )}
-        {triggerType === 'column_sla_timer' && (
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono text-muted">Порог нахождения:</label>
-            <div className="flex items-center gap-2">
-              <Input type="number" min={1} max={720} value={triggerSlaHours} onChange={(e) => setTriggerSlaHours(Number(e.target.value) || 24)} className="text-xs bg-surface border-subtle h-8" />
-              <span className="text-xs text-muted">часов</span>
-            </div>
-          </div>
-        )}
-        {triggerType === 'task_field_changed' && (
-          <div className="space-y-1">
-            <label className="text-[10px] font-mono text-muted">Поле задачи:</label>
-            <select value={triggerField} onChange={(e) => setTriggerField(e.target.value)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
-              <option value="priority">Приоритет</option>
-              <option value="due_date">Дедлайн</option>
-              <option value="status">Статус</option>
-            </select>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
+      {triggerType === 'task_field_changed' && (
+        <div className="space-y-1">
+          <label className="text-[10px] font-mono text-muted">Поле задачи:</label>
+          <select value={triggerField} onChange={(e) => setTriggerField(e.target.value)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
+            <option value="priority">Приоритет</option><option value="due_date">Дедлайн</option><option value="status">Статус</option>
+          </select>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const TagAutocomplete: React.FC<{
+  value: string; onChange: (val: string) => void; workspaceId?: string; placeholder?: string; allowCreate?: boolean;
+}> = ({ value, onChange, workspaceId, placeholder = 'Имя тега...', allowCreate = false }) => {
+  const { data: allTags = [] } = useWorkspaceTagsQuery(workspaceId);
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState(value);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [isOpen]);
+
+  const filtered = allTags.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()));
+  const exact = allTags.some((t) => t.name.toLowerCase() === query.trim().toLowerCase());
+
+  return (
+    <div ref={containerRef} className="relative flex-1">
+      <input
+        type="text" value={query} onFocus={() => setIsOpen(true)}
+        onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setIsOpen(true); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (filtered[0]) { onChange(filtered[0].name); setQuery(filtered[0].name); setIsOpen(false); }
+            else if (allowCreate && query.trim()) { onChange(query.trim()); setIsOpen(false); }
+          }
+        }}
+        placeholder={placeholder}
+        className="w-full bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary focus:outline-none"
+      />
+      {isOpen && (
+        <div className="absolute left-0 top-full mt-1 w-full max-h-36 overflow-y-auto bg-surface border border-subtle rounded-lg shadow-washi-sm z-50 p-1 text-xs space-y-0.5">
+          {filtered.map((t) => (
+            <button key={t.id} type="button" onClick={() => { onChange(t.name); setQuery(t.name); setIsOpen(false); }} className="w-full text-left px-2 py-1 rounded hover:bg-canvas text-primary transition-colors flex items-center justify-between">
+              <span>#{t.name}</span>
+            </button>
+          ))}
+          {filtered.length === 0 && !allowCreate && <p className="px-2 py-1 text-[11px] text-muted italic">Теги не найдены</p>}
+          {allowCreate && query.trim() && !exact && (
+            <button type="button" onClick={() => { onChange(query.trim()); setIsOpen(false); }} className="w-full text-left px-2 py-1 rounded hover:bg-canvas text-accent-solid font-medium transition-colors">
+              ✨ Создать тег «{query.trim()}»
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
 
-const ConditionValuePicker: React.FC<{ cond: AutomationCondition; onUpdate: (p: Partial<AutomationCondition>) => void }> = ({ cond, onUpdate }) => {
+const MultiTagAutocomplete: React.FC<{
+  value: string[] | string; onChange: (val: string[]) => void; workspaceId?: string;
+}> = ({ value, onChange, workspaceId }) => {
+  const selected = Array.isArray(value) ? value : typeof value === 'string' && value ? value.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const addTag = (name: string) => { if (name && !selected.includes(name)) onChange([...selected, name]); };
+  const removeTag = (name: string) => onChange(selected.filter((s) => s !== name));
+
+  return (
+    <div className="flex-1 flex flex-wrap items-center gap-1">
+      {selected.map((tag) => (
+        <span key={tag} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-accent-surface/60 border border-subtle text-primary">
+          <span>{tag}</span>
+          <button type="button" onClick={() => removeTag(tag)} className="text-muted hover:text-primary">✕</button>
+        </span>
+      ))}
+      <TagAutocomplete value="" onChange={addTag} workspaceId={workspaceId} placeholder="+ тег..." allowCreate />
+    </div>
+  );
+};
+
+const ConditionValuePicker: React.FC<{
+  cond: AutomationCondition; onUpdate: (p: Partial<AutomationCondition>) => void; workspaceId?: string;
+}> = ({ cond, onUpdate, workspaceId }) => {
   if (cond.operator === 'is_empty' || cond.operator === 'is_not_empty') return null;
 
   if (cond.field === 'is_completed') {
@@ -121,14 +186,11 @@ const ConditionValuePicker: React.FC<{ cond: AutomationCondition; onUpdate: (p: 
       const toggle = (val: string) => onUpdate({ value: selected.includes(val) ? selected.filter((v) => v !== val) : [...selected, val] });
       return (
         <div className="flex items-center gap-1 flex-wrap flex-1">
-          {PRIORITIES.map((p) => {
-            const isSel = selected.includes(p.value);
-            return (
-              <button key={p.value} type="button" onClick={() => toggle(p.value)} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', isSel ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>
-                {isSel ? `✓ ${p.label}` : p.label}
-              </button>
-            );
-          })}
+          {PRIORITIES.map((p) => (
+            <button key={p.value} type="button" onClick={() => toggle(p.value)} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', selected.includes(p.value) ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>
+              {selected.includes(p.value) ? `✓ ${p.label}` : p.label}
+            </button>
+          ))}
         </div>
       );
     }
@@ -146,9 +208,7 @@ const ConditionValuePicker: React.FC<{ cond: AutomationCondition; onUpdate: (p: 
       <div className="flex items-center gap-1 flex-wrap flex-1">
         <div className="flex items-center gap-1">
           {presets.map((pr) => (
-            <button key={pr.id} type="button" onClick={() => onUpdate({ value: pr.id })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', val === pr.id ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>
-              {pr.l}
-            </button>
+            <button key={pr.id} type="button" onClick={() => onUpdate({ value: pr.id })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', val === pr.id ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>{pr.l}</button>
           ))}
         </div>
         <input type="date" value={val.match(/^\d{4}-\d{2}-\d{2}$/) ? val : ''} onChange={(e) => onUpdate({ value: e.target.value })} className="bg-canvas/50 border border-subtle rounded px-1.5 py-0.5 text-[11px] text-primary" />
@@ -161,9 +221,7 @@ const ConditionValuePicker: React.FC<{ cond: AutomationCondition; onUpdate: (p: 
     return (
       <div className="flex items-center gap-1 flex-wrap flex-1">
         {[24, 48, 72].map((h) => (
-          <button key={h} type="button" onClick={() => onUpdate({ value: h })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', hours === h ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>
-            {h} ч
-          </button>
+          <button key={h} type="button" onClick={() => onUpdate({ value: h })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', hours === h ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>{h} ч</button>
         ))}
         <input type="number" min={1} max={720} value={hours} onChange={(e) => onUpdate({ value: Number(e.target.value) || 24 })} className="w-14 bg-canvas/50 border border-subtle rounded px-1.5 py-0.5 text-xs text-primary" />
         <span className="text-[10px] text-muted">ч</span>
@@ -171,8 +229,15 @@ const ConditionValuePicker: React.FC<{ cond: AutomationCondition; onUpdate: (p: 
     );
   }
 
+  if (cond.field === 'tags') {
+    if (cond.operator === 'in') {
+      return <MultiTagAutocomplete value={cond.value as string[] | string} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} />;
+    }
+    return <TagAutocomplete value={String(cond.value || '')} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} placeholder="Тег..." />;
+  }
+
   return (
-    <input type="text" value={String(cond.value || '')} onChange={(e) => onUpdate({ value: e.target.value })} placeholder={cond.operator === 'in' || cond.operator === 'not_in' ? 'тег1, тег2...' : 'Значение...'} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1 focus:outline-none" />
+    <input type="text" value={String(cond.value || '')} onChange={(e) => onUpdate({ value: e.target.value })} placeholder="Значение..." className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1 focus:outline-none" />
   );
 };
 
@@ -183,15 +248,11 @@ export interface ConditionsSectionProps {
   onAdd: () => void;
   onRemove: (idx: number) => void;
   onUpdate: (idx: number, patch: Partial<AutomationCondition>) => void;
+  workspaceId?: string;
 }
 
 export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
-  conditions,
-  logicalOperator = 'and',
-  onLogicalOperatorChange,
-  onAdd,
-  onRemove,
-  onUpdate,
+  conditions, logicalOperator = 'and', onLogicalOperatorChange, onAdd, onRemove, onUpdate, workspaceId,
 }) => (
   <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2.5">
     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -217,49 +278,47 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
       <p className="text-xs text-muted italic px-2 py-1 bg-canvas/40 rounded-lg border border-subtle/40">Действие выполняется всегда без дополнительных условий.</p>
     ) : (
       <div className="space-y-2">
-        {conditions.map((cond, index) => (
-          <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-subtle text-xs flex-wrap sm:flex-nowrap">
-            {index === 0 ? (
-              <span className="text-[10px] font-mono text-muted shrink-0 w-10 text-center uppercase">ЕСЛИ</span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onLogicalOperatorChange?.(logicalOperator === 'and' ? 'or' : 'and')}
-                className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-subtle bg-accent-surface/40 hover:bg-accent-surface text-primary shrink-0 w-12 text-center transition-colors flex items-center justify-center gap-0.5"
-                title="Переключить связку (И / ИЛИ)"
+        {conditions.map((cond, index) => {
+          const validOps = FIELD_OPERATORS_MAP[cond.field as AutomationConditionField] || ['equals'];
+          const availableOperators = CONDITION_OPERATORS.filter((op) => validOps.includes(op.operator));
+
+          return (
+            <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-subtle text-xs flex-wrap sm:flex-nowrap">
+              {index === 0 ? (
+                <span className="text-[10px] font-mono text-muted shrink-0 w-10 text-center uppercase">ЕСЛИ</span>
+              ) : (
+                <button type="button" onClick={() => onLogicalOperatorChange?.(logicalOperator === 'and' ? 'or' : 'and')} className="text-[10px] font-mono px-1.5 py-0.5 rounded border border-subtle bg-accent-surface/40 hover:bg-accent-surface text-primary shrink-0 w-12 text-center transition-colors flex items-center justify-center gap-0.5" title="Переключить связку (И / ИЛИ)">
+                  <span>{logicalOperator === 'or' ? 'ИЛИ' : 'И'}</span>
+                  <span className="text-[8px] text-muted">▾</span>
+                </button>
+              )}
+
+              <select
+                value={cond.field}
+                onChange={(e) => {
+                  const f = e.target.value as AutomationConditionField;
+                  const fValidOps = FIELD_OPERATORS_MAP[f] || ['equals'];
+                  const nextOp = fValidOps.includes(cond.operator as AutomationConditionOperator) ? cond.operator : fValidOps[0];
+                  const defVal = f === 'is_completed' ? true : f === 'due_date_status' ? 'overdue' : f === 'priority' ? 'high' : '';
+                  onUpdate(index, { field: f, operator: nextOp, value: defVal });
+                }}
+                className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary"
               >
-                <span>{logicalOperator === 'or' ? 'ИЛИ' : 'И'}</span>
-                <span className="text-[8px] text-muted">▾</span>
+                {CONDITION_FIELDS.map((f) => (<option key={f.field} value={f.field}>{f.label}</option>))}
+              </select>
+
+              <select value={cond.operator} onChange={(e) => onUpdate(index, { operator: e.target.value as AutomationConditionOperator })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary">
+                {availableOperators.map((op) => (<option key={op.operator} value={op.operator}>{op.label}</option>))}
+              </select>
+
+              <ConditionValuePicker cond={cond} onUpdate={(patch) => onUpdate(index, patch)} workspaceId={workspaceId} />
+
+              <button type="button" onClick={() => onRemove(index)} className="text-muted hover:text-primary p-1 rounded transition-colors shrink-0 ml-auto sm:ml-0" title="Удалить условие">
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
-            )}
-
-            <select
-              value={cond.field}
-              onChange={(e) => {
-                const f = e.target.value as AutomationConditionField;
-                const defVal = f === 'is_completed' ? true : f === 'due_date_status' ? 'overdue' : f === 'priority' ? 'high' : '';
-                onUpdate(index, { field: f, value: defVal });
-              }}
-              className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary"
-            >
-              {CONDITION_FIELDS.map((f) => (<option key={f.field} value={f.field}>{f.label}</option>))}
-            </select>
-
-            <select
-              value={cond.operator}
-              onChange={(e) => onUpdate(index, { operator: e.target.value as AutomationConditionOperator })}
-              className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary"
-            >
-              {CONDITION_OPERATORS.map((op) => (<option key={op.operator} value={op.operator}>{op.label}</option>))}
-            </select>
-
-            <ConditionValuePicker cond={cond} onUpdate={(patch) => onUpdate(index, patch)} />
-
-            <button type="button" onClick={() => onRemove(index)} className="text-muted hover:text-primary p-1 rounded transition-colors shrink-0 ml-auto sm:ml-0" title="Удалить условие">
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     )}
   </div>
@@ -271,14 +330,11 @@ export interface ActionsSectionProps {
   onRemove: (idx: number) => void;
   onUpdate: (idx: number, patch: Partial<AutomationAction>) => void;
   allColumns: { id: string; name: string }[];
+  workspaceId?: string;
 }
 
 export const ActionsSection: React.FC<ActionsSectionProps> = ({
-  actions,
-  onAdd,
-  onRemove,
-  onUpdate,
-  allColumns,
+  actions, onAdd, onRemove, onUpdate, allColumns, workspaceId,
 }) => (
   <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2.5">
     <div className="flex items-center justify-between">
@@ -302,30 +358,23 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
 
           {act.type === 'move_to_column' && (
             <select value={String(act.params?.target_column_id || '')} onChange={(e) => onUpdate(index, { params: { ...act.params, target_column_id: e.target.value } })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
-              <option value="">Выберите колонку...</option>
-              {allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              <option value="">Выберите колонку...</option>{allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           )}
-
           {act.type === 'set_priority' && (
             <select value={String(act.params?.priority || 'high')} onChange={(e) => onUpdate(index, { params: { ...act.params, priority: e.target.value } })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
               {PRIORITIES.map((p) => (<option key={p.value} value={p.value}>{p.label}</option>))}
             </select>
           )}
-
-          {(act.type === 'add_tag' || act.type === 'remove_tag') && (
-            <input type="text" value={String(act.params?.name || '')} onChange={(e) => onUpdate(index, { params: { ...act.params, name: e.target.value } })} placeholder="Имя тега (напр. @бэкенд)" className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1 focus:outline-none" />
-          )}
-
+          {act.type === 'add_tag' && (<TagAutocomplete value={String(act.params?.name || '')} onChange={(val) => onUpdate(index, { params: { ...act.params, name: val } })} workspaceId={workspaceId} placeholder="Имя тега (напр. @бэкенд)" allowCreate />)}
+          {act.type === 'remove_tag' && (<TagAutocomplete value={String(act.params?.name || '')} onChange={(val) => onUpdate(index, { params: { ...act.params, name: val } })} workspaceId={workspaceId} placeholder="Выберите тег для снятия" allowCreate={false} />)}
           {act.type === 'set_due_date' && (
             <select value={String(act.params?.preset || 'today')} onChange={(e) => onUpdate(index, { params: { ...act.params, preset: e.target.value } })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
-              <option value="today">Сегодня</option>
-              <option value="tomorrow">Завтра</option>
-              <option value="clear">Очистить срок</option>
+              <option value="today">Сегодня</option><option value="tomorrow">Завтра</option><option value="clear">Очистить срок</option>
             </select>
           )}
 
-          {(act.type === 'mark_completed' || act.type === 'mark_uncompleted' || act.type === 'clear_due_date' || act.type === 'archive_task') && (
+          {['mark_completed', 'mark_uncompleted', 'clear_due_date', 'archive_task'].includes(act.type) && (
             <span className="text-[11px] text-muted italic flex-1 px-1">Параметры не требуются</span>
           )}
 

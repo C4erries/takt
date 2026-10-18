@@ -123,6 +123,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
           onAdd={handleAddCondition}
           onRemove={handleRemoveCondition}
           onUpdate={handleUpdateCondition}
+          workspaceId={workspaceId}
         />
 
         {/* STEP 3: THEN */}
@@ -132,6 +133,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
           onRemove={handleRemoveAction}
           onUpdate={handleUpdateAction}
           allColumns={allColumns}
+          workspaceId={workspaceId}
         />
 
         {/* Action Buttons */}

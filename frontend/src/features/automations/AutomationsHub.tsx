@@ -12,11 +12,12 @@ import {
   useAutomationsQuery,
   useToggleAutomationMutation,
   useDeleteAutomationMutation,
+  useCreateAutomationMutation,
   type Automation,
 } from '@/entities/automation';
 import { DEMO_COLUMNS, type Column } from '@/entities/project';
 import { AutomationCard } from './AutomationCard';
-import { RuleBuilderModal } from './RuleBuilderModal';
+import { RuleBuilderModal, RuleDetailModal } from './RuleBuilderModal';
 
 export interface AutomationsHubProps {
   workspaceId?: string;
@@ -29,9 +30,12 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
   const { data: automations = [], isLoading, isError, error, refetch } = useAutomationsQuery(workspaceId);
   const toggleMutation = useToggleAutomationMutation(workspaceId);
   const deleteMutation = useDeleteAutomationMutation(workspaceId);
+  const createMutation = useCreateAutomationMutation(workspaceId);
 
   const [filter, setFilter] = useState<FilterCategory>('all');
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [detailRule, setDetailRule] = useState<Automation | null>(null);
+  const [editingRule, setEditingRule] = useState<Automation | null>(null);
 
   // Collect columns from cache or fallback to default project columns
   const cachedCols = queryClient
@@ -58,6 +62,24 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
     deleteMutation.mutate(id);
   };
 
+  const handleDuplicate = (rule: Automation) => {
+    createMutation.mutate({
+      name: `${rule.name} (копия)`,
+      triggerType: rule.triggerType,
+      boardId: rule.boardId,
+      columnId: rule.columnId,
+      conditionsJson: rule.conditionsJson,
+      actionsJson: rule.actionsJson,
+      isEnabled: rule.isEnabled,
+      ruleDefinition: rule.ruleDefinition,
+    });
+  };
+
+  const handleEdit = (rule: Automation) => {
+    setEditingRule(rule);
+    setIsBuilderOpen(true);
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden p-6 md:p-8 space-y-5">
       {/* Header */}
@@ -80,7 +102,10 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
           <Button
             variant="solid"
             size="sm"
-            onClick={() => setIsBuilderOpen(true)}
+            onClick={() => {
+              setEditingRule(null);
+              setIsBuilderOpen(true);
+            }}
             leftIcon={<Plus className="w-3.5 h-3.5" />}
           >
             Собрать правило
@@ -152,7 +177,14 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
             title="Нет активных правил автоматизации"
             description="Создайте первое Low-Code правило для автоматизации переноса задач, смены приоритетов или SLA таймеров"
             action={
-              <Button variant="solid" size="sm" onClick={() => setIsBuilderOpen(true)}>
+              <Button
+                variant="solid"
+                size="sm"
+                onClick={() => {
+                  setEditingRule(null);
+                  setIsBuilderOpen(true);
+                }}
+              >
                 Собрать правило
               </Button>
             }
@@ -172,7 +204,11 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
                 automation={auto}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
+                onDetail={(r) => setDetailRule(r)}
+                onEdit={handleEdit}
+                onDuplicate={handleDuplicate}
                 columnName={col?.name}
+                allColumns={allColumns}
               />
             );
           })}
@@ -182,9 +218,24 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
       {/* Rule Builder Modal */}
       <RuleBuilderModal
         isOpen={isBuilderOpen}
-        onClose={() => setIsBuilderOpen(false)}
+        onClose={() => {
+          setIsBuilderOpen(false);
+          setEditingRule(null);
+        }}
         workspaceId={workspaceId}
         allColumns={allColumns}
+        mode={editingRule ? 'edit' : 'create'}
+        initialRule={editingRule}
+      />
+
+      {/* Rule Detail Modal */}
+      <RuleDetailModal
+        isOpen={Boolean(detailRule)}
+        onClose={() => setDetailRule(null)}
+        rule={detailRule}
+        allColumns={allColumns}
+        onEdit={handleEdit}
+        onDuplicate={handleDuplicate}
       />
     </div>
   );

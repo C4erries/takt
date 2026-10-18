@@ -1,14 +1,23 @@
 import React from 'react';
-import { Zap, Clock, Sparkles, ArrowRight, Trash2 } from 'lucide-react';
-import { Badge } from '@/shared/components/ui';
+import { Zap, Clock, Sparkles, ArrowRight, Trash2, Pencil, Copy } from 'lucide-react';
+import { Badge, Button } from '@/shared/components/ui';
 import type { Automation } from '@/entities/automation';
 import { cn } from '@/shared/lib/cn';
+import {
+  formatTriggerLabel,
+  formatConditionLabel,
+  formatActionLabel,
+} from './useRuleBuilder';
 
 export interface AutomationCardProps {
   automation: Automation;
   onToggle: (automation: Automation) => void;
   onDelete?: (automationId: string) => void;
+  onDetail?: (automation: Automation) => void;
+  onEdit?: (automation: Automation) => void;
+  onDuplicate?: (automation: Automation) => void;
   columnName?: string;
+  allColumns?: { id: string; name: string }[];
   isDeletable?: boolean;
 }
 
@@ -16,32 +25,22 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
   automation,
   onToggle,
   onDelete,
+  onDetail,
+  onEdit,
+  onDuplicate,
   columnName,
+  allColumns = [],
   isDeletable = true,
 }) => {
   const triggerType = automation.triggerType;
   const isTimeTrigger = triggerType === 'column_sla_timer' || triggerType === 'scheduled_sweep';
 
-  const triggerLabel = (() => {
-    switch (triggerType) {
-      case 'task_entered_column':
-        return columnName ? `Вход в [${columnName}]` : 'Вход в колонку';
-      case 'task_completed_in_column':
-        return columnName ? `Завершение в [${columnName}]` : 'Завершение в колонке';
-      case 'column_sla_timer':
-        return columnName ? `SLA таймер [${columnName}]` : 'SLA таймер';
-      case 'scheduled_sweep':
-        return columnName ? `Расписание [${columnName}]` : 'Ежедневное расписание';
-      case 'task_field_changed':
-        return 'Смена поля задачи';
-      case 'task_completed':
-        return 'Задача завершена';
-      case 'task_updated':
-        return 'Задача обновлена';
-      default:
-        return triggerType;
-    }
-  })();
+  const triggerLabel = formatTriggerLabel(
+    triggerType,
+    automation.columnId,
+    allColumns.length > 0 ? allColumns : columnName ? [{ id: automation.columnId || '', name: columnName }] : [],
+    automation.ruleDefinition?.trigger?.params
+  );
 
   const conditions = automation.ruleDefinition?.conditions ?? [];
   const actions = automation.ruleDefinition?.actions ?? [];
@@ -70,7 +69,13 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
 
           <div className="space-y-1.5 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-serif text-sm font-normal text-primary">
+              <h4
+                className={cn(
+                  'font-serif text-sm font-normal text-primary',
+                  onDetail && 'cursor-pointer hover:underline'
+                )}
+                onClick={() => onDetail && onDetail(automation)}
+              >
                 {automation.name}
               </h4>
               <Badge
@@ -99,7 +104,7 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
                       key={i}
                       className="bg-accent-surface/30 px-1.5 py-0.5 rounded border border-subtle text-primary"
                     >
-                      {String(c.field)} {String(c.operator)} {c.value !== undefined ? String(c.value) : ''}
+                      {formatConditionLabel(c)}
                     </span>
                   ))}
                 </>
@@ -114,7 +119,7 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
                       key={i}
                       className="bg-canvas px-1.5 py-0.5 rounded border border-subtle text-accent-solid font-medium"
                     >
-                      {String(a.type)}
+                      {formatActionLabel(a, allColumns)}
                     </span>
                   ))}
                 </>
@@ -123,8 +128,41 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
           </div>
         </div>
 
-        {/* Right actions: Toggle and Delete */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right actions: Detail, Duplicate, Edit, Delete and Toggle */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onDetail && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDetail(automation)}
+              className="text-[11px] h-7 px-2 text-muted hover:text-primary"
+            >
+              Подробнее
+            </Button>
+          )}
+
+          {onDuplicate && (
+            <button
+              type="button"
+              onClick={() => onDuplicate(automation)}
+              className="p-1 rounded text-muted hover:text-primary hover:bg-canvas transition-colors"
+              title="Создать копию"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(automation)}
+              className="p-1 rounded text-muted hover:text-primary hover:bg-canvas transition-colors"
+              title="Редактировать правило"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {isDeletable && onDelete && (
             <button
               type="button"
@@ -142,7 +180,7 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
             aria-checked={automation.isEnabled}
             onClick={() => onToggle(automation)}
             className={cn(
-              'w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 cursor-pointer',
+              'w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 cursor-pointer ml-1',
               automation.isEnabled ? 'bg-accent-solid' : 'bg-canvas border border-subtle'
             )}
             title={automation.isEnabled ? 'Выключить' : 'Включить'}

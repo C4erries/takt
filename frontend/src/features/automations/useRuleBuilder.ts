@@ -10,14 +10,19 @@ import type {
   AutomationTriggerType,
   RuleDefinition,
 } from '@/entities/automation';
-import { useCreateAutomationMutation } from '@/entities/automation';
+import {
+  useCreateAutomationMutation,
+  useUpdateAutomationMutation,
+} from '@/entities/automation';
 
 export interface UseRuleBuilderParams {
   workspaceId?: string;
   prefilledColumnId?: string | null;
   prefilledColumnName?: string | null;
   allColumns?: { id: string; name: string }[];
-  onSuccess?: (created: Automation) => void;
+  mode?: 'create' | 'edit';
+  initialRule?: Automation | null;
+  onSuccess?: (saved: Automation) => void;
   onClose: () => void;
 }
 
@@ -65,15 +70,106 @@ export const PRIORITIES = [
   { value: 'none', label: 'Обычный' },
 ];
 
+export function formatTriggerLabel(
+  triggerType: string,
+  columnId?: string | null,
+  allColumns: { id: string; name: string }[] = [],
+  params?: Record<string, unknown>
+): string {
+  const colName =
+    allColumns.find((c) => c.id === columnId)?.name ||
+    (params?.column_id ? allColumns.find((c) => c.id === params.column_id)?.name : undefined);
+  const slaHours = params?.duration_hours;
+
+  switch (triggerType) {
+    case 'task_entered_column':
+      return colName ? `При попадании в [${colName}]` : 'При попадании в колонку';
+    case 'task_completed_in_column':
+      return colName ? `При завершении в [${colName}]` : 'При завершении в колонке';
+    case 'task_field_changed':
+      return 'При изменении поля задачи';
+    case 'column_sla_timer':
+      return colName
+        ? `SLA таймер в [${colName}] (> ${slaHours || 24} ч)`
+        : `SLA таймер (> ${slaHours || 24} ч)`;
+    case 'scheduled_sweep':
+      return 'Ежедневная проверка по расписанию';
+    case 'task_completed':
+      return 'При завершении задачи';
+    case 'task_updated':
+      return 'При обновлении задачи';
+    case 'task_created':
+      return 'При создании задачи';
+    case 'due_date_reached':
+      return 'При наступлении дедлайна';
+    default:
+      return triggerType;
+  }
+}
+
+export function formatConditionLabel(condition: AutomationCondition): string {
+  const fieldObj = CONDITION_FIELDS.find((f) => f.field === condition.field);
+  const fieldName = fieldObj?.label || String(condition.field);
+  const opObj = CONDITION_OPERATORS.find((o) => o.operator === condition.operator);
+  const opName = opObj?.label || String(condition.operator);
+
+  let val = condition.value;
+  if (condition.field === 'priority' && typeof val === 'string') {
+    const p = PRIORITIES.find((item) => item.value === val);
+    if (p) val = p.label;
+  }
+  if (condition.operator === 'is_empty' || condition.operator === 'is_not_empty') {
+    return `${fieldName} ${opName}`;
+  }
+  return `${fieldName} ${opName} ${val !== undefined && val !== '' ? `«${val}»` : ''}`.trim();
+}
+
+export function formatActionLabel(
+  action: AutomationAction,
+  allColumns: { id: string; name: string }[] = []
+): string {
+  const params = action.params || {};
+  switch (action.type) {
+    case 'move_to_column': {
+      const targetCol = allColumns.find((c) => c.id === params.target_column_id)?.name;
+      return targetCol ? `Переместить в [${targetCol}]` : 'Переместить в колонку';
+    }
+    case 'set_priority': {
+      const p = PRIORITIES.find((item) => item.value === params.priority);
+      return `Установить приоритет: ${p?.label || params.priority || 'Высокий'}`;
+    }
+    case 'add_tag':
+      return `Добавить тег: «${params.tag_name || params.tag || ''}»`;
+    case 'remove_tag':
+      return `Удалить тег: «${params.tag_name || params.tag || ''}»`;
+    case 'set_due_date': {
+      const presetMap: Record<string, string> = {
+        today: 'сегодня',
+        tomorrow: 'завтра',
+        next_week: 'следующая неделя',
+      };
+      const presetStr = String(params.preset || '');
+      return `Назначить срок: ${presetMap[presetStr] || presetStr || 'срок'}`;
+    }
+    case 'archive_task':
+      return 'Архивировать задачу';
+    default:
+      return ACTION_TYPES.find((a) => a.type === action.type)?.label || String(action.type);
+  }
+}
+
 export function useRuleBuilder({
   workspaceId,
   prefilledColumnId,
   prefilledColumnName,
   allColumns = [],
+  mode = 'create',
+  initialRule,
   onSuccess,
   onClose,
 }: UseRuleBuilderParams) {
   const createMutation = useCreateAutomationMutation(workspaceId);
+  const updateMutation = useUpdateAutomationMutation(workspaceId);
 
   const [ruleName, setRuleName] = useState('');
   const [isCustomName, setIsCustomName] = useState(false);
@@ -89,13 +185,40 @@ export function useRuleBuilder({
   ]);
 
   useEffect(() => {
-    if (prefilledColumnId) {
+    if (initialRule) {
+      setRuleName(initialRule.name);
+      setIsCustomName(true);
+      const trig = initialRule.ruleDefinition?.trigger;
+      const trigType = (trig?.type || initialRule.triggerType || 'task_entered_column') as AutomationTriggerType;
+      setTriggerType(trigType);
+      const colId = (trig?.params?.column_id as string) || initialRule.columnId || prefilledColumnId || '';
+      setTriggerColumnId(colId);
+      const sla = Number(trig?.params?.duration_hours);
+      if (sla) setTriggerSlaHours(sla);
+      const fld = trig?.params?.field as string;
+      if (fld) setTriggerField(fld);
+      const conds =
+        initialRule.ruleDefinition?.conditions ||
+        ((initialRule.conditionsJson as { conditions?: AutomationCondition[] })?.conditions) ||
+        [];
+      setConditions(conds);
+      const op =
+        initialRule.ruleDefinition?.logicalOperator ||
+        ((initialRule.conditionsJson as { logical_operator?: 'and' | 'or' })?.logical_operator) ||
+        'and';
+      setLogicalOperator(op);
+      const acts =
+        initialRule.ruleDefinition?.actions ||
+        ((initialRule.actionsJson as { actions?: AutomationAction[] })?.actions) ||
+        [];
+      setActions(acts.length > 0 ? acts : [{ type: 'set_priority', params: { priority: 'high' } }]);
+    } else if (prefilledColumnId) {
       setTriggerColumnId(prefilledColumnId);
       setTriggerType('task_entered_column');
     } else if (allColumns.length > 0 && !triggerColumnId) {
       setTriggerColumnId(allColumns[0].id);
     }
-  }, [prefilledColumnId, allColumns]);
+  }, [initialRule, prefilledColumnId, allColumns]);
 
   useEffect(() => {
     if (!isCustomName) {
@@ -158,16 +281,31 @@ export function useRuleBuilder({
     const ruleDefinition: RuleDefinition = { trigger, conditions, logicalOperator, actions };
 
     try {
-      const created = await createMutation.mutateAsync({
-        name: ruleName.trim(),
-        triggerType,
-        columnId: triggerColumnId || null,
-        conditionsJson: { conditions, logical_operator: logicalOperator },
-        actionsJson: { actions },
-        isEnabled: true,
-        ruleDefinition,
-      });
-      if (onSuccess) onSuccess(created);
+      if (mode === 'edit' && initialRule?.id) {
+        const updated = await updateMutation.mutateAsync({
+          automationId: initialRule.id,
+          data: {
+            name: ruleName.trim(),
+            triggerType,
+            columnId: triggerColumnId || null,
+            conditionsJson: { conditions, logical_operator: logicalOperator },
+            actionsJson: { actions },
+            ruleDefinition,
+          },
+        });
+        if (onSuccess) onSuccess(updated);
+      } else {
+        const created = await createMutation.mutateAsync({
+          name: ruleName.trim(),
+          triggerType,
+          columnId: triggerColumnId || null,
+          conditionsJson: { conditions, logical_operator: logicalOperator },
+          actionsJson: { actions },
+          isEnabled: true,
+          ruleDefinition,
+        });
+        if (onSuccess) onSuccess(created);
+      }
       onClose();
     } catch {
       // Handled in mutation
@@ -197,6 +335,6 @@ export function useRuleBuilder({
     handleRemoveAction,
     handleUpdateAction,
     handleSave,
-    isSubmitting: createMutation.isPending,
+    isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
 }

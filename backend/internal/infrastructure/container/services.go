@@ -39,8 +39,8 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 	var automationService *automationApp.Service
 	var automationWorker *automationApp.Worker
 	if repos.AutomationRepo != nil {
-		automationService = automationApp.NewService(repos.AutomationRepo)
 		evaluator := automationApp.NewEvaluator(repos.AutomationRepo, repos.AutomationRepo)
+		automationService = automationApp.NewService(repos.AutomationRepo, repos.AutomationRepo, evaluator)
 		listener := automationApp.NewEventListener(repos.AutomationRepo, repos.AutomationRepo, repos.AutomationRepo, nil)
 		_ = listener.Register(eventBus)
 		automationWorker = automationApp.NewWorker(repos.AutomationRepo, repos.AutomationRepo, evaluator, 0)

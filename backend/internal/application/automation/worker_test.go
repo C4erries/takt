@@ -26,6 +26,14 @@ func (m *mockTaskReader) ListTasksByColumn(ctx context.Context, wsID, colID uuid
 	return nil, args.Error(1)
 }
 
+func (m *mockTaskReader) GetTaskByID(ctx context.Context, taskID, wsID uuid.UUID) (*appAutomation.TaskInfo, error) {
+	args := m.Called(ctx, taskID, wsID)
+	if task := args.Get(0); task != nil {
+		return task.(*appAutomation.TaskInfo), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func TestWorker_Tick(t *testing.T) {
 	t.Parallel()
 
@@ -112,6 +120,51 @@ func TestWorker_Tick(t *testing.T) {
 
 		mockReader.On("ListTasksByColumn", mock.Anything, wsID, colID).Return([]*appAutomation.TaskInfo{task1}, nil).Once()
 		mockMod.On("MoveTaskToColumn", mock.Anything, task1.ID, wsID, &targetColID, (*uuid.UUID)(nil), 1000.0).Return(nil).Once()
+
+		err = worker.Tick(context.Background())
+		require.NoError(t, err)
+
+		mockRepo.AssertExpectations(t)
+		mockReader.AssertExpectations(t)
+		mockMod.AssertExpectations(t)
+	})
+
+	t.Run("processes task_timer rule when delay threshold exceeded", func(t *testing.T) {
+		mockRepo := new(appMocks.MockAutomationRepository)
+		mockReader := new(mockTaskReader)
+		mockMod := new(mockTaskModifier)
+
+		eval := appAutomation.NewEvaluator(mockMod, nil)
+		worker := appAutomation.NewWorker(mockRepo, mockReader, eval, 1*time.Minute)
+
+		taskID := uuid.New()
+		ruleDef := &domainAutomation.RuleDefinition{
+			Trigger: domainAutomation.Trigger{
+				Type: domainAutomation.TriggerTaskTimer,
+				Params: map[string]interface{}{
+					"delay_minutes": 30,
+				},
+			},
+			Actions: []domainAutomation.Action{
+				{Type: domainAutomation.ActionSetPriority, Params: map[string]interface{}{"priority": "urgent"}},
+			},
+		}
+
+		autoRule, err := domainAutomation.NewRuleAutomation(wsID, nil, nil, "Task Timer Rule", ruleDef, true)
+		require.NoError(t, err)
+		autoRule.TaskID = &taskID
+		autoRule.CreatedAt = time.Now().UTC().Add(-35 * time.Minute)
+
+		mockRepo.EXPECT().ListAllEnabledTimerAutomations(mock.Anything).Return([]*domainAutomation.Automation{autoRule}, nil).Once()
+
+		task := &appAutomation.TaskInfo{
+			ID:          taskID,
+			WorkspaceID: wsID,
+			IsCompleted: false,
+		}
+
+		mockReader.On("GetTaskByID", mock.Anything, taskID, wsID).Return(task, nil).Once()
+		mockMod.On("SetTaskPriority", mock.Anything, taskID, wsID, "urgent").Return(nil).Once()
 
 		err = worker.Tick(context.Background())
 		require.NoError(t, err)

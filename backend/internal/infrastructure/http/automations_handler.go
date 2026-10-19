@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
@@ -38,6 +39,11 @@ func mapDomainAutomationToGenerated(a *domainAutomation.Automation) generated.Au
 		col := *a.ColumnID
 		columnID = &col
 	}
+	var taskID *openapi_types.UUID
+	if a.TaskID != nil {
+		t := *a.TaskID
+		taskID = &t
+	}
 
 	var conditions map[string]interface{}
 	if len(a.ConditionsJSON) > 0 {
@@ -65,6 +71,7 @@ func mapDomainAutomationToGenerated(a *domainAutomation.Automation) generated.Au
 		WorkspaceId:    a.WorkspaceID,
 		BoardId:        boardID,
 		ColumnId:       columnID,
+		TaskId:         taskID,
 		Name:           a.Name,
 		TriggerType:    generated.AutomationTriggerType(a.TriggerType),
 		ConditionsJson: conditions,
@@ -158,7 +165,19 @@ func (h *Handler) ListWorkspaceAutomations(c echo.Context, wsID openapi_types.UU
 	if !h.checkAccessAndService(c, wsID) {
 		return nil
 	}
-	rules, err := h.automationService.ListAutomations(c.Request().Context(), wsID)
+	ctx := c.Request().Context()
+	var rules []*domainAutomation.Automation
+	var err error
+
+	if taskIDParam := c.QueryParam("taskId"); taskIDParam != "" {
+		taskUUID, parseErr := uuid.Parse(taskIDParam)
+		if parseErr != nil {
+			return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid taskId parameter"})
+		}
+		rules, err = h.automationService.ListTaskAutomations(ctx, wsID, taskUUID)
+	} else {
+		rules, err = h.automationService.ListAutomations(ctx, wsID)
+	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, generated.Error{Code: "INTERNAL_ERROR", Message: "Failed to list automations"})
 	}
@@ -197,6 +216,7 @@ func (h *Handler) CreateAutomation(c echo.Context, wsID openapi_types.UUID) erro
 		WorkspaceID:    wsID,
 		BoardID:        req.BoardId,
 		ColumnID:       req.ColumnId,
+		TaskID:         req.TaskId,
 		Name:           req.Name,
 		TriggerType:    string(req.TriggerType),
 		ConditionsJSON: condBytes,
@@ -252,6 +272,10 @@ func (h *Handler) UpdateAutomation(c echo.Context, wsID, autoID openapi_types.UU
 	if _, ok := raw["columnId"]; ok && req.ColumnId == nil {
 		clearCol = true
 	}
+	var clearTask bool
+	if _, ok := raw["taskId"]; ok && req.TaskId == nil {
+		clearTask = true
+	}
 
 	domRuleDef := mapGeneratedRuleDefinitionToDomain(req.RuleDefinition)
 	if domRuleDef != nil {
@@ -280,6 +304,8 @@ func (h *Handler) UpdateAutomation(c echo.Context, wsID, autoID openapi_types.UU
 		BoardID:        req.BoardId,
 		ColumnID:       req.ColumnId,
 		ClearColumnID:  clearCol,
+		TaskID:         req.TaskId,
+		ClearTaskID:    clearTask,
 		Name:           req.Name,
 		TriggerType:    triggerType,
 		ConditionsJSON: condBytes,

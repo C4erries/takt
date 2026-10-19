@@ -1,12 +1,18 @@
 import React, { useRef } from 'react';
 import { Calendar, Paperclip, Tag as TagIcon, KanbanSquare, X } from 'lucide-react';
 
+export interface BoardColumnGroup {
+  boardName: string;
+  columns: { id: string; name: string }[];
+}
+
 export interface QuickActionBarProps {
   dueDate?: string | null;
   onDueDateChange: (date: string | null) => void;
   onAttachClick: () => void;
   onToggleTagInput: () => void;
   columns?: { id: string; name: string }[];
+  boardGroups?: BoardColumnGroup[];
   selectedColumnId?: string | null;
   onColumnChange?: (columnId: string) => void;
 }
@@ -17,6 +23,7 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({
   onAttachClick,
   onToggleTagInput,
   columns = [],
+  boardGroups,
   selectedColumnId,
   onColumnChange,
 }) => {
@@ -86,20 +93,30 @@ export const QuickActionBar: React.FC<QuickActionBarProps> = ({
         <span>+ Тег</span>
       </button>
 
-      {/* Column/Status Selector (if project has columns) */}
-      {columns.length > 0 && onColumnChange && (
+      {/* Column/Status Selector (if project has columns or boardGroups) */}
+      {((boardGroups && boardGroups.some((g) => g.columns.length > 0)) || columns.length > 0) && onColumnChange && (
         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-surface border border-subtle/80 text-muted shadow-washi-sm">
-          <KanbanSquare className="w-3.5 h-3.5 text-accent-solid" />
+          <KanbanSquare className="w-3.5 h-3.5 text-accent-solid shrink-0" />
           <select
             value={selectedColumnId ?? ''}
             onChange={(e) => onColumnChange(e.target.value)}
-            className="bg-transparent text-[11px] font-sans text-primary focus:outline-none cursor-pointer"
+            className="bg-transparent text-[11px] font-sans text-primary focus:outline-none cursor-pointer max-w-[150px] truncate"
           >
-            {columns.map((col) => (
-              <option key={col.id} value={col.id}>
-                {col.name}
-              </option>
-            ))}
+            {boardGroups && boardGroups.length > 0
+              ? boardGroups.map((group) => (
+                  <optgroup key={group.boardName} label={group.boardName}>
+                    {group.columns.map((col) => (
+                      <option key={col.id} value={col.id}>
+                        {col.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))
+              : columns.map((col) => (
+                  <option key={col.id} value={col.id}>
+                    {col.name}
+                  </option>
+                ))}
           </select>
         </div>
       )}

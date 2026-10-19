@@ -62,6 +62,7 @@ const (
 	AutomationTriggerTypeTaskCreated           AutomationTriggerType = "task_created"
 	AutomationTriggerTypeTaskEnteredColumn     AutomationTriggerType = "task_entered_column"
 	AutomationTriggerTypeTaskFieldChanged      AutomationTriggerType = "task_field_changed"
+	AutomationTriggerTypeTaskTimer             AutomationTriggerType = "task_timer"
 	AutomationTriggerTypeTaskUpdated           AutomationTriggerType = "task_updated"
 )
 
@@ -83,6 +84,8 @@ func (e AutomationTriggerType) Valid() bool {
 	case AutomationTriggerTypeTaskEnteredColumn:
 		return true
 	case AutomationTriggerTypeTaskFieldChanged:
+		return true
+	case AutomationTriggerTypeTaskTimer:
 		return true
 	case AutomationTriggerTypeTaskUpdated:
 		return true
@@ -197,6 +200,7 @@ const (
 	CreateAutomationRequestTriggerTypeTaskCreated           CreateAutomationRequestTriggerType = "task_created"
 	CreateAutomationRequestTriggerTypeTaskEnteredColumn     CreateAutomationRequestTriggerType = "task_entered_column"
 	CreateAutomationRequestTriggerTypeTaskFieldChanged      CreateAutomationRequestTriggerType = "task_field_changed"
+	CreateAutomationRequestTriggerTypeTaskTimer             CreateAutomationRequestTriggerType = "task_timer"
 	CreateAutomationRequestTriggerTypeTaskUpdated           CreateAutomationRequestTriggerType = "task_updated"
 )
 
@@ -218,6 +222,8 @@ func (e CreateAutomationRequestTriggerType) Valid() bool {
 	case CreateAutomationRequestTriggerTypeTaskEnteredColumn:
 		return true
 	case CreateAutomationRequestTriggerTypeTaskFieldChanged:
+		return true
+	case CreateAutomationRequestTriggerTypeTaskTimer:
 		return true
 	case CreateAutomationRequestTriggerTypeTaskUpdated:
 		return true
@@ -335,6 +341,7 @@ const (
 	TriggerTypeTaskCompletedInColumn TriggerType = "task_completed_in_column"
 	TriggerTypeTaskEnteredColumn     TriggerType = "task_entered_column"
 	TriggerTypeTaskFieldChanged      TriggerType = "task_field_changed"
+	TriggerTypeTaskTimer             TriggerType = "task_timer"
 )
 
 // Valid indicates whether the value is a known member of the TriggerType enum.
@@ -349,6 +356,8 @@ func (e TriggerType) Valid() bool {
 	case TriggerTypeTaskEnteredColumn:
 		return true
 	case TriggerTypeTaskFieldChanged:
+		return true
+	case TriggerTypeTaskTimer:
 		return true
 	default:
 		return false
@@ -365,6 +374,7 @@ const (
 	UpdateAutomationRequestTriggerTypeTaskCreated           UpdateAutomationRequestTriggerType = "task_created"
 	UpdateAutomationRequestTriggerTypeTaskEnteredColumn     UpdateAutomationRequestTriggerType = "task_entered_column"
 	UpdateAutomationRequestTriggerTypeTaskFieldChanged      UpdateAutomationRequestTriggerType = "task_field_changed"
+	UpdateAutomationRequestTriggerTypeTaskTimer             UpdateAutomationRequestTriggerType = "task_timer"
 	UpdateAutomationRequestTriggerTypeTaskUpdated           UpdateAutomationRequestTriggerType = "task_updated"
 )
 
@@ -386,6 +396,8 @@ func (e UpdateAutomationRequestTriggerType) Valid() bool {
 	case UpdateAutomationRequestTriggerTypeTaskEnteredColumn:
 		return true
 	case UpdateAutomationRequestTriggerTypeTaskFieldChanged:
+		return true
+	case UpdateAutomationRequestTriggerTypeTaskTimer:
 		return true
 	case UpdateAutomationRequestTriggerTypeTaskUpdated:
 		return true
@@ -594,8 +606,9 @@ type Automation struct {
 	IsEnabled bool `json:"isEnabled"`
 
 	// Name Example: Done & Archive
-	Name           string          `json:"name"`
-	RuleDefinition *RuleDefinition `json:"ruleDefinition,omitempty"`
+	Name           string              `json:"name"`
+	RuleDefinition *RuleDefinition     `json:"ruleDefinition,omitempty"`
+	TaskId         *openapi_types.UUID `json:"taskId,omitempty"`
 
 	// TriggerType Example: task_completed
 	TriggerType AutomationTriggerType `json:"triggerType"`
@@ -685,8 +698,9 @@ type CreateAutomationRequest struct {
 	IsEnabled      *bool                   `json:"isEnabled,omitempty"`
 
 	// Name Example: Move to Done on Complete
-	Name           string          `json:"name"`
-	RuleDefinition *RuleDefinition `json:"ruleDefinition,omitempty"`
+	Name           string              `json:"name"`
+	RuleDefinition *RuleDefinition     `json:"ruleDefinition,omitempty"`
+	TaskId         *openapi_types.UUID `json:"taskId,omitempty"`
 
 	// TriggerType Example: task_completed_in_column
 	TriggerType CreateAutomationRequestTriggerType `json:"triggerType"`
@@ -943,8 +957,9 @@ type UpdateAutomationRequest struct {
 	IsEnabled      *bool                   `json:"isEnabled,omitempty"`
 
 	// Name Example: Move to Done on Complete
-	Name           *string         `json:"name,omitempty"`
-	RuleDefinition *RuleDefinition `json:"ruleDefinition,omitempty"`
+	Name           *string             `json:"name,omitempty"`
+	RuleDefinition *RuleDefinition     `json:"ruleDefinition,omitempty"`
+	TaskId         *openapi_types.UUID `json:"taskId,omitempty"`
 
 	// TriggerType Example: task_completed_in_column
 	TriggerType *UpdateAutomationRequestTriggerType `json:"triggerType,omitempty"`

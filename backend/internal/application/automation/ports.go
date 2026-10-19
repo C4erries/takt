@@ -36,6 +36,7 @@ type AutomationRepository interface {
 	DeleteAutomation(ctx context.Context, id, workspaceID uuid.UUID) error
 	ListEnabledAutomationsByTrigger(ctx context.Context, workspaceID uuid.UUID, triggerType string) ([]*domainAutomation.Automation, error)
 	ListAutomationsByColumn(ctx context.Context, workspaceID, columnID uuid.UUID) ([]*domainAutomation.Automation, error)
+	ListAutomationsByTask(ctx context.Context, taskID, workspaceID uuid.UUID) ([]*domainAutomation.Automation, error)
 	CreateColumnAutomation(ctx context.Context, a *domainAutomation.Automation) error
 	ListAllEnabledTimerAutomations(ctx context.Context) ([]*domainAutomation.Automation, error)
 }
@@ -55,6 +56,7 @@ type TaskModifier interface {
 // TaskReader reads tasks for timer and schedule evaluation.
 type TaskReader interface {
 	ListTasksByColumn(ctx context.Context, workspaceID, columnID uuid.UUID) ([]*TaskInfo, error)
+	GetTaskByID(ctx context.Context, taskID, workspaceID uuid.UUID) (*TaskInfo, error)
 }
 
 // ProjectReader inspects board and column structure to determine target columns.

@@ -92,6 +92,30 @@ export const useAutomationsQuery = (workspaceId?: string) => {
   });
 };
 
+export const useTaskAutomationsQuery = (workspaceId?: string, taskId?: string) => {
+  return useQuery<Automation[], Error>({
+    queryKey: ['automations', workspaceId, 'task', taskId],
+    queryFn: async () => {
+      if (!taskId) return [];
+      const customLocal = getStoredCustomAutomations();
+      if (!workspaceId || !getAuthToken()) {
+        return customLocal.filter((a) => a.taskId === taskId);
+      }
+      try {
+        const data = await automationsApi.fetchAutomations(workspaceId, taskId);
+        const filtered = data.filter((a) => a.taskId === taskId);
+        const localFiltered = customLocal.filter(
+          (c) => c.taskId === taskId && !filtered.some((item) => item.id === c.id)
+        );
+        return [...filtered, ...localFiltered];
+      } catch {
+        return customLocal.filter((a) => a.taskId === taskId);
+      }
+    },
+    enabled: Boolean(taskId),
+  });
+};
+
 export interface ToggleAutomationVariables {
   automationId: string;
   isEnabled: boolean;

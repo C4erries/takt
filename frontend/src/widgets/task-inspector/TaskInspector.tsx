@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Calendar,
   Tag as TagIcon,
@@ -15,10 +15,14 @@ import {
   useUpdateTaskMutation,
   useSetTaskFocusMutation,
 } from '@/entities/task';
-import { useProjectsQuery } from '@/entities/project';
+import {
+  useProjectsQuery,
+  useProjectBoardsQuery,
+  useProjectAllColumnsQuery,
+} from '@/entities/project';
 import { useUploadAttachmentMutation } from '@/entities/attachment';
 import { useTaskStore } from '@/features/task-navigation';
-import { TaskTagSection } from '@/widgets/task-drawer';
+import { TaskTagSection, TaskAutomationsSection } from '@/widgets/task-drawer';
 import { cn } from '@/shared/lib/cn';
 import { MarkdownNotes } from './MarkdownNotes';
 import { TaskAttachments } from './TaskAttachments';
@@ -59,6 +63,14 @@ export const TaskInspector: React.FC<TaskInspectorProps> = ({
   const updateTaskMutation = useUpdateTaskMutation(workspaceId);
   const setFocusMutation = useSetTaskFocusMutation(workspaceId);
   const { data: projects = [] } = useProjectsQuery(workspaceId);
+  const boardsQuery = useProjectBoardsQuery(workspaceId, task?.projectId ?? undefined);
+  const boards = boardsQuery.data ?? [];
+  const activeBoard = boards[0];
+  const { data: boardGroups = [] } = useProjectAllColumnsQuery(workspaceId, boards);
+  const allColumns = useMemo(
+    () => (boardGroups.length > 0 ? boardGroups.flatMap((bg) => bg.columns) : []),
+    [boardGroups]
+  );
   const uploadAttachmentMutation = useUploadAttachmentMutation(workspaceId, task?.id);
 
   const [title, setTitle] = useState(task?.title ?? '');
@@ -317,6 +329,19 @@ export const TaskInspector: React.FC<TaskInspectorProps> = ({
 
         {/* Attachments Section */}
         <TaskAttachments workspaceId={workspaceId} taskId={task.id} />
+
+        {/* Task automations (D-072-4) */}
+        {workspaceId && (
+          <TaskAutomationsSection
+            taskId={task.id}
+            workspaceId={workspaceId}
+            columnId={task.columnId}
+            boardId={activeBoard?.id}
+            projectId={task.projectId}
+            allColumns={allColumns}
+            boardColumnGroups={boardGroups}
+          />
+        )}
       </div>
 
       {/* Action buttons footer */}

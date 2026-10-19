@@ -13,11 +13,13 @@ import (
 type UseCases interface {
 	ListAutomations(ctx context.Context, workspaceID uuid.UUID) ([]*domainAutomation.Automation, error)
 	ListColumnAutomations(ctx context.Context, workspaceID, columnID uuid.UUID) ([]*domainAutomation.Automation, error)
+	ListTaskAutomations(ctx context.Context, workspaceID, taskID uuid.UUID) ([]*domainAutomation.Automation, error)
 	GetAutomation(ctx context.Context, workspaceID, automationID uuid.UUID) (*domainAutomation.Automation, error)
 	ToggleAutomation(ctx context.Context, workspaceID, automationID uuid.UUID, isEnabled bool) (*domainAutomation.Automation, error)
 	CreateAutomation(ctx context.Context, input CreateAutomationInput) (*domainAutomation.Automation, error)
 	UpdateAutomation(ctx context.Context, input UpdateAutomationInput) (*domainAutomation.Automation, error)
 	DeleteAutomation(ctx context.Context, workspaceID, automationID uuid.UUID) error
+	ExecuteTaskAutomation(ctx context.Context, workspaceID, taskID, automationID uuid.UUID) error
 	CreateColumnAutomation(ctx context.Context, input CreateColumnAutomationInput) (*domainAutomation.Automation, error)
 	SeedDefaultAutomations(ctx context.Context, workspaceID uuid.UUID) error
 }
@@ -27,6 +29,7 @@ type CreateAutomationInput struct {
 	WorkspaceID    uuid.UUID
 	BoardID        *uuid.UUID
 	ColumnID       *uuid.UUID
+	TaskID         *uuid.UUID
 	Name           string
 	TriggerType    string
 	ConditionsJSON json.RawMessage
@@ -42,6 +45,8 @@ type UpdateAutomationInput struct {
 	BoardID        *uuid.UUID
 	ColumnID       *uuid.UUID
 	ClearColumnID  bool
+	TaskID         *uuid.UUID
+	ClearTaskID    bool
 	Name           *string
 	TriggerType    *string
 	ConditionsJSON json.RawMessage
@@ -64,12 +69,29 @@ type CreateColumnAutomationInput struct {
 
 // Service implements UseCases.
 type Service struct {
-	repo AutomationRepository
+	repo       AutomationRepository
+	taskReader TaskReader
+	evaluator  *Evaluator
 }
 
 // NewService constructs a new automation Service.
-func NewService(repo AutomationRepository) *Service {
-	return &Service{repo: repo}
+func NewService(repo AutomationRepository, optional ...interface{}) *Service {
+	s := &Service{repo: repo}
+	for _, opt := range optional {
+		switch v := opt.(type) {
+		case TaskReader:
+			s.taskReader = v
+		case *Evaluator:
+			s.evaluator = v
+		}
+	}
+	return s
+}
+
+// SetExecutionDeps configures task reading and rule evaluation for manual execution.
+func (s *Service) SetExecutionDeps(taskReader TaskReader, evaluator *Evaluator) {
+	s.taskReader = taskReader
+	s.evaluator = evaluator
 }
 
 // ListAutomations returns all automations configured for the given workspace.
@@ -80,6 +102,11 @@ func (s *Service) ListAutomations(ctx context.Context, workspaceID uuid.UUID) ([
 // ListColumnAutomations returns all automations configured for a specific column.
 func (s *Service) ListColumnAutomations(ctx context.Context, workspaceID, columnID uuid.UUID) ([]*domainAutomation.Automation, error) {
 	return s.repo.ListAutomationsByColumn(ctx, workspaceID, columnID)
+}
+
+// ListTaskAutomations returns all automations configured for a specific task.
+func (s *Service) ListTaskAutomations(ctx context.Context, workspaceID, taskID uuid.UUID) ([]*domainAutomation.Automation, error) {
+	return s.repo.ListAutomationsByTask(ctx, taskID, workspaceID)
 }
 
 // GetAutomation returns a specific automation rule.
@@ -106,6 +133,7 @@ func (s *Service) CreateAutomation(ctx context.Context, input CreateAutomationIn
 		if err != nil {
 			return nil, err
 		}
+		rule.TaskID = input.TaskID
 		if err := s.repo.CreateAutomation(ctx, rule); err != nil {
 			return nil, err
 		}
@@ -125,6 +153,7 @@ func (s *Service) CreateAutomation(ctx context.Context, input CreateAutomationIn
 		return nil, err
 	}
 	rule.ColumnID = input.ColumnID
+	rule.TaskID = input.TaskID
 	if err := s.repo.CreateAutomation(ctx, rule); err != nil {
 		return nil, err
 	}
@@ -177,6 +206,11 @@ func (s *Service) UpdateAutomation(ctx context.Context, input UpdateAutomationIn
 	} else if input.ColumnID != nil {
 		rule.ColumnID = input.ColumnID
 	}
+	if input.ClearTaskID {
+		rule.SetTaskID(nil)
+	} else if input.TaskID != nil {
+		rule.SetTaskID(input.TaskID)
+	}
 
 	if err := s.repo.UpdateAutomation(ctx, rule); err != nil {
 		return nil, err
@@ -191,6 +225,28 @@ func (s *Service) DeleteAutomation(ctx context.Context, workspaceID, automationI
 		return err
 	}
 	return s.repo.DeleteAutomation(ctx, automationID, workspaceID)
+}
+
+// ExecuteTaskAutomation runs rule evaluation and actions for a task immediately.
+func (s *Service) ExecuteTaskAutomation(ctx context.Context, workspaceID, taskID, automationID uuid.UUID) error {
+	rule, err := s.repo.GetAutomationByID(ctx, automationID, workspaceID)
+	if err != nil {
+		return err
+	}
+	if rule.RuleDefinition == nil {
+		return nil
+	}
+	if s.taskReader == nil || s.evaluator == nil {
+		return nil
+	}
+	task, err := s.taskReader.GetTaskByID(ctx, taskID, workspaceID)
+	if err != nil {
+		return err
+	}
+	if task == nil {
+		return domainAutomation.ErrAutomationNotFound
+	}
+	return s.evaluator.ExecuteRule(ctx, rule.RuleDefinition, task)
 }
 
 // CreateColumnAutomation creates and persists a column-scoped automation.

@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, AlertCircle, Clock, Calendar } from 'lucide-react';
+import { GripVertical, AlertCircle, Clock, Calendar, MoreHorizontal } from 'lucide-react';
 import { Checkbox, Badge } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Task, Priority } from '@/shared/api';
+import {
+  useProjectBoardsQuery,
+  useProjectAllColumnsQuery,
+  useMoveTaskMutation,
+} from '@/entities/project';
 
 export interface KanbanCardProps {
   task: Task;
@@ -12,6 +17,8 @@ export interface KanbanCardProps {
   onSelect?: (taskId: string) => void;
   isSelected?: boolean;
   isOverlay?: boolean;
+  workspaceId?: string;
+  projectId?: string;
 }
 
 const PRIORITY_BADGES: Record<Priority, { label: string; variant: 'persimmon' | 'denim' | 'straw' | 'matcha' | 'subtle' } | null> = {
@@ -76,7 +83,29 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   onSelect,
   isSelected = false,
   isOverlay = false,
+  workspaceId,
+  projectId,
 }) => {
+  const effectiveProjectId = projectId || (task.projectId ?? undefined);
+  const boardsQuery = useProjectBoardsQuery(workspaceId, effectiveProjectId);
+  const boards = boardsQuery.data ?? [];
+  const { data: boardGroups = [] } = useProjectAllColumnsQuery(workspaceId, boards);
+  const moveTaskMutation = useMoveTaskMutation(workspaceId, effectiveProjectId);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
+
   const {
     attributes,
     listeners,
@@ -196,12 +225,80 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
           </div>
         </div>
 
-        {/* Round 18px GTD Checkbox on top-right */}
+        {/* Actions & Checkbox */}
         <div
-          className="pt-0.5 shrink-0 ml-auto"
+          className="pt-0.5 shrink-0 ml-auto flex items-center gap-1"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
+          {!isOverlay && (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsMenuOpen((prev) => !prev);
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-canvas text-muted hover:text-primary transition-opacity"
+                title="Переместить на доску..."
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
+
+              {isMenuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 w-52 max-h-64 overflow-y-auto bg-surface border border-subtle rounded-xl shadow-washi-modal z-50 p-1.5 text-xs space-y-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-muted px-2 py-0.5">
+                    Переместить на доску
+                  </div>
+                  {boardGroups.length === 0 ? (
+                    <div className="px-2 py-1 text-[11px] text-muted italic">Загрузка досок...</div>
+                  ) : (
+                    boardGroups.map((bg) => (
+                      <div key={bg.boardName} className="space-y-0.5">
+                        <div className="text-[10px] font-semibold text-muted px-2 py-0.5 bg-canvas/40 rounded">
+                          {bg.boardName}
+                        </div>
+                        {bg.columns.map((c) => {
+                          const isCurrent = c.id === task.columnId;
+                          return (
+                            <button
+                              key={c.id}
+                            type="button"
+                            disabled={isCurrent}
+                            onClick={() => {
+                              moveTaskMutation.mutate({
+                                taskId: task.id,
+                                data: {
+                                  columnId: c.id,
+                                  position: task.position,
+                                  projectId: effectiveProjectId,
+                                },
+                              });
+                              setIsMenuOpen(false);
+                            }}
+                            className={cn(
+                              'w-full text-left px-2.5 py-1 rounded-md text-xs transition-colors flex items-center justify-between',
+                              isCurrent
+                                ? 'text-muted/60 bg-canvas/20 cursor-default'
+                                : 'text-primary hover:bg-canvas hover:text-accent-solid'
+                            )}
+                          >
+                            <span>{c.name}</span>
+                            {isCurrent && <span className="text-[9px] text-muted font-mono">(здесь)</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <Checkbox
             checked={task.isCompleted}
             onChange={() => onToggle?.(task.id)}

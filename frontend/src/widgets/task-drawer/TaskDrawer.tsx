@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   Star,
@@ -16,6 +16,7 @@ import {
   useProjectsQuery,
   useProjectBoardsQuery,
   useBoardColumnsQuery,
+  useProjectAllColumnsQuery,
   useMoveTaskMutation,
 } from '@/entities/project';
 import { useUploadAttachmentMutation } from '@/entities/attachment';
@@ -24,6 +25,7 @@ import { Button, Input } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import { QuickActionBar } from './QuickActionBar';
 import { TaskTagSection } from './TaskTagSection';
+import { TaskAutomationsSection } from './TaskAutomationsSection';
 import type { TaskDrawerProps } from './types';
 
 const PRIORITIES: { value: Priority; label: string }[] = [
@@ -63,9 +65,15 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   const { data: projects = [] } = useProjectsQuery(workspaceId);
 
   const boardsQuery = useProjectBoardsQuery(workspaceId, currentTask?.projectId ?? undefined);
-  const activeBoard = boardsQuery.data?.[0];
+  const boards = boardsQuery.data ?? [];
+  const activeBoard = boards[0];
+  const { data: boardGroups = [] } = useProjectAllColumnsQuery(workspaceId, boards);
   const columnsQuery = useBoardColumnsQuery(workspaceId, activeBoard?.id);
   const columns = columnsQuery.data ?? [];
+  const allColumns = useMemo(
+    () => (boardGroups.length > 0 ? boardGroups.flatMap((bg) => bg.columns) : columns),
+    [boardGroups, columns]
+  );
   const moveTaskMutation = useMoveTaskMutation(workspaceId, currentTask?.projectId ?? undefined);
 
   const uploadAttachmentMutation = useUploadAttachmentMutation(workspaceId, currentTask?.id);
@@ -253,6 +261,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
               onAttachClick={() => fileInputRef.current?.click()}
               onToggleTagInput={() => setIsAddingTag((prev) => !prev)}
               columns={columns}
+              boardGroups={boardGroups}
               selectedColumnId={currentTask.columnId}
               onColumnChange={handleColumnChange}
             />
@@ -332,6 +341,17 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
             {/* Attachments Section */}
             <TaskAttachments workspaceId={workspaceId} taskId={currentTask.id} />
+
+            {/* Task automations (D-072-4) */}
+            <TaskAutomationsSection
+              taskId={currentTask.id}
+              workspaceId={workspaceId}
+              columnId={currentTask.columnId}
+              boardId={activeBoard?.id}
+              projectId={currentTask.projectId}
+              allColumns={allColumns}
+              boardColumnGroups={boardGroups}
+            />
           </div>
         ) : null}
 

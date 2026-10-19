@@ -42,6 +42,7 @@ func toDomainAutomation(m sqlc.Automation) *domainAutomation.Automation {
 		WorkspaceID:    pgToUUID(m.WorkspaceID),
 		BoardID:        pgToUUIDPtr(m.BoardID),
 		ColumnID:       pgToUUIDPtr(m.ColumnID),
+		TaskID:         pgToUUIDPtr(m.TaskID),
 		Name:           m.Name,
 		TriggerType:    m.TriggerType,
 		ConditionsJSON: m.ConditionsJson,
@@ -79,10 +80,7 @@ func (r *AutomationRepository) ListWorkspaceAutomations(ctx context.Context, wsI
 }
 
 func (r *AutomationRepository) GetAutomationByID(ctx context.Context, id, wsID uuid.UUID) (*domainAutomation.Automation, error) {
-	row, err := getQuerier(ctx, r.queries).GetAutomationByID(ctx, sqlc.GetAutomationByIDParams{
-		ID:          uuidToPg(id),
-		WorkspaceID: uuidToPg(wsID),
-	})
+	row, err := getQuerier(ctx, r.queries).GetAutomationByID(ctx, sqlc.GetAutomationByIDParams{ID: uuidToPg(id), WorkspaceID: uuidToPg(wsID)})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domainAutomation.ErrAutomationNotFound
@@ -93,11 +91,7 @@ func (r *AutomationRepository) GetAutomationByID(ctx context.Context, id, wsID u
 }
 
 func (r *AutomationRepository) ToggleAutomation(ctx context.Context, id, wsID uuid.UUID, isEnabled bool) (*domainAutomation.Automation, error) {
-	row, err := getQuerier(ctx, r.queries).ToggleAutomation(ctx, sqlc.ToggleAutomationParams{
-		ID:          uuidToPg(id),
-		WorkspaceID: uuidToPg(wsID),
-		IsEnabled:   isEnabled,
-	})
+	row, err := getQuerier(ctx, r.queries).ToggleAutomation(ctx, sqlc.ToggleAutomationParams{ID: uuidToPg(id), WorkspaceID: uuidToPg(wsID), IsEnabled: isEnabled})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domainAutomation.ErrAutomationNotFound
@@ -109,37 +103,22 @@ func (r *AutomationRepository) ToggleAutomation(ctx context.Context, id, wsID uu
 
 func (r *AutomationRepository) CreateAutomation(ctx context.Context, a *domainAutomation.Automation) error {
 	row, err := getQuerier(ctx, r.queries).CreateAutomation(ctx, sqlc.CreateAutomationParams{
-		WorkspaceID:    uuidToPg(a.WorkspaceID),
-		BoardID:        uuidPtrToPg(a.BoardID),
-		ColumnID:       uuidPtrToPg(a.ColumnID),
-		Name:           a.Name,
-		TriggerType:    a.TriggerType,
-		ConditionsJson: a.ConditionsJSON,
-		ActionsJson:    a.ActionsJSON,
-		IsEnabled:      a.IsEnabled,
-		RuleDefinition: getRuleBytes(a.RuleDefinition),
+		WorkspaceID: uuidToPg(a.WorkspaceID), BoardID: uuidPtrToPg(a.BoardID), ColumnID: uuidPtrToPg(a.ColumnID),
+		TaskID: uuidPtrToPg(a.TaskID), Name: a.Name, TriggerType: a.TriggerType,
+		ConditionsJson: a.ConditionsJSON, ActionsJson: a.ActionsJSON, IsEnabled: a.IsEnabled, RuleDefinition: getRuleBytes(a.RuleDefinition),
 	})
 	if err != nil {
 		return err
 	}
-	a.ID = pgToUUID(row.ID)
-	a.CreatedAt = pgToTime(row.CreatedAt)
-	a.UpdatedAt = pgToTime(row.UpdatedAt)
+	a.ID, a.CreatedAt, a.UpdatedAt = pgToUUID(row.ID), pgToTime(row.CreatedAt), pgToTime(row.UpdatedAt)
 	return nil
 }
 
 func (r *AutomationRepository) UpdateAutomation(ctx context.Context, a *domainAutomation.Automation) error {
 	row, err := getQuerier(ctx, r.queries).UpdateAutomation(ctx, sqlc.UpdateAutomationParams{
-		ID:             uuidToPg(a.ID),
-		WorkspaceID:    uuidToPg(a.WorkspaceID),
-		Name:           a.Name,
-		TriggerType:    a.TriggerType,
-		ConditionsJson: a.ConditionsJSON,
-		ActionsJson:    a.ActionsJSON,
-		IsEnabled:      a.IsEnabled,
-		RuleDefinition: getRuleBytes(a.RuleDefinition),
-		BoardID:        uuidPtrToPg(a.BoardID),
-		ColumnID:       uuidPtrToPg(a.ColumnID),
+		ID: uuidToPg(a.ID), WorkspaceID: uuidToPg(a.WorkspaceID), Name: a.Name, TriggerType: a.TriggerType,
+		ConditionsJson: a.ConditionsJSON, ActionsJson: a.ActionsJSON, IsEnabled: a.IsEnabled, RuleDefinition: getRuleBytes(a.RuleDefinition),
+		BoardID: uuidPtrToPg(a.BoardID), ColumnID: uuidPtrToPg(a.ColumnID), TaskID: uuidPtrToPg(a.TaskID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -147,24 +126,16 @@ func (r *AutomationRepository) UpdateAutomation(ctx context.Context, a *domainAu
 		}
 		return err
 	}
-	a.BoardID = pgToUUIDPtr(row.BoardID)
-	a.ColumnID = pgToUUIDPtr(row.ColumnID)
-	a.UpdatedAt = pgToTime(row.UpdatedAt)
+	a.BoardID, a.ColumnID, a.TaskID, a.UpdatedAt = pgToUUIDPtr(row.BoardID), pgToUUIDPtr(row.ColumnID), pgToUUIDPtr(row.TaskID), pgToTime(row.UpdatedAt)
 	return nil
 }
 
 func (r *AutomationRepository) DeleteAutomation(ctx context.Context, id, wsID uuid.UUID) error {
-	return getQuerier(ctx, r.queries).DeleteAutomation(ctx, sqlc.DeleteAutomationParams{
-		ID:          uuidToPg(id),
-		WorkspaceID: uuidToPg(wsID),
-	})
+	return getQuerier(ctx, r.queries).DeleteAutomation(ctx, sqlc.DeleteAutomationParams{ID: uuidToPg(id), WorkspaceID: uuidToPg(wsID)})
 }
 
 func (r *AutomationRepository) ListEnabledAutomationsByTrigger(ctx context.Context, wsID uuid.UUID, trig string) ([]*domainAutomation.Automation, error) {
-	rows, err := getQuerier(ctx, r.queries).ListEnabledAutomationsByTrigger(ctx, sqlc.ListEnabledAutomationsByTriggerParams{
-		WorkspaceID: uuidToPg(wsID),
-		TriggerType: trig,
-	})
+	rows, err := getQuerier(ctx, r.queries).ListEnabledAutomationsByTrigger(ctx, sqlc.ListEnabledAutomationsByTriggerParams{WorkspaceID: uuidToPg(wsID), TriggerType: trig})
 	if err != nil {
 		return nil, err
 	}
@@ -172,10 +143,15 @@ func (r *AutomationRepository) ListEnabledAutomationsByTrigger(ctx context.Conte
 }
 
 func (r *AutomationRepository) ListAutomationsByColumn(ctx context.Context, wsID, colID uuid.UUID) ([]*domainAutomation.Automation, error) {
-	rows, err := getQuerier(ctx, r.queries).ListAutomationsByColumn(ctx, sqlc.ListAutomationsByColumnParams{
-		ColumnID:    uuidToPg(colID),
-		WorkspaceID: uuidToPg(wsID),
-	})
+	rows, err := getQuerier(ctx, r.queries).ListAutomationsByColumn(ctx, sqlc.ListAutomationsByColumnParams{ColumnID: uuidToPg(colID), WorkspaceID: uuidToPg(wsID)})
+	if err != nil {
+		return nil, err
+	}
+	return toDomainAutomations(rows), nil
+}
+
+func (r *AutomationRepository) ListAutomationsByTask(ctx context.Context, taskID, wsID uuid.UUID) ([]*domainAutomation.Automation, error) {
+	rows, err := getQuerier(ctx, r.queries).ListAutomationsByTask(ctx, sqlc.ListAutomationsByTaskParams{TaskID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID)})
 	if err != nil {
 		return nil, err
 	}
@@ -196,22 +172,14 @@ func (r *AutomationRepository) CreateColumnAutomation(ctx context.Context, a *do
 		colPg = uuidToPg(*a.ColumnID)
 	}
 	row, err := getQuerier(ctx, r.queries).CreateColumnAutomation(ctx, sqlc.CreateColumnAutomationParams{
-		WorkspaceID:    uuidToPg(a.WorkspaceID),
-		BoardID:        uuidPtrToPg(a.BoardID),
-		ColumnID:       colPg,
-		Name:           a.Name,
-		TriggerType:    a.TriggerType,
-		ConditionsJson: a.ConditionsJSON,
-		ActionsJson:    a.ActionsJSON,
-		IsEnabled:      a.IsEnabled,
-		RuleDefinition: getRuleBytes(a.RuleDefinition),
+		WorkspaceID: uuidToPg(a.WorkspaceID), BoardID: uuidPtrToPg(a.BoardID), ColumnID: colPg,
+		TaskID: uuidPtrToPg(a.TaskID), Name: a.Name, TriggerType: a.TriggerType,
+		ConditionsJson: a.ConditionsJSON, ActionsJson: a.ActionsJSON, IsEnabled: a.IsEnabled, RuleDefinition: getRuleBytes(a.RuleDefinition),
 	})
 	if err != nil {
 		return err
 	}
-	a.ID = pgToUUID(row.ID)
-	a.CreatedAt = pgToTime(row.CreatedAt)
-	a.UpdatedAt = pgToTime(row.UpdatedAt)
+	a.ID, a.CreatedAt, a.UpdatedAt = pgToUUID(row.ID), pgToTime(row.CreatedAt), pgToTime(row.UpdatedAt)
 	return nil
 }
 
@@ -219,11 +187,7 @@ func (r *AutomationRepository) CreateColumnAutomation(ctx context.Context, a *do
 
 func (r *AutomationRepository) MoveTaskToColumn(ctx context.Context, taskID, wsID uuid.UUID, colID, prjID *uuid.UUID, pos float64) error {
 	_, err := getQuerier(ctx, r.queries).MoveTaskToColumnAndPosition(ctx, sqlc.MoveTaskToColumnAndPositionParams{
-		ID:          uuidToPg(taskID),
-		WorkspaceID: uuidToPg(wsID),
-		ColumnID:    uuidPtrToPg(colID),
-		ProjectID:   uuidPtrToPg(prjID),
-		Position:    pos,
+		ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), ColumnID: uuidPtrToPg(colID), ProjectID: uuidPtrToPg(prjID), Position: pos,
 	})
 	return err
 }
@@ -233,20 +197,12 @@ func (r *AutomationRepository) SetTaskFocus(ctx context.Context, taskID, wsID uu
 	if focusOrder != nil {
 		fo = pgtype.Int4{Int32: int32(*focusOrder), Valid: true}
 	}
-	_, err := getQuerier(ctx, r.queries).SetTaskFocus(ctx, sqlc.SetTaskFocusParams{
-		ID:          uuidToPg(taskID),
-		WorkspaceID: uuidToPg(wsID),
-		FocusOrder:  fo,
-	})
+	_, err := getQuerier(ctx, r.queries).SetTaskFocus(ctx, sqlc.SetTaskFocusParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), FocusOrder: fo})
 	return err
 }
 
 func (r *AutomationRepository) SetTaskPriority(ctx context.Context, taskID, wsID uuid.UUID, priority string) error {
-	_, err := getQuerier(ctx, r.queries).SetTaskPriority(ctx, sqlc.SetTaskPriorityParams{
-		ID:          uuidToPg(taskID),
-		WorkspaceID: uuidToPg(wsID),
-		Priority:    priority,
-	})
+	_, err := getQuerier(ctx, r.queries).SetTaskPriority(ctx, sqlc.SetTaskPriorityParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), Priority: priority})
 	return err
 }
 
@@ -258,21 +214,14 @@ func (r *AutomationRepository) resolveTagID(ctx context.Context, wsID uuid.UUID,
 		return pgtype.UUID{}, nil
 	}
 	q := getQuerier(ctx, r.queries)
-	tagRow, err := q.GetTagByName(ctx, sqlc.GetTagByNameParams{
-		WorkspaceID: uuidToPg(wsID),
-		Lower:       strings.ToLower(tagName),
-	})
+	tagRow, err := q.GetTagByName(ctx, sqlc.GetTagByNameParams{WorkspaceID: uuidToPg(wsID), Lower: strings.ToLower(tagName)})
 	if err == nil {
 		return tagRow.ID, nil
 	}
 	if !create {
 		return pgtype.UUID{}, err
 	}
-	newTag, err := q.CreateTag(ctx, sqlc.CreateTagParams{
-		WorkspaceID: uuidToPg(wsID),
-		Name:        tagName,
-		ColorHex:    "#6366f1",
-	})
+	newTag, err := q.CreateTag(ctx, sqlc.CreateTagParams{WorkspaceID: uuidToPg(wsID), Name: tagName, ColorHex: "#6366f1"})
 	if err != nil {
 		return pgtype.UUID{}, err
 	}
@@ -300,60 +249,61 @@ func (r *AutomationRepository) SetTaskDueDate(ctx context.Context, taskID, wsID 
 	if dueDate != nil {
 		duePg = pgtype.Date{Time: *dueDate, Valid: true}
 	}
-	_, err := getQuerier(ctx, r.queries).SetTaskDueDate(ctx, sqlc.SetTaskDueDateParams{
-		ID:          uuidToPg(taskID),
-		WorkspaceID: uuidToPg(wsID),
-		DueDate:     duePg,
-	})
+	_, err := getQuerier(ctx, r.queries).SetTaskDueDate(ctx, sqlc.SetTaskDueDateParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), DueDate: duePg})
 	return err
 }
 
 func (r *AutomationRepository) SetTaskCompleted(ctx context.Context, taskID, wsID uuid.UUID, isCompleted bool) error {
-	_, err := getQuerier(ctx, r.queries).SetTaskCompletion(ctx, sqlc.SetTaskCompletionParams{
-		ID:          uuidToPg(taskID),
-		WorkspaceID: uuidToPg(wsID),
-		IsCompleted: isCompleted,
-	})
+	_, err := getQuerier(ctx, r.queries).SetTaskCompletion(ctx, sqlc.SetTaskCompletionParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), IsCompleted: isCompleted})
 	return err
 }
 
 func (r *AutomationRepository) ArchiveTask(ctx context.Context, taskID, wsID uuid.UUID) error {
-	return getQuerier(ctx, r.queries).DeleteTask(ctx, sqlc.DeleteTaskParams{
-		ID:          uuidToPg(taskID),
-		WorkspaceID: uuidToPg(wsID),
-	})
+	return getQuerier(ctx, r.queries).DeleteTask(ctx, sqlc.DeleteTaskParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID)})
 }
 
 // TaskReader implementation
 
+func mapTaskInfo(id, wsID, prjID, colID pgtype.UUID, title, priority string, isCompleted bool, dueDate pgtype.Date, created, updated pgtype.Timestamptz) *appAutomation.TaskInfo {
+	var due *time.Time
+	if dueDate.Valid {
+		due = &dueDate.Time
+	}
+	return &appAutomation.TaskInfo{
+		ID:          pgToUUID(id),
+		WorkspaceID: pgToUUID(wsID),
+		ProjectID:   pgToUUIDPtr(prjID),
+		ColumnID:    pgToUUIDPtr(colID),
+		Title:       title,
+		Priority:    priority,
+		IsCompleted: isCompleted,
+		DueDate:     due,
+		CreatedAt:   pgToTime(created),
+		UpdatedAt:   pgToTime(updated),
+	}
+}
+
 func (r *AutomationRepository) ListTasksByColumn(ctx context.Context, wsID, colID uuid.UUID) ([]*appAutomation.TaskInfo, error) {
-	rows, err := getQuerier(ctx, r.queries).ListTasksByColumn(ctx, sqlc.ListTasksByColumnParams{
-		ColumnID:    uuidToPg(colID),
-		WorkspaceID: uuidToPg(wsID),
-	})
+	rows, err := getQuerier(ctx, r.queries).ListTasksByColumn(ctx, sqlc.ListTasksByColumnParams{ColumnID: uuidToPg(colID), WorkspaceID: uuidToPg(wsID)})
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*appAutomation.TaskInfo, len(rows))
+	res := make([]*appAutomation.TaskInfo, len(rows))
 	for i, row := range rows {
-		var due *time.Time
-		if row.DueDate.Valid {
-			due = &row.DueDate.Time
-		}
-		result[i] = &appAutomation.TaskInfo{
-			ID:          pgToUUID(row.ID),
-			WorkspaceID: pgToUUID(row.WorkspaceID),
-			ProjectID:   pgToUUIDPtr(row.ProjectID),
-			ColumnID:    pgToUUIDPtr(row.ColumnID),
-			Title:       row.Title,
-			Priority:    row.Priority,
-			IsCompleted: row.IsCompleted,
-			DueDate:     due,
-			CreatedAt:   pgToTime(row.CreatedAt),
-			UpdatedAt:   pgToTime(row.UpdatedAt),
-		}
+		res[i] = mapTaskInfo(row.ID, row.WorkspaceID, row.ProjectID, row.ColumnID, row.Title, row.Priority, row.IsCompleted, row.DueDate, row.CreatedAt, row.UpdatedAt)
 	}
-	return result, nil
+	return res, nil
+}
+
+func (r *AutomationRepository) GetTaskByID(ctx context.Context, taskID, wsID uuid.UUID) (*appAutomation.TaskInfo, error) {
+	row, err := getQuerier(ctx, r.queries).GetTaskByID(ctx, sqlc.GetTaskByIDParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID)})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return mapTaskInfo(row.ID, row.WorkspaceID, row.ProjectID, row.ColumnID, row.Title, row.Priority, row.IsCompleted, row.DueDate, row.CreatedAt, row.UpdatedAt), nil
 }
 
 // ProjectReader implementation

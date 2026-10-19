@@ -106,10 +106,54 @@ func (w *Worker) Tick(ctx context.Context) error {
 			w.processSLATimerRule(ctx, rule)
 		case domainAutomation.TriggerScheduledSweep:
 			w.processScheduledSweepRule(ctx, rule)
+		case domainAutomation.TriggerTaskTimer:
+			w.processTaskTimerRule(ctx, rule)
 		}
 	}
 
 	return nil
+}
+
+func (w *Worker) processTaskTimerRule(ctx context.Context, rule *domainAutomation.Automation) {
+	if rule.TaskID == nil {
+		return
+	}
+
+	task, err := w.taskReader.GetTaskByID(ctx, *rule.TaskID, rule.WorkspaceID)
+	if err != nil || task == nil || task.IsCompleted {
+		return
+	}
+
+	delayMinutes := toFloat(rule.RuleDefinition.Trigger.Params["delay_minutes"])
+	if delayMinutes <= 0 {
+		delayMinutes = toFloat(rule.RuleDefinition.Trigger.Params["duration_minutes"])
+	}
+	var requiredDuration time.Duration
+	if delayMinutes > 0 {
+		requiredDuration = time.Duration(delayMinutes) * time.Minute
+	} else {
+		durationHours := toFloat(rule.RuleDefinition.Trigger.Params["duration_hours"])
+		if durationHours <= 0 {
+			durationHours = toFloat(rule.RuleDefinition.Trigger.Params["delay_hours"])
+		}
+		if durationHours <= 0 {
+			durationHours = 24
+		}
+		requiredDuration = time.Duration(durationHours * float64(time.Hour))
+	}
+
+	refTime := rule.CreatedAt
+	if refTime.IsZero() {
+		refTime = task.UpdatedAt
+		if refTime.IsZero() {
+			refTime = task.CreatedAt
+		}
+	}
+
+	now := time.Now().UTC()
+	if now.Sub(refTime) >= requiredDuration {
+		_ = w.evaluator.ExecuteRule(ctx, rule.RuleDefinition, task)
+	}
 }
 
 func (w *Worker) processSLATimerRule(ctx context.Context, rule *domainAutomation.Automation) {

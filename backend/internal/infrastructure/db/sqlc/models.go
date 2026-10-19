@@ -33,6 +33,7 @@ type Automation struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	ColumnID       pgtype.UUID        `json:"column_id"`
 	RuleDefinition []byte             `json:"rule_definition"`
+	TaskID         pgtype.UUID        `json:"task_id"`
 }
 
 type Board struct {

@@ -21,13 +21,14 @@ import (
 )
 
 type mockAutomationService struct {
-	listFn   func(ctx context.Context, wsID uuid.UUID) ([]*domainAutomation.Automation, error)
-	toggleFn func(ctx context.Context, wsID, autoID uuid.UUID, isEnabled bool) (*domainAutomation.Automation, error)
-	seedFn   func(ctx context.Context, wsID uuid.UUID) error
-	createFn func(ctx context.Context, input appAutomation.CreateAutomationInput) (*domainAutomation.Automation, error)
-	updateFn func(ctx context.Context, input appAutomation.UpdateAutomationInput) (*domainAutomation.Automation, error)
-	deleteFn func(ctx context.Context, wsID, autoID uuid.UUID) error
-	getFn    func(ctx context.Context, wsID, autoID uuid.UUID) (*domainAutomation.Automation, error)
+	listFn     func(ctx context.Context, wsID uuid.UUID) ([]*domainAutomation.Automation, error)
+	listTaskFn func(ctx context.Context, wsID, taskID uuid.UUID) ([]*domainAutomation.Automation, error)
+	toggleFn   func(ctx context.Context, wsID, autoID uuid.UUID, isEnabled bool) (*domainAutomation.Automation, error)
+	seedFn     func(ctx context.Context, wsID uuid.UUID) error
+	createFn   func(ctx context.Context, input appAutomation.CreateAutomationInput) (*domainAutomation.Automation, error)
+	updateFn   func(ctx context.Context, input appAutomation.UpdateAutomationInput) (*domainAutomation.Automation, error)
+	deleteFn   func(ctx context.Context, wsID, autoID uuid.UUID) error
+	getFn      func(ctx context.Context, wsID, autoID uuid.UUID) (*domainAutomation.Automation, error)
 }
 
 func (m *mockAutomationService) ListAutomations(ctx context.Context, wsID uuid.UUID) ([]*domainAutomation.Automation, error) {
@@ -35,6 +36,17 @@ func (m *mockAutomationService) ListAutomations(ctx context.Context, wsID uuid.U
 		return m.listFn(ctx, wsID)
 	}
 	return nil, nil
+}
+
+func (m *mockAutomationService) ListTaskAutomations(ctx context.Context, wsID, taskID uuid.UUID) ([]*domainAutomation.Automation, error) {
+	if m.listTaskFn != nil {
+		return m.listTaskFn(ctx, wsID, taskID)
+	}
+	return nil, nil
+}
+
+func (m *mockAutomationService) ExecuteTaskAutomation(ctx context.Context, wsID, taskID, autoID uuid.UUID) error {
+	return nil
 }
 
 func (m *mockAutomationService) ListColumnAutomations(ctx context.Context, wsID, colID uuid.UUID) ([]*domainAutomation.Automation, error) {
@@ -295,4 +307,37 @@ func TestToggleAutomation(t *testing.T) {
 		})
 	}
 }
+
+func TestListWorkspaceAutomations_WithTaskId(t *testing.T) {
+	wsID := uuid.New()
+	taskID := uuid.New()
+	rule, _ := domainAutomation.NewAutomation(wsID, nil, "Task Rule", domainAutomation.TriggerTaskTimer, nil, nil, true)
+	rule.TaskID = &taskID
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/workspaces/"+wsID.String()+"/automations?taskId="+taskID.String(), nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.Set("workspace_id", wsID.String())
+
+	mockSvc := &mockAutomationService{
+		listTaskFn: func(ctx context.Context, wid, tid uuid.UUID) ([]*domainAutomation.Automation, error) {
+			assert.Equal(t, wsID, wid)
+			assert.Equal(t, taskID, tid)
+			return []*domainAutomation.Automation{rule}, nil
+		},
+	}
+
+	h := NewHandler(nil, "v1", false, nil, nil, nil, nil, mockSvc)
+	err := h.ListWorkspaceAutomations(c, wsID)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var resp []generated.Automation
+	err = json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	require.Len(t, resp, 1)
+	assert.Equal(t, &taskID, resp[0].TaskId)
+}
+
 

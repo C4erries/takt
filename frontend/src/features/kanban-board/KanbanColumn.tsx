@@ -354,6 +354,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             <KanbanCard
               key={task.id}
               task={task}
+              workspaceId={workspaceId}
+              projectId={projectId}
               isSelected={selectedTaskId === task.id}
               isOverlay={isOverlay}
               onSelect={onSelectTask}

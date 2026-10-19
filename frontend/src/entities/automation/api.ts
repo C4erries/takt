@@ -7,8 +7,9 @@ import type {
 } from './types';
 
 export const automationsApi = {
-  async fetchAutomations(workspaceId: string): Promise<Automation[]> {
-    return request<Automation[]>(`/workspaces/${workspaceId}/automations`, {
+  async fetchAutomations(workspaceId: string, taskId?: string): Promise<Automation[]> {
+    const query = taskId ? `?taskId=${encodeURIComponent(taskId)}` : '';
+    return request<Automation[]>(`/workspaces/${workspaceId}/automations${query}`, {
       method: 'GET',
     });
   },

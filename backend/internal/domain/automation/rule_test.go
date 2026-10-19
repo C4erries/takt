@@ -50,15 +50,18 @@ func TestRuleDefinition_Validate(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "valid rule with all supported triggers",
+			name: "valid rule with column_sla_timer trigger",
 			rule: &automation.RuleDefinition{
-				Trigger: automation.Trigger{
-					Type: automation.TriggerColumnSLATimer,
-					Params: map[string]interface{}{
-						"column_id":      uuid.New().String(),
-						"duration_hours": 24,
-					},
-				},
+				Trigger:    automation.Trigger{Type: automation.TriggerColumnSLATimer, Params: map[string]interface{}{"duration_hours": 24}},
+				Conditions: []automation.Condition{validCondition},
+				Actions:    []automation.Action{validAction},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "valid rule with task_timer trigger",
+			rule: &automation.RuleDefinition{
+				Trigger:    automation.Trigger{Type: automation.TriggerTaskTimer, Params: map[string]interface{}{"delay_hours": 24}},
 				Conditions: []automation.Condition{validCondition},
 				Actions:    []automation.Action{validAction},
 			},

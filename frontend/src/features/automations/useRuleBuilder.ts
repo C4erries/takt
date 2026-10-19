@@ -22,6 +22,7 @@ export interface UseRuleBuilderParams {
   allColumns?: { id: string; name: string }[];
   mode?: 'create' | 'edit';
   initialRule?: Automation | null;
+  taskId?: string | null;
   onSuccess?: (saved: Automation) => void;
   onClose: () => void;
 }
@@ -31,6 +32,7 @@ export const TRIGGER_OPTIONS: { type: AutomationTriggerType; label: string; desc
   { type: 'task_completed_in_column', label: 'Завершение в колонке', desc: 'Задача выполнена в колонке' },
   { type: 'task_field_changed', label: 'Изменение поля', desc: 'Смена приоритета, дедлайна или статуса' },
   { type: 'column_sla_timer', label: 'SLA таймер в колонке', desc: 'Задача в колонке дольше N часов' },
+  { type: 'task_timer', label: 'Таймер задачи', desc: 'Через N часов выполнить действие' },
   { type: 'scheduled_sweep', label: 'Ежедневное расписание', desc: 'Регулярная утренняя проверка' },
 ];
 
@@ -44,16 +46,11 @@ export const CONDITION_FIELDS: { field: AutomationConditionField; label: string 
 ];
 
 export const CONDITION_OPERATORS: { operator: AutomationConditionOperator; label: string }[] = [
-  { operator: 'equals', label: 'равно' },
-  { operator: 'not_equals', label: 'не равно' },
-  { operator: 'contains', label: 'содержит' },
-  { operator: 'not_contains', label: 'не содержит' },
-  { operator: 'is_not_empty', label: 'заполнено' },
-  { operator: 'is_empty', label: 'пусто' },
-  { operator: 'greater_than', label: 'больше чем' },
-  { operator: 'less_than', label: 'меньше чем' },
-  { operator: 'in', label: 'один из' },
-  { operator: 'not_in', label: 'ни один из' },
+  { operator: 'equals', label: 'равно' }, { operator: 'not_equals', label: 'не равно' },
+  { operator: 'contains', label: 'содержит' }, { operator: 'not_contains', label: 'не содержит' },
+  { operator: 'is_not_empty', label: 'заполнено' }, { operator: 'is_empty', label: 'пусто' },
+  { operator: 'greater_than', label: 'больше чем' }, { operator: 'less_than', label: 'меньше чем' },
+  { operator: 'in', label: 'один из' }, { operator: 'not_in', label: 'ни один из' },
 ];
 
 export const FIELD_OPERATORS_MAP: Record<AutomationConditionField, AutomationConditionOperator[]> = {
@@ -78,11 +75,8 @@ export const ACTION_TYPES: { type: AutomationActionType; label: string; desc: st
 ];
 
 export const PRIORITIES = [
-  { value: 'pending', label: 'В ожидании' },
-  { value: 'high', label: 'Высокий' },
-  { value: 'medium', label: 'Средний' },
-  { value: 'low', label: 'Низкий' },
-  { value: 'none', label: 'Обычный' },
+  { value: 'pending', label: 'В ожидании' }, { value: 'high', label: 'Высокий' },
+  { value: 'medium', label: 'Средний' }, { value: 'low', label: 'Низкий' }, { value: 'none', label: 'Обычный' },
 ];
 
 export const PRIORITY_ACTIVE_STYLES: Record<string, string> = {
@@ -95,10 +89,8 @@ export const PRIORITY_ACTIVE_STYLES: Record<string, string> = {
 };
 
 export const DUE_DATE_STATUS_OPTIONS = [
-  { value: 'overdue', label: 'Просрочен' },
-  { value: 'due_soon', label: 'Горит (<= 48ч)' },
-  { value: 'on_track', label: 'В графике' },
-  { value: 'no_due_date', label: 'Без срока' },
+  { value: 'overdue', label: 'Просрочен' }, { value: 'due_soon', label: 'Горит (<= 48ч)' },
+  { value: 'on_track', label: 'В графике' }, { value: 'no_due_date', label: 'Без срока' },
 ];
 
 export function formatTriggerLabel(
@@ -123,6 +115,8 @@ export function formatTriggerLabel(
       return colName
         ? `SLA таймер в [${colName}] (> ${slaHours || 24} ч)`
         : `SLA таймер (> ${slaHours || 24} ч)`;
+    case 'task_timer':
+      return `Таймер задачи (> ${slaHours || 24} ч)`;
     case 'scheduled_sweep':
       return 'Ежедневная проверка по расписанию';
     case 'task_completed':
@@ -222,6 +216,7 @@ export function useRuleBuilder({
   allColumns = [],
   mode = 'create',
   initialRule,
+  taskId,
   onSuccess,
   onClose,
 }: UseRuleBuilderParams) {
@@ -230,7 +225,9 @@ export function useRuleBuilder({
 
   const [ruleName, setRuleName] = useState('');
   const [isCustomName, setIsCustomName] = useState(false);
-  const [triggerType, setTriggerType] = useState<AutomationTriggerType>('task_entered_column');
+  const [triggerType, setTriggerType] = useState<AutomationTriggerType>(
+    taskId ? 'task_timer' : 'task_entered_column'
+  );
   const [triggerColumnId, setTriggerColumnId] = useState<string>(prefilledColumnId || '');
   const [triggerSlaHours, setTriggerSlaHours] = useState<number>(24);
   const [triggerField, setTriggerField] = useState<string>('priority');
@@ -269,13 +266,15 @@ export function useRuleBuilder({
         ((initialRule.actionsJson as { actions?: AutomationAction[] })?.actions) ||
         [];
       setActions(acts.length > 0 ? acts : [{ type: 'set_priority', params: { priority: 'high' } }]);
+    } else if (taskId) {
+      setTriggerType('task_timer');
     } else if (prefilledColumnId) {
       setTriggerColumnId(prefilledColumnId);
       setTriggerType('task_entered_column');
     } else if (allColumns.length > 0 && !triggerColumnId) {
       setTriggerColumnId(allColumns[0].id);
     }
-  }, [initialRule, prefilledColumnId, allColumns]);
+  }, [initialRule, prefilledColumnId, allColumns, taskId]);
 
   useEffect(() => {
     if (!isCustomName) {
@@ -328,7 +327,7 @@ export function useRuleBuilder({
       triggerType === 'scheduled_sweep'
     ) {
       if (effectiveColumnId) triggerParams.column_id = effectiveColumnId;
-    } else if (triggerType === 'column_sla_timer') {
+    } else if (triggerType === 'column_sla_timer' || triggerType === 'task_timer') {
       if (effectiveColumnId) triggerParams.column_id = effectiveColumnId;
       triggerParams.duration_hours = Number(triggerSlaHours) || 24;
     } else if (triggerType === 'task_field_changed') {
@@ -346,6 +345,7 @@ export function useRuleBuilder({
             name: ruleName.trim(),
             triggerType,
             columnId: effectiveColumnId,
+            taskId: initialRule.taskId ?? taskId ?? null,
             conditionsJson: { conditions, logical_operator: logicalOperator },
             actionsJson: { actions },
             ruleDefinition,
@@ -357,6 +357,7 @@ export function useRuleBuilder({
           name: ruleName.trim(),
           triggerType,
           columnId: effectiveColumnId,
+          taskId: taskId ?? null,
           conditionsJson: { conditions, logical_operator: logicalOperator },
           actionsJson: { actions },
           isEnabled: true,

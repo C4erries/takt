@@ -248,6 +248,75 @@ func (_c *MockUseCases_DeleteAutomation_Call) RunAndReturn(run func(ctx context.
 	return _c
 }
 
+// ExecuteTaskAutomation provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) ExecuteTaskAutomation(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID, automationID uuid.UUID) error {
+	ret := _mock.Called(ctx, workspaceID, taskID, automationID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExecuteTaskAutomation")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, workspaceID, taskID, automationID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockUseCases_ExecuteTaskAutomation_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ExecuteTaskAutomation'
+type MockUseCases_ExecuteTaskAutomation_Call struct {
+	*mock.Call
+}
+
+// ExecuteTaskAutomation is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+//   - taskID uuid.UUID
+//   - automationID uuid.UUID
+func (_e *MockUseCases_Expecter) ExecuteTaskAutomation(ctx any, workspaceID any, taskID any, automationID any) *MockUseCases_ExecuteTaskAutomation_Call {
+	return &MockUseCases_ExecuteTaskAutomation_Call{Call: _e.mock.On("ExecuteTaskAutomation", ctx, workspaceID, taskID, automationID)}
+}
+
+func (_c *MockUseCases_ExecuteTaskAutomation_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID, automationID uuid.UUID)) *MockUseCases_ExecuteTaskAutomation_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_ExecuteTaskAutomation_Call) Return(err error) *MockUseCases_ExecuteTaskAutomation_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockUseCases_ExecuteTaskAutomation_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID, automationID uuid.UUID) error) *MockUseCases_ExecuteTaskAutomation_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetAutomation provides a mock function for the type MockUseCases
 func (_mock *MockUseCases) GetAutomation(ctx context.Context, workspaceID uuid.UUID, automationID uuid.UUID) (*automation0.Automation, error) {
 	ret := _mock.Called(ctx, workspaceID, automationID)
@@ -460,6 +529,80 @@ func (_c *MockUseCases_ListColumnAutomations_Call) Return(automations []*automat
 }
 
 func (_c *MockUseCases_ListColumnAutomations_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID) ([]*automation0.Automation, error)) *MockUseCases_ListColumnAutomations_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListTaskAutomations provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) ListTaskAutomations(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID) ([]*automation0.Automation, error) {
+	ret := _mock.Called(ctx, workspaceID, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListTaskAutomations")
+	}
+
+	var r0 []*automation0.Automation
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) ([]*automation0.Automation, error)); ok {
+		return returnFunc(ctx, workspaceID, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) []*automation0.Automation); ok {
+		r0 = returnFunc(ctx, workspaceID, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*automation0.Automation)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_ListTaskAutomations_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListTaskAutomations'
+type MockUseCases_ListTaskAutomations_Call struct {
+	*mock.Call
+}
+
+// ListTaskAutomations is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+//   - taskID uuid.UUID
+func (_e *MockUseCases_Expecter) ListTaskAutomations(ctx any, workspaceID any, taskID any) *MockUseCases_ListTaskAutomations_Call {
+	return &MockUseCases_ListTaskAutomations_Call{Call: _e.mock.On("ListTaskAutomations", ctx, workspaceID, taskID)}
+}
+
+func (_c *MockUseCases_ListTaskAutomations_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID)) *MockUseCases_ListTaskAutomations_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_ListTaskAutomations_Call) Return(automations []*automation0.Automation, err error) *MockUseCases_ListTaskAutomations_Call {
+	_c.Call.Return(automations, err)
+	return _c
+}
+
+func (_c *MockUseCases_ListTaskAutomations_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID) ([]*automation0.Automation, error)) *MockUseCases_ListTaskAutomations_Call {
 	_c.Call.Return(run)
 	return _c
 }

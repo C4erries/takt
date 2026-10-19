@@ -17,6 +17,7 @@ var validDSLTriggers = map[string]bool{
 	TriggerTaskFieldChanged:      true,
 	TriggerColumnSLATimer:        true,
 	TriggerScheduledSweep:        true,
+	TriggerTaskTimer:             true,
 }
 
 // IsValidDSLTrigger validates if the trigger type is recognized in Low-Code DSL.

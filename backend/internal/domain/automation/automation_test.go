@@ -89,6 +89,20 @@ func TestNewAutomation(t *testing.T) {
 			},
 		},
 		{
+			name:           "valid trigger task timer",
+			boardID:        &boardID,
+			ruleName:       "Auto Move After 24h",
+			triggerType:    automation.TriggerTaskTimer,
+			conditionsJSON: json.RawMessage(`{}`),
+			actionsJSON:    json.RawMessage(`{"action":"move_to_column"}`),
+			isEnabled:      true,
+			wantErr:        nil,
+			checkOut: func(t *testing.T, a *automation.Automation) {
+				assert.Equal(t, automation.TriggerTaskTimer, a.TriggerType)
+				assert.True(t, a.IsEnabled)
+			},
+		},
+		{
 			name:        "error: empty rule name",
 			ruleName:    "   ",
 			triggerType: automation.TriggerTaskCreated,
@@ -236,5 +250,31 @@ func TestAutomation_SetColumnID(t *testing.T) {
 	a.SetColumnID(nil)
 	assert.Nil(t, a.ColumnID)
 }
+
+func TestAutomation_SetTaskID(t *testing.T) {
+	wsID := uuid.New()
+	taskID := uuid.New()
+	a, err := automation.NewAutomation(
+		wsID,
+		nil,
+		"Test Rule",
+		automation.TriggerTaskTimer,
+		nil,
+		nil,
+		true,
+	)
+	require.NoError(t, err)
+	assert.Nil(t, a.TaskID)
+
+	initialUpdated := a.UpdatedAt
+
+	a.SetTaskID(&taskID)
+	assert.Equal(t, &taskID, a.TaskID)
+	assert.True(t, a.UpdatedAt.After(initialUpdated) || a.UpdatedAt.Equal(initialUpdated))
+
+	a.SetTaskID(nil)
+	assert.Nil(t, a.TaskID)
+}
+
 
 

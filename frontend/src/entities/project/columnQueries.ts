@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getAuthToken } from '@/shared/api';
 import { projectApi } from './api';
-import type { Column, UpdateColumnRequest } from './types';
+import type { Column, UpdateColumnRequest, Board } from './types';
 import { DEMO_COLUMNS, updateDemoColumnPosition } from './demo';
 
 export interface MoveColumnVariables {
@@ -141,6 +141,43 @@ export const useBoardColumnsQuery = (workspaceId?: string, boardId?: string) => 
       }
     },
     enabled: !!workspaceId && !!boardId,
+  });
+};
+
+export interface BoardWithColumns {
+  board: Board;
+  boardName: string;
+  columns: Column[];
+}
+
+export const useProjectAllColumnsQuery = (workspaceId?: string, boards?: Board[]) => {
+  return useQuery<BoardWithColumns[], Error>({
+    queryKey: ['all-columns', workspaceId, boards?.map((b) => b.id).join(',')],
+    queryFn: async () => {
+      if (!boards || boards.length === 0) return [];
+      if (!workspaceId || !getAuthToken()) {
+        return boards.map((board) => ({
+          board,
+          boardName: board.name,
+          columns: DEMO_COLUMNS.filter((c) => c.boardId === board.id),
+        }));
+      }
+      return Promise.all(
+        boards.map(async (board) => {
+          try {
+            const cols = await projectApi.listBoardColumns(workspaceId, board.id);
+            return {
+              board,
+              boardName: board.name,
+              columns: [...(cols ?? [])].sort((a, b) => a.position - b.position),
+            };
+          } catch {
+            return { board, boardName: board.name, columns: [] };
+          }
+        })
+      );
+    },
+    enabled: !!workspaceId && !!boards && boards.length > 0,
   });
 };
 

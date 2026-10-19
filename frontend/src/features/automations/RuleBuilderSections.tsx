@@ -59,9 +59,9 @@ export const TriggerSection: React.FC<TriggerSectionProps> = ({
           </select>
         </div>
       )}
-      {triggerType === 'column_sla_timer' && (
+      {(triggerType === 'column_sla_timer' || triggerType === 'task_timer') && (
         <div className="space-y-1">
-          <label className="text-[10px] font-mono text-muted">Порог нахождения:</label>
+          <label className="text-[10px] font-mono text-muted">{triggerType === 'task_timer' ? 'Таймер задачи:' : 'Порог нахождения:'}</label>
           <div className="flex items-center gap-2">
             <Input type="number" min={1} max={720} value={triggerSlaHours} onChange={(e) => setTriggerSlaHours(Number(e.target.value) || 24)} className="text-xs bg-surface border-subtle h-8" />
             <span className="text-xs text-muted">часов</span>
@@ -89,13 +89,10 @@ const TagAutocomplete: React.FC<{
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setQuery(value); }, [value]);
-
   useEffect(() => {
     if (!isOpen) return;
     const onPointerDown = (e: PointerEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false);
     };
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
@@ -104,19 +101,20 @@ const TagAutocomplete: React.FC<{
   const filtered = allTags.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()));
   const exact = allTags.some((t) => t.name.toLowerCase() === query.trim().toLowerCase());
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filtered[0]) { onChange(filtered[0].name); setQuery(filtered[0].name); setIsOpen(false); }
+      else if (allowCreate && query.trim()) { onChange(query.trim()); setIsOpen(false); }
+    }
+  };
+
   return (
     <div ref={containerRef} className="relative flex-1">
       <input
         type="text" value={query} onFocus={() => setIsOpen(true)}
         onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setIsOpen(true); }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            if (filtered[0]) { onChange(filtered[0].name); setQuery(filtered[0].name); setIsOpen(false); }
-            else if (allowCreate && query.trim()) { onChange(query.trim()); setIsOpen(false); }
-          }
-        }}
-        placeholder={placeholder}
+        onKeyDown={handleKeyDown} placeholder={placeholder}
         className="w-full bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary focus:outline-none"
       />
       {isOpen && (
@@ -204,11 +202,10 @@ const ConditionValuePicker: React.FC<{
 
   if (cond.field === 'due_date') {
     const val = String(cond.value || '');
-    const presets = [{ id: 'today', l: 'Сегодня' }, { id: 'tomorrow', l: 'Завтра' }, { id: 'overdue', l: 'Просрочен' }];
     return (
       <div className="flex items-center gap-1 flex-wrap flex-1">
         <div className="flex items-center gap-1">
-          {presets.map((pr) => (
+          {[{ id: 'today', l: 'Сегодня' }, { id: 'tomorrow', l: 'Завтра' }, { id: 'overdue', l: 'Просрочен' }].map((pr) => (
             <button key={pr.id} type="button" onClick={() => onUpdate({ value: pr.id })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', val === pr.id ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>{pr.l}</button>
           ))}
         </div>
@@ -221,9 +218,7 @@ const ConditionValuePicker: React.FC<{
     const hours = Number(cond.value) || 24;
     return (
       <div className="flex items-center gap-1 flex-wrap flex-1">
-        {[24, 48, 72].map((h) => (
-          <button key={h} type="button" onClick={() => onUpdate({ value: h })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', hours === h ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>{h} ч</button>
-        ))}
+        {[24, 48, 72].map((h) => (<button key={h} type="button" onClick={() => onUpdate({ value: h })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', hours === h ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>{h} ч</button>))}
         <input type="number" min={1} max={720} value={hours} onChange={(e) => onUpdate({ value: Number(e.target.value) || 24 })} className="w-14 bg-canvas/50 border border-subtle rounded px-1.5 py-0.5 text-xs text-primary" />
         <span className="text-[10px] text-muted">ч</span>
       </div>
@@ -298,8 +293,7 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
                 value={cond.field}
                 onChange={(e) => {
                   const f = e.target.value as AutomationConditionField;
-                  const fValidOps = FIELD_OPERATORS_MAP[f] || ['equals'];
-                  const nextOp = fValidOps.includes(cond.operator as AutomationConditionOperator) ? cond.operator : fValidOps[0];
+                  const nextOp = (FIELD_OPERATORS_MAP[f] || ['equals']).includes(cond.operator as AutomationConditionOperator) ? cond.operator : (FIELD_OPERATORS_MAP[f] || ['equals'])[0];
                   const defVal = f === 'is_completed' ? true : f === 'due_date_status' ? 'overdue' : f === 'priority' ? 'high' : '';
                   onUpdate(index, { field: f, operator: nextOp, value: defVal });
                 }}
@@ -307,7 +301,6 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
               >
                 {CONDITION_FIELDS.map((f) => (<option key={f.field} value={f.field}>{f.label}</option>))}
               </select>
-
               <select value={cond.operator} onChange={(e) => onUpdate(index, { operator: e.target.value as AutomationConditionOperator })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary">
                 {availableOperators.map((op) => (<option key={op.operator} value={op.operator}>{op.label}</option>))}
               </select>
@@ -331,11 +324,12 @@ export interface ActionsSectionProps {
   onRemove: (idx: number) => void;
   onUpdate: (idx: number, patch: Partial<AutomationAction>) => void;
   allColumns: { id: string; name: string }[];
+  boardColumnGroups?: { boardName: string; columns: { id: string; name: string }[] }[];
   workspaceId?: string;
 }
 
 export const ActionsSection: React.FC<ActionsSectionProps> = ({
-  actions, onAdd, onRemove, onUpdate, allColumns, workspaceId,
+  actions, onAdd, onRemove, onUpdate, allColumns, boardColumnGroups, workspaceId,
 }) => (
   <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2.5">
     <div className="flex items-center justify-between">
@@ -359,7 +353,16 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
 
           {act.type === 'move_to_column' && (
             <select value={String(act.params?.target_column_id || '')} onChange={(e) => onUpdate(index, { params: { ...act.params, target_column_id: e.target.value } })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
-              <option value="">Выберите колонку...</option>{allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              <option value="">Выберите колонку...</option>
+              {boardColumnGroups && boardColumnGroups.length > 0 ? (
+                boardColumnGroups.map((g) => (
+                  <optgroup key={g.boardName} label={g.boardName}>
+                    {g.columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                  </optgroup>
+                ))
+              ) : (
+                allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))
+              )}
             </select>
           )}
           {act.type === 'set_priority' && (

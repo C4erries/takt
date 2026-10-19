@@ -7,7 +7,8 @@ export type AutomationTriggerType =
   | 'task_completed'
   | 'task_updated'
   | 'task_created'
-  | 'due_date_reached';
+  | 'due_date_reached'
+  | 'task_timer';
 
 export interface AutomationTrigger {
   type: AutomationTriggerType | string;
@@ -68,6 +69,7 @@ export interface Automation {
   workspaceId: string;
   boardId?: string | null;
   columnId?: string | null;
+  taskId?: string | null;
   name: string;
   triggerType: AutomationTriggerType | string;
   conditionsJson: Record<string, unknown>;
@@ -83,6 +85,7 @@ export interface CreateAutomationRequest {
   triggerType: AutomationTriggerType | string;
   boardId?: string | null;
   columnId?: string | null;
+  taskId?: string | null;
   conditionsJson?: Record<string, unknown>;
   actionsJson?: Record<string, unknown>;
   isEnabled?: boolean;
@@ -94,6 +97,7 @@ export interface UpdateAutomationRequest {
   triggerType?: AutomationTriggerType | string;
   boardId?: string | null;
   columnId?: string | null;
+  taskId?: string | null;
   conditionsJson?: Record<string, unknown>;
   actionsJson?: Record<string, unknown>;
   isEnabled?: boolean;

@@ -23,6 +23,7 @@ const (
 	TriggerTaskFieldChanged      = "task_field_changed"
 	TriggerColumnSLATimer        = "column_sla_timer"
 	TriggerScheduledSweep        = "scheduled_sweep"
+	TriggerTaskTimer             = "task_timer"
 )
 
 var validTriggers = map[string]bool{
@@ -35,6 +36,7 @@ var validTriggers = map[string]bool{
 	TriggerTaskFieldChanged:      true,
 	TriggerColumnSLATimer:        true,
 	TriggerScheduledSweep:        true,
+	TriggerTaskTimer:             true,
 }
 
 // IsValidTriggerType validates if the given trigger string is recognized.
@@ -48,6 +50,7 @@ type Automation struct {
 	WorkspaceID    uuid.UUID
 	BoardID        *uuid.UUID
 	ColumnID       *uuid.UUID
+	TaskID         *uuid.UUID
 	Name           string
 	TriggerType    string
 	ConditionsJSON json.RawMessage
@@ -108,6 +111,12 @@ func (a *Automation) SetEnabled(enabled bool) {
 // SetColumnID updates the associated column and timestamp.
 func (a *Automation) SetColumnID(columnID *uuid.UUID) {
 	a.ColumnID = columnID
+	a.UpdatedAt = time.Now().UTC()
+}
+
+// SetTaskID updates the associated task and timestamp.
+func (a *Automation) SetTaskID(taskID *uuid.UUID) {
+	a.TaskID = taskID
 	a.UpdatedAt = time.Now().UTC()
 }
 

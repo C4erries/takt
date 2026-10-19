@@ -21,8 +21,10 @@ export interface RuleBuilderModalProps {
   prefilledColumnId?: string | null;
   prefilledColumnName?: string | null;
   allColumns?: { id: string; name: string }[];
+  boardColumnGroups?: { boardName: string; columns: { id: string; name: string }[] }[];
   mode?: 'create' | 'edit';
   initialRule?: Automation | null;
+  taskId?: string | null;
   onSuccess?: (saved: Automation) => void;
 }
 
@@ -33,8 +35,10 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
   prefilledColumnId,
   prefilledColumnName,
   allColumns = [],
+  boardColumnGroups,
   mode = 'create',
   initialRule,
+  taskId,
   onSuccess,
 }) => {
   const isEdit = mode === 'edit';
@@ -69,6 +73,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
     allColumns,
     mode,
     initialRule,
+    taskId,
     onSuccess,
     onClose,
   });
@@ -133,6 +138,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
           onRemove={handleRemoveAction}
           onUpdate={handleUpdateAction}
           allColumns={allColumns}
+          boardColumnGroups={boardColumnGroups}
           workspaceId={workspaceId}
         />
 
@@ -179,7 +185,7 @@ export const RuleDetailModal: React.FC<RuleDetailModalProps> = ({
   if (!rule) return null;
 
   const isTimeTrigger =
-    rule.triggerType === 'column_sla_timer' || rule.triggerType === 'scheduled_sweep';
+    rule.triggerType === 'column_sla_timer' || rule.triggerType === 'scheduled_sweep' || rule.triggerType === 'task_timer';
   const triggerLabel = formatTriggerLabel(
     rule.triggerType,
     rule.columnId,

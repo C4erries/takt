@@ -247,5 +247,102 @@ func TestService_UpdateAutomation(t *testing.T) {
 		require.NotNil(t, updated)
 		assert.Equal(t, domainAutomation.LogicOr, updated.RuleDefinition.LogicalOperator)
 	})
+
+	t.Run("binds and unbinds rule for task", func(t *testing.T) {
+		repo := mocks.NewMockAutomationRepository(t)
+		copied := *rule
+		taskID := uuid.New()
+		repo.EXPECT().GetAutomationByID(mock.Anything, ruleID, wsID).Return(&copied, nil).Twice()
+		repo.EXPECT().UpdateAutomation(mock.Anything, mock.MatchedBy(func(a *domainAutomation.Automation) bool {
+			return a.TaskID != nil && *a.TaskID == taskID
+		})).Return(nil).Once()
+		repo.EXPECT().UpdateAutomation(mock.Anything, mock.MatchedBy(func(a *domainAutomation.Automation) bool {
+			return a.TaskID == nil
+		})).Return(nil).Once()
+
+		svc := appAutomation.NewService(repo)
+		updated, err := svc.UpdateAutomation(context.Background(), appAutomation.UpdateAutomationInput{
+			AutomationID: ruleID,
+			WorkspaceID:  wsID,
+			TaskID:       &taskID,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, &taskID, updated.TaskID)
+
+		cleared, err := svc.UpdateAutomation(context.Background(), appAutomation.UpdateAutomationInput{
+			AutomationID: ruleID,
+			WorkspaceID:  wsID,
+			ClearTaskID:  true,
+		})
+		require.NoError(t, err)
+		assert.Nil(t, cleared.TaskID)
+	})
+}
+
+func TestService_ListTaskAutomations(t *testing.T) {
+	wsID := uuid.New()
+	taskID := uuid.New()
+	rule, _ := domainAutomation.NewAutomation(wsID, nil, "Task Rule", domainAutomation.TriggerTaskTimer, nil, nil, true)
+	rule.TaskID = &taskID
+
+	t.Run("successful list", func(t *testing.T) {
+		repo := mocks.NewMockAutomationRepository(t)
+		repo.EXPECT().ListAutomationsByTask(mock.Anything, taskID, wsID).Return([]*domainAutomation.Automation{rule}, nil).Once()
+
+		svc := appAutomation.NewService(repo)
+		rules, err := svc.ListTaskAutomations(context.Background(), wsID, taskID)
+		require.NoError(t, err)
+		require.Len(t, rules, 1)
+		assert.Equal(t, &taskID, rules[0].TaskID)
+	})
+}
+
+func TestService_ExecuteTaskAutomation(t *testing.T) {
+	wsID := uuid.New()
+	taskID := uuid.New()
+	autoID := uuid.New()
+	targetColID := uuid.New()
+
+	ruleDef := &domainAutomation.RuleDefinition{
+		Trigger: domainAutomation.Trigger{Type: domainAutomation.TriggerTaskTimer},
+		Actions: []domainAutomation.Action{
+			{Type: domainAutomation.ActionMoveToColumn, Params: map[string]interface{}{"target_column_id": targetColID.String()}},
+		},
+	}
+	rule, _ := domainAutomation.NewRuleAutomation(wsID, nil, nil, "Move Task", ruleDef, true)
+	rule.ID = autoID
+	rule.TaskID = &taskID
+
+	task := &appAutomation.TaskInfo{ID: taskID, WorkspaceID: wsID, Priority: "high"}
+
+	t.Run("successfully executes task automation", func(t *testing.T) {
+		repo := mocks.NewMockAutomationRepository(t)
+		reader := mocks.NewMockTaskReader(t)
+		mod := mocks.NewMockTaskModifier(t)
+
+		repo.EXPECT().GetAutomationByID(mock.Anything, autoID, wsID).Return(rule, nil).Once()
+		reader.EXPECT().GetTaskByID(mock.Anything, taskID, wsID).Return(task, nil).Once()
+		mod.EXPECT().MoveTaskToColumn(mock.Anything, taskID, wsID, &targetColID, mock.Anything, 1000.0).Return(nil).Once()
+
+		evaluator := appAutomation.NewEvaluator(mod, nil)
+		svc := appAutomation.NewService(repo, reader, evaluator)
+
+		err := svc.ExecuteTaskAutomation(context.Background(), wsID, taskID, autoID)
+		require.NoError(t, err)
+	})
+
+	t.Run("returns ErrAutomationNotFound if task does not exist", func(t *testing.T) {
+		repo := mocks.NewMockAutomationRepository(t)
+		reader := mocks.NewMockTaskReader(t)
+
+		repo.EXPECT().GetAutomationByID(mock.Anything, autoID, wsID).Return(rule, nil).Once()
+		reader.EXPECT().GetTaskByID(mock.Anything, taskID, wsID).Return(nil, nil).Once()
+
+		evaluator := appAutomation.NewEvaluator(nil, nil)
+		svc := appAutomation.NewService(repo, reader, evaluator)
+
+		err := svc.ExecuteTaskAutomation(context.Background(), wsID, taskID, autoID)
+		require.ErrorIs(t, err, domainAutomation.ErrAutomationNotFound)
+	})
 }
 

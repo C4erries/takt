@@ -29,6 +29,11 @@ Automation:
       format: uuid
       nullable: true
       example: null
+    taskId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
     name:
       type: string
       minLength: 1
@@ -46,6 +51,7 @@ Automation:
         - task_field_changed
         - column_sla_timer
         - scheduled_sweep
+        - task_timer
       example: "task_completed"
     conditionsJson:
       type: object
@@ -83,6 +89,7 @@ Trigger:
         - task_field_changed
         - column_sla_timer
         - scheduled_sweep
+        - task_timer
       example: "task_entered_column"
     params:
       type: object
@@ -204,6 +211,7 @@ CreateAutomationRequest:
         - task_field_changed
         - column_sla_timer
         - scheduled_sweep
+        - task_timer
       example: "task_completed_in_column"
     boardId:
       type: string
@@ -211,6 +219,11 @@ CreateAutomationRequest:
       nullable: true
       example: null
     columnId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    taskId:
       type: string
       format: uuid
       nullable: true
@@ -253,6 +266,7 @@ UpdateAutomationRequest:
         - task_field_changed
         - column_sla_timer
         - scheduled_sweep
+        - task_timer
       nullable: true
       example: "task_completed_in_column"
     boardId:
@@ -261,6 +275,11 @@ UpdateAutomationRequest:
       nullable: true
       example: null
     columnId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    taskId:
       type: string
       format: uuid
       nullable: true

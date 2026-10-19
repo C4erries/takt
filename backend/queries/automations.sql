@@ -33,6 +33,7 @@ SET name = $3,
     rule_definition = $8,
     board_id = $9,
     column_id = $10,
+    task_id = $11,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
 RETURNING *;
@@ -42,6 +43,7 @@ INSERT INTO automations (
     workspace_id,
     board_id,
     column_id,
+    task_id,
     name,
     trigger_type,
     conditions_json,
@@ -49,7 +51,7 @@ INSERT INTO automations (
     is_enabled,
     rule_definition
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
 RETURNING *;
 
@@ -58,6 +60,7 @@ INSERT INTO automations (
     workspace_id,
     board_id,
     column_id,
+    task_id,
     name,
     trigger_type,
     conditions_json,
@@ -65,13 +68,18 @@ INSERT INTO automations (
     is_enabled,
     rule_definition
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 )
 RETURNING *;
 
 -- name: ListAutomationsByColumn :many
 SELECT * FROM automations
 WHERE column_id = $1 AND workspace_id = $2
+ORDER BY created_at ASC;
+
+-- name: ListAutomationsByTask :many
+SELECT * FROM automations
+WHERE task_id = $1 AND workspace_id = $2
 ORDER BY created_at ASC;
 
 -- name: ListEnabledAutomationsByTrigger :many
@@ -83,7 +91,7 @@ ORDER BY created_at ASC;
 
 -- name: ListAllEnabledTimerAutomations :many
 SELECT * FROM automations
-WHERE trigger_type IN ('column_sla_timer', 'scheduled_sweep') AND is_enabled = true;
+WHERE trigger_type IN ('column_sla_timer', 'scheduled_sweep', 'task_timer') AND is_enabled = true;
 
 -- name: DeleteAutomation :exec
 DELETE FROM automations

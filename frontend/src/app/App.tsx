@@ -1,33 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth, AuthModal, AuthScreen } from '@/features/auth';
+import { useTaskNavigation, useTaskStore, useUrlSync } from '@/features/task-navigation';
 import {
-  useTaskNavigation,
-  useInboxTasks,
-  useCreateTaskMutation,
-  useToggleTaskMutation,
-  useDeleteTaskMutation,
-  useTaskStore,
-  useUrlSync,
-  TASKS_QUERY_KEY,
-} from '@/features/task-navigation';
+  useInboxTasks, useCreateTaskMutation, useToggleTaskMutation,
+  useDeleteTaskMutation, useTodayTasksQuery, TASKS_QUERY_KEY,
+} from '@/entities/task';
 import { PanelLeftOpen } from 'lucide-react';
 import { QuickCaptureModal } from '@/features/quick-capture';
 import { Sidebar } from '@/widgets/sidebar';
 import { BoardsRail } from '@/widgets/boards-panel';
 import { MainSheet } from '@/widgets/main-sheet';
 import { TaskDrawer } from '@/widgets/task-drawer';
+import { ThemePickerModal, useThemeStore } from '@/features/theme-switcher';
+import { AmbientCanvas } from '@/shared/lib/ambient';
 import { UiCatalog } from './components/UiCatalog';
 import { StatesShowcase } from './components/StatesShowcase';
 import { Button } from '@/shared/components/ui';
-
-import { useTodayTasksQuery } from '@/entities/task';
 import {
-  useProjectTasksQuery,
-  useProjectsQuery,
-  useBoardColumnsQuery,
-  projectApi,
-  DEMO_PROJECT_TASKS,
+  useProjectTasksQuery, useProjectsQuery, useBoardColumnsQuery,
+  projectApi, DEMO_PROJECT_TASKS,
 } from '@/entities/project';
 import { tasksApi, getAuthToken, type Task, type CreateInboxTaskRequest } from '@/shared/api';
 import { AutomationsModal } from '@/features/automations';
@@ -37,14 +29,9 @@ import { getStoredColumnAutomationConfig } from '@/features/kanban-board';
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
+  const { theme, ambientIntensity } = useThemeStore();
   const {
-    user,
-    workspace,
-    setWorkspace,
-    login,
-    register,
-    logout,
-    refresh,
+    user, workspace, setWorkspace, login, register, logout, refresh,
     isLoading: isAuthLoading,
   } = useAuth();
 
@@ -52,18 +39,9 @@ export const App: React.FC = () => {
   useUrlSync({ workspaceId: workspace?.id });
 
   const {
-    selectedTaskId,
-    setSelectedTaskId,
-    isQuickCaptureOpen,
-    setQuickCaptureOpen,
-    activeNav,
-    setActiveNav,
-    selectedProjectId,
-    selectedDateFilter,
-    activeBoardId,
-    setActiveBoardId,
-    isBoardsPanelCollapsed,
-    toggleBoardsPanel,
+    selectedTaskId, setSelectedTaskId, isQuickCaptureOpen, setQuickCaptureOpen,
+    activeNav, setActiveNav, selectedProjectId, selectedDateFilter,
+    activeBoardId, setActiveBoardId, isBoardsPanelCollapsed, toggleBoardsPanel,
   } = useTaskStore();
 
   const {
@@ -248,6 +226,9 @@ export const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex">
+      {/* Background 2D Ambient Canvas (ADR-0007) */}
+      <AmbientCanvas themeId={theme} intensity={ambientIntensity} />
+
       {/* Sidebar with collapse support */}
       <Sidebar
         user={user}
@@ -386,6 +367,7 @@ export const App: React.FC = () => {
         workspaceId={workspace?.id}
         onOpenQuickCapture={() => setQuickCaptureOpen(true)}
       />
+      <ThemePickerModal />
     </div>
   );
 };

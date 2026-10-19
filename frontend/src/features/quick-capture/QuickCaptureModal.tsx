@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Modal, Input, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Priority, CreateInboxTaskRequest } from '@/shared/api';
-import { useTaskStore, useCreateTaskMutation } from '@/features/task-navigation';
+import { useTaskStore } from '@/features/task-navigation';
+import { useCreateTaskMutation } from '@/entities/task';
 
 export interface QuickCaptureModalProps {
   isOpen?: boolean;

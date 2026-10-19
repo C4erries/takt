@@ -1,13 +1,13 @@
 import React from 'react';
 import type { Task, CreateInboxTaskRequest } from '@/shared/api';
+import { useTaskStore } from '@/features/task-navigation';
 import {
   useInboxTasks,
   useCreateTaskMutation,
   useToggleTaskMutation,
   useDeleteTaskMutation,
-  useTaskStore,
-} from '@/features/task-navigation';
-import { useTodayTasksQuery } from '@/entities/task';
+  useTodayTasksQuery,
+} from '@/entities/task';
 import { InboxView } from './InboxView';
 import { TodayView } from './TodayView';
 import { ProjectView } from './ProjectView';

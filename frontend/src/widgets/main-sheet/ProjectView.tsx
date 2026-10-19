@@ -11,7 +11,7 @@ import {
   projectApi,
   DEMO_PROJECT_TASKS,
 } from '@/entities/project';
-import { useToggleTaskMutation, useDeleteTaskMutation } from '@/features/task-navigation';
+import { useToggleTaskMutation, useDeleteTaskMutation } from '@/entities/task';
 import { BoardFilterBar, filterAndSortTasks, initialFilterState } from '@/features/board-filters';
 import type { BoardFilterState } from '@/features/board-filters';
 import { getAuthToken, tasksApi, type Task } from '@/shared/api';

@@ -1,25 +1,16 @@
 import React, { useState } from 'react';
 import {
-  Inbox,
-  Zap,
-  FolderClosed,
-  Plus,
-  LogOut,
-  LogIn,
-  SlidersHorizontal,
-  Layers,
-  X,
-  Sparkles,
-  Search,
-  PanelLeftClose,
+  Inbox, Zap, FolderClosed, Plus, LogOut, LogIn,
+  SlidersHorizontal, Layers, X, Sparkles, Search, PanelLeftClose, Palette,
 } from 'lucide-react';
 import { Button, Badge, Input } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
 import { WorkspaceSwitcher } from '@/features/workspace-switcher';
 import { MiniCalendar } from '@/widgets/mini-calendar';
-import { useTaskStore, useInboxTasks } from '@/features/task-navigation';
+import { useTaskStore } from '@/features/task-navigation';
+import { useThemeStore, getTheme } from '@/features/theme-switcher';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
-import { useTodayTasksQuery } from '@/entities/task';
+import { useTodayTasksQuery, useInboxTasks } from '@/entities/task';
 import { useAutomationsQuery } from '@/entities/automation';
 
 export interface SidebarProps {
@@ -49,6 +40,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     setQuickCaptureOpen, activeNav: storeActiveNav, setActiveNav: storeSetActiveNav,
     setSelectedProjectId, setActiveBoardId,
   } = useTaskStore();
+  const { theme, setPickerOpen } = useThemeStore();
+  const themeInfo = getTheme(theme);
   const { data: inboxTasks } = useInboxTasks();
   const { data: todayTasks = [] } = useTodayTasksQuery(workspace?.id);
   const { data: projects = [] } = useProjectsQuery(workspace?.id);
@@ -153,80 +146,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="px-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-muted">
             Горизонты
           </div>
-
-          {/* Inbox */}
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedProjectId(null);
-              setActiveBoardId(null);
-              handleNavChange('inbox');
-            }}
-            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
-              currentNav === 'inbox' && !showUiCatalog
-                ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
-                : 'text-primary hover:bg-surface/60'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Inbox className="w-4 h-4 stroke-[1.8] text-muted" />
-              <span>Входящие</span>
-            </span>
-            {currentInboxCount > 0 && (
-              <Badge variant="subtle" size="sm" className="font-mono text-[11px] px-1.5 py-0">
-                {currentInboxCount}
-              </Badge>
-            )}
-          </button>
-
-          {/* Today */}
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedProjectId(null);
-              setActiveBoardId(null);
-              handleNavChange('today');
-            }}
-            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
-              currentNav === 'today' && !showUiCatalog
-                ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
-                : 'text-primary hover:bg-surface/60 opacity-80'
-            }`}
-          >
-            <span className="flex items-center gap-2.5">
-              <Zap className="w-4 h-4 stroke-[1.8] text-muted" />
-              <span>Сегодня</span>
-            </span>
-            {todayCount > 0 && (
-              <Badge variant="persimmon" size="sm" className="font-mono text-[11px] px-1.5 py-0">
-                {todayCount}
-              </Badge>
-            )}
-          </button>
-
-          {/* Automations */}
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedProjectId(null);
-              setActiveBoardId(null);
-              handleNavChange('automations');
-            }}
-            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
-              currentNav === 'automations' && !showUiCatalog
-                ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
-                : 'text-primary hover:bg-surface/60 opacity-80'
-            }`}
-            title="Автоматизации воркспейса"
-          >
-            <span className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 stroke-[1.8] text-accent-solid" />
-              <span>Автоматизации</span>
-            </span>
-            <Badge variant="subtle" size="sm" className="font-mono text-[11px] px-1.5 py-0">
-              {activeAutomationsCount}
-            </Badge>
-          </button>
+          {[
+            { id: 'inbox', label: 'Входящие', icon: Inbox, count: currentInboxCount, badgeVariant: 'subtle' as const },
+            { id: 'today', label: 'Сегодня', icon: Zap, count: todayCount, badgeVariant: 'persimmon' as const },
+            { id: 'automations', label: 'Автоматизации', icon: Sparkles, count: activeAutomationsCount, badgeVariant: 'subtle' as const, iconColor: 'text-accent-solid' },
+          ].map(({ id, label, icon: Icon, count, badgeVariant, iconColor }) => {
+            const isSelected = currentNav === id && !showUiCatalog;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => { setSelectedProjectId(null); setActiveBoardId(null); handleNavChange(id); }}
+                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-sm transition-all duration-150 ${
+                  isSelected ? 'bg-accent-surface font-medium text-primary shadow-washi-sm' : 'text-primary hover:bg-surface/60 opacity-90'
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 stroke-[1.8] ${iconColor || 'text-muted'}`} />
+                  <span>{label}</span>
+                </span>
+                {count > 0 && (
+                  <Badge variant={badgeVariant} size="sm" className="font-mono text-[11px] px-1.5 py-0">
+                    {count}
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Projects Section */}
@@ -316,12 +262,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <MiniCalendar workspaceId={workspace?.id} isCompact />
         </div>
 
-        {/* UI-Kit Showcase section */}
-        <div className="pt-2 border-t border-subtle/50">
+        {/* Settings & Extras */}
+        <div className="pt-2 border-t border-subtle/50 space-y-0.5">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-muted hover:text-primary hover:bg-surface/60 transition-all group"
+            title="Выбрать тему оформления"
+          >
+            <span className="flex items-center gap-2">
+              <Palette className="w-3.5 h-3.5 text-muted group-hover:text-primary transition-colors" />
+              <span>Оформление</span>
+            </span>
+            <span className="text-[10px] font-mono text-muted/70 group-hover:text-muted truncate max-w-[80px]">
+              {themeInfo.name.split(' ')[0]}
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={onToggleUiCatalog}
-            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-all duration-150 ${
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 ${
               showUiCatalog ? 'bg-accent-surface font-medium text-primary' : 'text-muted hover:text-primary hover:bg-surface/60'
             }`}
           >

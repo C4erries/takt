@@ -33,6 +33,7 @@
 | **Шрифты & Дизайн** | **Newsreader** (Google Fonts Serif) + **Geist Sans** (UI) + **JetBrains Mono** | Контраст книжной антиквы для разделов, плотного гротеска для текста задач и моноширинного шрифта для цифр/шорткатов. |
 | **Управление состоянием** | **TanStack Query (React Query)** + **Zustand** | React Query для синхронизации с сервером и оптимистичных апдейтов; Zustand для локального UI (фокусная строка, инспектор, меню). |
 | **Drag & Drop & Иконки** | **`@dnd-kit/core`**, **`lucide-react`** (stroke 1.5px) | Доступный легкий DnD для канбан-колонок; строгие контурные иконки без визуального мусора. |
+| **Анимации & Кинетика** | **`motion` (`motion/react` v12+)** | Пружинная физика (`spring physics`), `AnimatePresence`, layout-переходы, A11y Dampening (`prefers-reduced-motion`). |
 | **Контракты API** | **OpenAPI 3.0** (мультифайловый: `api/openapi/*`) | Модульная спецификация (paths/schemas), склейка через `@redocly/cli`, генерация серверных роутов через `oapi-codegen`. |
 | **Инфраструктура** | **Docker Compose**, **Nginx** (reverse proxy), **Makefile** | Локальный и продакшн паритет; Nginx маршрутизирует `/api/*` в Go и отдает фронтенд; `make check-arch` линтит архитектуру. |
 | **Тестирование & Python** | **uv** + **pytest** + **httpx** (`tests/`) | Ультрабыстрый запуск (`uv run pytest`), изоляция виртуального окружения, E2E проверка пользовательских сценариев через HTTP API. |
@@ -241,6 +242,8 @@ erDiagram
 |---|---|---|
 | **App** | `src/app` | Инициализация React, роутер, провайдеры TanStack Query и тем. |
 | **Shared: UI-Kit** | `src/shared/components/ui` | Атомарные компоненты: `Button`, `Input`, `Checkbox` (18px круг), `Card`, `Badge` (капсулы), `Modal`, `Skeleton`, `EmptyState`. |
+| **Shared: Motion** | `src/shared/lib/motion` | Примитивы кинетики, пресеты пружин (`springTactile`, `springSheet`), хуки доступности (`useReducedMotion`). |
+| **Shared: Ambient** | `src/shared/lib/ambient` | Легковесный Canvas 2D движок фоновых эффектов (снег, метель, листопад, созвездия) с авто-паузой во сне. |
 | **Shared: Lib** | `src/shared/lib` | Утилиты дат, горячих клавиш (J/K навигация), `cn` хелпер. |
 | **Shared: API** | `src/shared/api` | Типизированный клиент API, сгенерированный по OpenAPI. |
 | **Entities** | `src/entities/task`, `workspace`, `project` | Типы, карточка задачи в покое, селекторы. |
@@ -248,6 +251,7 @@ erDiagram
 | **Features: Task Focus** | `src/features/task-focus` | Управление фокусом задачи, J/K переключение со snappy-анимацией. |
 | **Features: Automations Toggle**| `src/features/automations-toggle`| Панель тумблеров включения/выключения готовых правил на доске. |
 | **Features: Workspace Switcher**| `src/features/workspace-switcher`| Выпадающее меню переключения воркспейсов и модал создания. |
+| **Features: Theme Switcher**   | `src/features/theme-switcher`   | Выбор темы оформления из 16 палитр Editorial Tech и анимированных тем, хранение в localStorage. |
 | **Features: Workspace Members** | `src/features/workspace-members` | Управление участниками, генерация инвайт-ссылок и принятие. |
 | **Widgets: Sidebar** | `src/widgets/sidebar` | Сворачиваемая навигация (Inbox, Today, Someday, Projects, встроенный MiniCalendar). |
 | **Widgets: Boards Rail** | `src/widgets/boards-panel` | Сворачиваемая промежуточная панель мульти-досок WEEEK-style (220px, создание, счетчики). |

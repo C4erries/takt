@@ -15,6 +15,9 @@
 | **ADR-0002** | [0002-jwt-auth-and-tenant-isolation.md](0002-jwt-auth-and-tenant-isolation.md) | 2026-10-14 | `Accepted` | Гибридный JWT (HTTP-only Cookie + Bearer Fallback), автосоздание Personal Workspace и Tenant Isolation |
 | **ADR-0003** | [0003-s3-storage-and-attachments-architecture.md](0003-s3-storage-and-attachments-architecture.md) | 2026-10-15 | `Accepted` | S3-хранилище (MinIO dev), бэкенд-прокси загрузки multipart, перманентные Content URLs для Markdown и лимит 50 МБ |
 | **ADR-0004** | [0004-low-code-automations-dsl.md](0004-low-code-automations-dsl.md) | 2026-10-18 | `Accepted` | Спецификация Low-Code DSL правил автоматизации (Trigger-Condition-Action) в JSONB, типизация и валидация |
+| **ADR-0005** | [0005-frontend-motion-and-kinetics-engine.md](0005-frontend-motion-and-kinetics-engine.md) | 2026-10-19 | `Accepted` | Движок кинетики на motion/react 12+, пружинная физика, пресеты, хореография чекбокса и A11y Dampening |
+| **ADR-0006** | [0006-editorial-tech-themes-system.md](0006-editorial-tech-themes-system.md) | 2026-10-19 | `Accepted` | Система 12 тем Editorial Tech, переключатель палитр, двухуровневый фон и FSD-рефакторинг |
+| **ADR-0007** | [0007-animated-themes-and-interactive-ambient-engine.md](0007-animated-themes-and-interactive-ambient-engine.md) | 2026-10-20 | `Accepted` | Анимированные и интерактивные темы (Snow, Tsukimi, Celestial), Canvas 2D Engine и контроль интенсивности |
 
 ---
 

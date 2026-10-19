@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Plus, MoreHorizontal, ArrowRight, GripVertical, Inbox, Check, Zap } from 'lucide-react';
 import { Badge, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
+import { motion, AnimatePresence, cardExitVariants } from '@/shared/lib/motion';
 import type { Task } from '@/shared/api';
 import {
   useProjectBoardsQuery,
@@ -41,23 +42,15 @@ const COLUMN_COLORS = [
 ] as const;
 
 function getStoredColumnColor(columnId: string): string | null {
-  try {
-    const raw = localStorage.getItem('takt_column_colors');
-    return raw ? JSON.parse(raw)[columnId] ?? null : null;
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(localStorage.getItem('takt_column_colors') || '{}')[columnId] ?? null; } catch { return null; }
 }
 
 function setStoredColumnColor(columnId: string, color: string | null): void {
   try {
-    const raw = localStorage.getItem('takt_column_colors');
-    const map = raw ? JSON.parse(raw) : {};
+    const map = JSON.parse(localStorage.getItem('takt_column_colors') || '{}');
     if (color) map[columnId] = color; else delete map[columnId];
     localStorage.setItem('takt_column_colors', JSON.stringify(map));
-  } catch {
-    // Ignored
-  }
+  } catch {}
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -73,16 +66,9 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   isOverlay = false,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
-    useSortable({
-      id: column.id,
-      data: { type: 'Column', column },
-      disabled: isOverlay,
-    });
+    useSortable({ id: column.id, data: { type: 'Column', column }, disabled: isOverlay });
 
-  const style: React.CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-  };
+  const style: React.CSSProperties = { transform: CSS.Translate.toString(transform), transition };
 
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -101,9 +87,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   useEffect(() => {
     if (!isMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsMenuOpen(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -147,10 +131,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       )}
     >
       {/* Color Accent Bar */}
-      <div
-        className="h-1 -mx-3 -mt-3 mb-2.5 rounded-t-xl transition-colors duration-150"
-        style={{ backgroundColor: columnColor || 'transparent' }}
-      />
+      <div className="h-1 -mx-3 -mt-3 mb-2.5 rounded-t-xl transition-colors duration-150" style={{ backgroundColor: columnColor || 'transparent' }} />
 
       {/* Column Header */}
       <div className="flex items-center justify-between px-1 pb-2.5 select-none">
@@ -165,9 +146,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             </div>
           )}
           <span className={cn('w-2 h-2 rounded-full shrink-0', categoryConfig.dot)} />
-          <h3 className="text-xs font-semibold tracking-wide uppercase text-primary truncate">
-            {column.name}
-          </h3>
+          <h3 className="text-xs font-semibold tracking-wide uppercase text-primary truncate">{column.name}</h3>
           {column.isInbox && (
             <span title="Входящая колонка проекта" className="inline-flex items-center shrink-0">
               <Inbox className="w-3.5 h-3.5 text-accent-solid" />
@@ -184,10 +163,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              className={cn(
-                'h-6 w-6 p-0 text-muted hover:text-primary',
-                isMenuOpen && 'bg-canvas/60 text-primary'
-              )}
+              className={cn('h-6 w-6 p-0 text-muted hover:text-primary', isMenuOpen && 'bg-canvas/60 text-primary')}
               title="Меню колонки"
               aria-label={`Меню колонки ${column.name}`}
             >
@@ -201,10 +177,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   type="button"
                   onClick={() => {
                     setIsMenuOpen(false);
-                    updateColumnMutation.mutate({
-                      columnId: column.id,
-                      data: { isInbox: !column.isInbox },
-                    });
+                    updateColumnMutation.mutate({ columnId: column.id, data: { isInbox: !column.isInbox } });
                   }}
                   className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
                 >
@@ -218,10 +191,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 {/* 2. Column Automations */}
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setIsAutomationsOpen(true);
-                  }}
+                  onClick={() => { setIsMenuOpen(false); setIsAutomationsOpen(true); }}
                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
                 >
                   <Zap className="w-3.5 h-3.5 text-accent-solid shrink-0" />
@@ -232,7 +202,6 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase border-t border-subtle/40 pt-1.5 mt-1">
                   Переместить на доску
                 </div>
-
                 {otherBoards.length === 0 ? (
                   <div className="px-2 py-1 text-[11px] text-muted italic">Нет других досок</div>
                 ) : (
@@ -243,10 +212,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                         type="button"
                         onClick={() => {
                           setIsMenuOpen(false);
-                          moveColumnMutation.mutate({
-                            columnId: column.id,
-                            targetBoardId: targetBoard.id,
-                          });
+                          moveColumnMutation.mutate({ columnId: column.id, targetBoardId: targetBoard.id });
                         }}
                         className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
                       >
@@ -262,25 +228,22 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   Цвет колонки
                 </div>
                 <div className="grid grid-cols-4 gap-1.5 px-2 py-1">
-                  {COLUMN_COLORS.map((c) => {
-                    const isSelected = c.hex === columnColor;
-                    return (
-                      <button
-                        key={c.name}
-                        type="button"
-                        onClick={() => handleSelectColor(c.hex)}
-                        title={c.name}
-                        className={cn(
-                          'w-6 h-6 rounded-full flex items-center justify-center transition-all border shadow-washi-sm',
-                          isSelected ? 'ring-2 ring-accent-solid scale-105 border-surface' : 'border-subtle/80 hover:scale-105',
-                          !c.hex && 'bg-canvas/60 text-muted'
-                        )}
-                        style={c.hex ? { backgroundColor: c.hex } : undefined}
-                      >
-                        {!c.hex && <span className="text-[10px] font-mono leading-none">✕</span>}
-                      </button>
-                    );
-                  })}
+                  {COLUMN_COLORS.map((c) => (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => handleSelectColor(c.hex)}
+                      title={c.name}
+                      className={cn(
+                        'w-6 h-6 rounded-full flex items-center justify-center transition-all border shadow-washi-sm',
+                        c.hex === columnColor ? 'ring-2 ring-accent-solid scale-105 border-surface' : 'border-subtle/80 hover:scale-105',
+                        !c.hex && 'bg-canvas/60 text-muted'
+                      )}
+                      style={c.hex ? { backgroundColor: c.hex } : undefined}
+                    >
+                      {!c.hex && <span className="text-[10px] font-mono leading-none">✕</span>}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -299,37 +262,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 autoFocus
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setIsAdding(false);
-                    setNewTitle('');
-                  }
-                }}
+                onKeyDown={(e) => { if (e.key === 'Escape') { setIsAdding(false); setNewTitle(''); } }}
                 placeholder="Название задачи... (Enter)"
                 disabled={isSubmitting}
                 className="w-full px-2.5 py-1.5 text-xs bg-canvas/40 border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
               />
               <div className="flex items-center justify-end gap-1.5">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setIsAdding(false);
-                    setNewTitle('');
-                  }}
-                  className="text-[11px] h-6 px-2 text-muted hover:text-primary"
-                >
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setIsAdding(false); setNewTitle(''); }} className="text-[11px] h-6 px-2 text-muted hover:text-primary">
                   Отмена
                 </Button>
-                <Button
-                  type="submit"
-                  variant="solid"
-                  size="sm"
-                  isLoading={isSubmitting}
-                  disabled={!newTitle.trim()}
-                  className="text-[11px] h-6 px-2.5"
-                >
+                <Button type="submit" variant="solid" size="sm" isLoading={isSubmitting} disabled={!newTitle.trim()} className="text-[11px] h-6 px-2.5">
                   Добавить
                 </Button>
               </div>
@@ -350,18 +292,28 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       {/* Droppable Task List */}
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 min-h-[140px] space-y-2 overflow-y-auto pr-0.5">
-          {tasks.map((task) => (
-            <KanbanCard
-              key={task.id}
-              task={task}
-              workspaceId={workspaceId}
-              projectId={projectId}
-              isSelected={selectedTaskId === task.id}
-              isOverlay={isOverlay}
-              onSelect={onSelectTask}
-              onToggle={onToggleTask}
-            />
-          ))}
+          <AnimatePresence initial={false}>
+            {tasks.map((task) => (
+              <motion.div
+                key={task.id}
+                layout={!isOverlay && !isDragging}
+                variants={cardExitVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <KanbanCard
+                  task={task}
+                  workspaceId={workspaceId}
+                  projectId={projectId}
+                  isSelected={selectedTaskId === task.id}
+                  isOverlay={isOverlay}
+                  onSelect={onSelectTask}
+                  onToggle={onToggleTask}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
           {tasks.length === 0 && !isAdding && (
             <div

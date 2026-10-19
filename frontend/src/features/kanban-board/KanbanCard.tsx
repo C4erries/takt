@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, AlertCircle, Clock, Calendar, MoreHorizontal } from 'lucide-react';
 import { Checkbox, Badge } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
+import { motion, strikeThroughVariants } from '@/shared/lib/motion';
 import type { Task, Priority } from '@/shared/api';
 import {
   useProjectBoardsQuery,
@@ -93,7 +94,41 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const moveTaskMutation = useMoveTaskMutation(workspaceId, effectiveProjectId);
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMarkingCompleted, setIsMarkingCompleted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (completionTimerRef.current) {
+        clearTimeout(completionTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (task.isCompleted) {
+      setIsMarkingCompleted(false);
+    }
+  }, [task.isCompleted]);
+
+  const handleToggle = () => {
+    if (task.isCompleted) {
+      setIsMarkingCompleted(false);
+      if (completionTimerRef.current) {
+        clearTimeout(completionTimerRef.current);
+      }
+      onToggle?.(task.id);
+    } else {
+      setIsMarkingCompleted(true);
+      if (completionTimerRef.current) {
+        clearTimeout(completionTimerRef.current);
+      }
+      completionTimerRef.current = setTimeout(() => {
+        onToggle?.(task.id);
+      }, 350);
+    }
+  };
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -158,16 +193,26 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
         {/* Task Details */}
         <div className="flex-1 min-w-0 space-y-1.5 pr-1">
-          <p
-            className={cn(
-              'text-xs font-medium leading-snug break-words transition-all duration-150',
-              task.isCompleted
-                ? 'line-through text-muted opacity-70'
-                : 'text-primary'
-            )}
-          >
-            {task.title}
-          </p>
+          <div className="relative inline-block max-w-full">
+            <p
+              className={cn(
+                'text-xs font-medium leading-snug break-words transition-colors duration-150',
+                task.isCompleted
+                  ? 'line-through text-muted opacity-70'
+                  : isMarkingCompleted
+                  ? 'text-muted opacity-80'
+                  : 'text-primary'
+              )}
+            >
+              {task.title}
+            </p>
+            <motion.span
+              variants={strikeThroughVariants}
+              initial="unchecked"
+              animate={task.isCompleted || isMarkingCompleted ? 'checked' : 'unchecked'}
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[1.5px] bg-muted pointer-events-none rounded-full origin-left"
+            />
+          </div>
 
           {task.descriptionMarkdown && (
             <p className="text-[11px] text-muted line-clamp-2 leading-relaxed">
@@ -300,8 +345,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
           )}
 
           <Checkbox
-            checked={task.isCompleted}
-            onChange={() => onToggle?.(task.id)}
+            checked={task.isCompleted || isMarkingCompleted}
+            onChange={handleToggle}
             aria-label={`Завершить задачу ${task.title}`}
           />
         </div>

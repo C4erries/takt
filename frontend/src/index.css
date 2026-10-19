@@ -1,34 +1,8 @@
+@import './shared/styles/themes.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  /* Surfaces and Canvas */
-  --bg-canvas: #E8E5DA;         /* Dry bamboo / unbleached linen (base window background) */
-  --bg-canvas-subtle: #DBD5C8;  /* Soft, natural darker shade of base canvas for boards rail */
-  --bg-surface: #F7F5EE;        /* Washi rice paper (central sheet, inspector cards) */
-  --border-subtle: #D0CBBF;     /* Subtle rice fiber (1px dividers) */
-
-  /* Text and Inks */
-  --text-primary: #21241E;      /* Sumi ink with soft warm undertone */
-  --text-muted: #74786C;        /* Dried tea leaf (secondary text, labels) */
-
-  /* Accents and Focus */
-  --accent-surface: #D6DEC8;    /* Milky matcha (soft active focus highlight) */
-  --accent-solid: #566B44;      /* Deep matcha green (solid button, active checkbox) */
-  --accent-solid-hover: #465737;
-
-  /* Pastel Context Tags (Pills) */
-  --tag-persimmon: #EBD5C3;     /* Persimmon / warm peach (@home) */
-  --tag-denim: #CFD8E0;         /* Indigo denim / muted grey-blue (project) */
-  --tag-straw: #EAE4CC;         /* Rice straw (time / estimates) */
-
-  /* Priority Accent Borders */
-  --accent-denim: #5A738E;      /* Indigo denim ink for urgent */
-  --accent-persimmon: #C85A32;  /* Terracotta / persimmon for high */
-  --accent-straw: #B88E2F;      /* Amber straw for medium */
-  --accent-bamboo: #40C057;     /* Bamboo sage green for low */
-}
 
 @layer base {
   * {

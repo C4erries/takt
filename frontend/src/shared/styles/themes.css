@@ -1,0 +1,358 @@
+/* Takt Editorial Tech — 12 Themes Palette (ADR-0006, Sprint 0.7.4) */
+
+:root,
+[data-theme="kyoto"] {
+  /* 1. Kyoto (Matcha & Hinoki — Default) */
+  --bg-canvas: #E8E5DA;
+  --bg-canvas-subtle: #DBD5C8;
+  --bg-surface: #F7F5EE;
+  --border-subtle: #DCD7C8;
+  --text-primary: #21241E;
+  --text-muted: #74786C;
+  --accent-surface: #D6DEC8;
+  --accent-solid: #566B44;
+  --accent-solid-hover: #465737;
+  --tag-persimmon: #EBD5C3;
+  --tag-denim: #CFD8E0;
+  --tag-straw: #EAE4CC;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="olive"] {
+  /* 2. Olive (Olive & Parchment) */
+  --bg-canvas: #ECE8DF;
+  --bg-canvas-subtle: #DFDBD0;
+  --bg-surface: #F6F4EE;
+  --border-subtle: #DFDBD0;
+  --text-primary: #23221F;
+  --text-muted: #78746B;
+  --accent-surface: #CDD2B6;
+  --accent-solid: #6E7A4E;
+  --accent-solid-hover: #5A643F;
+  --tag-persimmon: #E6CEC0;
+  --tag-denim: #CCD6DC;
+  --tag-straw: #EAE3D2;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #6E7A4E;
+}
+
+[data-theme="claude"] {
+  /* 3. Claude (Anthropic Pampas & Clay) */
+  --bg-canvas: #EFECE6;
+  --bg-canvas-subtle: #E3DEC3;
+  --bg-surface: #FAF8F5;
+  --border-subtle: #E3DEC3;
+  --text-primary: #1F1E1D;
+  --text-muted: #7A756E;
+  --accent-surface: #EFE2D8;
+  --accent-solid: #C96442;
+  --accent-solid-hover: #AF5232;
+  --tag-persimmon: #D8E0D5;
+  --tag-denim: #DFDDE6;
+  --tag-straw: #EFE6CE;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #C96442;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="ochre"] {
+  /* 4. Ochre (Ochre & Beeswax) */
+  --bg-canvas: #EFECE4;
+  --bg-canvas-subtle: #E2DBC8;
+  --bg-surface: #FAF8F2;
+  --border-subtle: #E2DBC8;
+  --text-primary: #211E18;
+  --text-muted: #787162;
+  --accent-surface: #EFE3B8;
+  --accent-solid: #B8860B;
+  --accent-solid-hover: #9E7309;
+  --tag-persimmon: #F2D6B3;
+  --tag-denim: #D5DEE2;
+  --tag-straw: #DCE3D5;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8860B;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="bauhaus"] {
+  /* 5. Bauhaus (Bauhaus Sun & Stone) */
+  --bg-canvas: #E9E8E4;
+  --bg-canvas-subtle: #D8D6CE;
+  --bg-surface: #F7F6F2;
+  --border-subtle: #D8D6CE;
+  --text-primary: #1C1B18;
+  --text-muted: #706E67;
+  --accent-surface: #F3E3A3;
+  --accent-solid: #C49A14;
+  --accent-solid-hover: #A8830E;
+  --tag-persimmon: #E3D9D6;
+  --tag-denim: #D4DCE6;
+  --tag-straw: #E0DFDA;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D97746;
+  --accent-straw: #C49A14;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="marigold"] {
+  /* 6. Marigold (Saffron & Raw Silk) */
+  --bg-canvas: #F0EAE1;
+  --bg-canvas-subtle: #E4DACB;
+  --bg-surface: #FBF8F3;
+  --border-subtle: #E4DACB;
+  --text-primary: #241D16;
+  --text-muted: #7D7165;
+  --accent-surface: #F4DFB6;
+  --accent-solid: #D47A1C;
+  --accent-solid-hover: #B76614;
+  --tag-persimmon: #DCE3D6;
+  --tag-denim: #D6DFE6;
+  --tag-straw: #EDE3D2;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D47A1C;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="nordic"] {
+  /* 7. Nordic (Nordic Birch & Fjord) */
+  --bg-canvas: #E6E8E6;
+  --bg-canvas-subtle: #D6DAD7;
+  --bg-surface: #F4F5F4;
+  --border-subtle: #D6DAD7;
+  --text-primary: #1C2120;
+  --text-muted: #6C7573;
+  --accent-surface: #D5E0E3;
+  --accent-solid: #4A6B75;
+  --accent-solid-hover: #3C575F;
+  --tag-persimmon: #E8D5D3;
+  --tag-denim: #E2DAE3;
+  --tag-straw: #D4E2DC;
+  --accent-denim: #4A6B75;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="oxford"] {
+  /* 8. Oxford (Oxford Ink & Vellum) */
+  --bg-canvas: #EAE8E1;
+  --bg-canvas-subtle: #DAD6CA;
+  --bg-surface: #F7F6F2;
+  --border-subtle: #DAD6CA;
+  --text-primary: #192028;
+  --text-muted: #6E747A;
+  --accent-surface: #D4DEE8;
+  --accent-solid: #344E68;
+  --accent-solid-hover: #293E54;
+  --tag-persimmon: #EFE0B9;
+  --tag-denim: #D6E2D8;
+  --tag-straw: #E6D5CD;
+  --accent-denim: #344E68;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="fig"] {
+  /* 9. Fig (Fig & Linen) */
+  --bg-canvas: #EDEAE6;
+  --bg-canvas-subtle: #DFD9D2;
+  --bg-surface: #F9F7F5;
+  --border-subtle: #DFD9D2;
+  --text-primary: #241E20;
+  --text-muted: #7A7074;
+  --accent-surface: #E4D6DC;
+  --accent-solid: #7A495B;
+  --accent-solid-hover: #633948;
+  --tag-persimmon: #EADCC9;
+  --tag-denim: #D8DCE6;
+  --tag-straw: #D9E0D7;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="alba"] {
+  /* 10. Alba (Gallery Chalk & Cobalt) */
+  --bg-canvas: #EDEDEB;
+  --bg-canvas-subtle: #DEDEDC;
+  --bg-surface: #FBFBF9;
+  --border-subtle: #DEDEDC;
+  --text-primary: #18191C;
+  --text-muted: #73757A;
+  --accent-surface: #D8E2F2;
+  --accent-solid: #2B54A3;
+  --accent-solid-hover: #204182;
+  --tag-persimmon: #F2DEC9;
+  --tag-denim: #DCE6DF;
+  --tag-straw: #E6E5E0;
+  --accent-denim: #2B54A3;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="espresso"] {
+  /* 11. Espresso (Evening Espresso & Brass — Warm Dark) */
+  --bg-canvas: #1C1917;
+  --bg-canvas-subtle: #24201C;
+  --bg-surface: #25211E;
+  --border-subtle: #36302B;
+  --text-primary: #EAE4DC;
+  --text-muted: #968E83;
+  --accent-surface: #383024;
+  --accent-solid: #D4A359;
+  --accent-solid-hover: #BE8E47;
+  --tag-persimmon: #422E27;
+  --tag-denim: #28333A;
+  --tag-straw: #38342A;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D97746;
+  --accent-straw: #D4A359;
+  --accent-bamboo: #84A36E;
+}
+
+[data-theme="cypress"] {
+  /* 12. Cypress (Midnight Cypress & Moss — Matcha Dark) */
+  --bg-canvas: #181C18;
+  --bg-canvas-subtle: #1E231E;
+  --bg-surface: #202620;
+  --border-subtle: #2E372E;
+  --text-primary: #E4E8E1;
+  --text-muted: #8A9486;
+  --accent-surface: #2C3B2B;
+  --accent-solid: #84A36E;
+  --accent-solid-hover: #6E8C58;
+  --tag-persimmon: #3D3226;
+  --tag-denim: #26343B;
+  --tag-straw: #323628;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #84A36E;
+}
+
+[data-theme="kyoto-snow"] {
+  /* 13. Kyoto Snow (Frosty Silver Winter — Animated Winter) */
+  --bg-canvas: #CFDDEB;
+  --bg-canvas-subtle: #BDCEDB;
+  --bg-surface: #EBF3FA;
+  --border-subtle: #B5C8DB;
+  --text-primary: #152230;
+  --text-muted: #5A6D80;
+  --accent-surface: #C6DBD1;
+  --accent-solid: #2B624A;
+  --accent-solid-hover: #1F4937;
+  --tag-persimmon: #E8D3C4;
+  --tag-denim: #C5D5E4;
+  --tag-straw: #DDE2E8;
+  --accent-denim: #2B5F85;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #2B624A;
+}
+
+[data-theme="tsukimi"] {
+  /* 14. Tsukimi (Tsukimi Dusk & Amber Glow — Animated Autumn) */
+  --bg-canvas: #1C1A18;
+  --bg-canvas-subtle: #24211D;
+  --bg-surface: #25221F;
+  --border-subtle: #38332D;
+  --text-primary: #EBE5DC;
+  --text-muted: #948A7E;
+  --accent-surface: #3C2C24;
+  --accent-solid: #D97746;
+  --accent-solid-hover: #BD6233;
+  --tag-persimmon: #45281D;
+  --tag-denim: #2C3338;
+  --tag-straw: #3D3828;
+  --accent-denim: #4A6B82;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #C49A24;
+}
+
+[data-theme="celestial"] {
+  /* 15. Celestial (Celestial Atlas & Astrolabe — Animated Interactive) */
+  --bg-canvas: #111622;
+  --bg-canvas-subtle: #161D2B;
+  --bg-surface: #171E2D;
+  --border-subtle: #252E42;
+  --text-primary: #E9EEF5;
+  --text-muted: #7E8B9E;
+  --accent-surface: #2B354C;
+  --accent-solid: #D4A853;
+  --accent-solid-hover: #BA8E3B;
+  --tag-persimmon: #3D2E24;
+  --tag-denim: #233454;
+  --tag-straw: #383626;
+  --accent-denim: #4B7BEC;
+  --accent-persimmon: #D97746;
+  --accent-straw: #D4A853;
+  --accent-bamboo: #566B44;
+}
+
+[data-theme="frost-pine"] {
+  /* 16. Frost Pine (Midnight Pine Forest & Blizzard — Animated Dark Winter) */
+  --bg-canvas: #1A2420;
+  --bg-canvas-subtle: #151D1A;
+  --bg-surface: #222E2A;
+  --border-subtle: #30403A;
+  --text-primary: #E5EFEA;
+  --text-muted: #859E92;
+  --accent-surface: #2A3D34;
+  --accent-solid: #4E9B73;
+  --accent-solid-hover: #3D7C5C;
+  --tag-persimmon: #3E3025;
+  --tag-denim: #283733;
+  --tag-straw: #343C2E;
+  --accent-denim: #4E9B73;
+  --accent-persimmon: #D97746;
+  --accent-straw: #B8943F;
+  --accent-bamboo: #4E9B73;
+}
+
+/* Global smooth color transition for theme switching */
+body,
+aside,
+header,
+nav,
+main,
+[role="dialog"] {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Dark themes noise overlay adjustment: softer opacity with overlay blend */
+[data-theme="espresso"] body::before,
+[data-theme="cypress"] body::before,
+[data-theme="tsukimi"] body::before,
+[data-theme="celestial"] body::before,
+[data-theme="frost-pine"] body::before {
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* Ambient glow effect for kanban canvas (ADR-0006, D-074-4) */
+.ambient-glow-canvas {
+  position: absolute;
+  top: -6rem;
+  right: -6rem;
+  width: 28rem;
+  height: 28rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--accent-surface) 0%, transparent 70%);
+  opacity: 0.12;
+  filter: blur(48px);
+  z-index: 0;
+  transition: background 0.3s ease;
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useTaskStore, useInboxTasks } from '@/features/task-navigation';
-import { useTodayTasksQuery, useUpdateTaskMutation } from '@/entities/task';
+import { useTaskStore } from '@/features/task-navigation';
+import { useInboxTasks, useTodayTasksQuery, useUpdateTaskMutation } from '@/entities/task';
 
 export interface MiniCalendarProps {
   workspaceId?: string;

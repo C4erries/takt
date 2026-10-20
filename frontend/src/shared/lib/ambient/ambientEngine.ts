@@ -6,9 +6,7 @@ import type {
   MouseState,
   ClickPulse,
 } from './types';
-import { SnowPreset } from './snowPreset';
-import { AutumnPreset } from './autumnPreset';
-import { CelestialPreset } from './celestialPreset';
+import { SnowPreset, AutumnPreset, CelestialPreset, OceanPreset } from './presets';
 
 export class AmbientEngine {
   private canvas: HTMLCanvasElement | null = null;
@@ -16,6 +14,7 @@ export class AmbientEngine {
   private activePreset: AmbientPreset | null = null;
   private activePresetName: AmbientPresetName | null = null;
   private intensity: AmbientIntensity = 'subtle';
+  private isInteractive = true;
 
   private rafId: number | null = null;
   private lastTime = 0;
@@ -95,6 +94,9 @@ export class AmbientEngine {
       case 'celestial':
         this.activePreset = new CelestialPreset();
         break;
+      case 'ocean':
+        this.activePreset = new OceanPreset();
+        break;
     }
 
     if (this.activePreset && this.ctx) {
@@ -107,6 +109,10 @@ export class AmbientEngine {
     if (intensity === 'off' && this.ctx && this.canvas) {
       this.ctx.clearRect(0, 0, this.width, this.height);
     }
+  }
+
+  setInteractive(interactive: boolean): void {
+    this.isInteractive = interactive;
   }
 
   private updateDimensions(): void {
@@ -206,8 +212,9 @@ export class AmbientEngine {
         height: this.height,
         dpr: this.dpr,
         intensity: this.intensity,
-        mouse: this.mouse,
-        clicks: this.clicks,
+        isInteractive: this.isInteractive,
+        mouse: this.isInteractive ? this.mouse : { x: -9999, y: -9999, isOver: false, lastMoveTime: 0 },
+        clicks: this.isInteractive ? this.clicks : [],
       };
 
       this.ctx.clearRect(0, 0, this.width, this.height);

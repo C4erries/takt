@@ -1,4 +1,4 @@
-import type { AmbientPreset, PresetContext, AmbientIntensity } from './types';
+import type { AmbientPreset, PresetContext, AmbientIntensity } from '../types';
 
 interface Star {
   baseX: number;
@@ -44,15 +44,9 @@ export class CelestialPreset implements AmbientPreset {
   }
 
   private getTargetCount(intensity: AmbientIntensity): number {
-    switch (intensity) {
-      case 'vivid':
-        return 130;
-      case 'subtle':
-        return 65;
-      case 'off':
-      default:
-        return 0;
-    }
+    if (intensity === 'vivid') return 130;
+    if (intensity === 'subtle') return 65;
+    return 0;
   }
 
   private rebuildStars(): void {
@@ -65,7 +59,6 @@ export class CelestialPreset implements AmbientPreset {
       const colorRoll = Math.random();
       const color: 'gold' | 'lapis' | 'white' =
         colorRoll < 0.45 ? 'gold' : colorRoll < 0.75 ? 'lapis' : 'white';
-
       const x = Math.random() * this.width;
       const y = Math.random() * this.height;
 
@@ -95,7 +88,6 @@ export class CelestialPreset implements AmbientPreset {
     if (this.stars.length === 0) return;
     const clampedDt = Math.min(dt, 0.1);
 
-    // Process new click pulses from context
     for (let i = 0; i < context.clicks.length; i++) {
       const click = context.clicks[i];
       if (!this.processedClickTimes.has(click.time)) {
@@ -111,18 +103,15 @@ export class CelestialPreset implements AmbientPreset {
       }
     }
 
-    // Clean old click records
     if (this.processedClickTimes.size > 30) {
       this.processedClickTimes.clear();
     }
 
-    // Update active gravitational waves
     for (let i = this.activeWaves.length - 1; i >= 0; i--) {
       const wave = this.activeWaves[i];
       wave.radius += wave.speed * clampedDt;
       wave.alpha = Math.max(0, 1 - wave.radius / wave.maxRadius);
 
-      // Push stars near wave front
       for (let j = 0; j < this.stars.length; j++) {
         const star = this.stars[j];
         const dx = star.x - wave.x;
@@ -142,12 +131,10 @@ export class CelestialPreset implements AmbientPreset {
       }
     }
 
-    // Update stars physics (spring back to base position)
     for (let i = 0; i < this.stars.length; i++) {
       const star = this.stars[i];
       star.twinklePhase += star.twinkleSpeed * clampedDt;
 
-      // Spring displacement
       const dx = star.baseX - star.x;
       const dy = star.baseY - star.y;
       star.vx += dx * 6 * clampedDt;
@@ -166,12 +153,10 @@ export class CelestialPreset implements AmbientPreset {
 
     const now = performance.now();
     const timeSinceLastMove = (now - mouse.lastMoveTime) / 1000;
-    // Lines fade out if mouse is idle > 3s
     const constellationFade = mouse.isOver
       ? Math.max(0, Math.min(1, 1 - (timeSinceLastMove - 1.5) / 1.5))
       : 0;
 
-    // 1. Draw constellation lines to cursor and between nearby stars
     if (constellationFade > 0.01) {
       const cursorRadius = 140;
       const nearbyStars: Star[] = [];
@@ -193,7 +178,6 @@ export class CelestialPreset implements AmbientPreset {
         }
       }
 
-      // Connect neighbor stars near cursor
       for (let i = 0; i < nearbyStars.length; i++) {
         for (let j = i + 1; j < nearbyStars.length; j++) {
           const s1 = nearbyStars[i];
@@ -212,7 +196,6 @@ export class CelestialPreset implements AmbientPreset {
       ctx.restore();
     }
 
-    // 2. Draw expanding gravitational waves
     for (let i = 0; i < this.activeWaves.length; i++) {
       const w = this.activeWaves[i];
       ctx.save();
@@ -224,7 +207,6 @@ export class CelestialPreset implements AmbientPreset {
       ctx.restore();
     }
 
-    // 3. Draw stars
     for (let i = 0; i < this.stars.length; i++) {
       const s = this.stars[i];
       const brightness = 0.6 + 0.4 * Math.sin(s.twinklePhase);
@@ -242,7 +224,6 @@ export class CelestialPreset implements AmbientPreset {
       ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Anchor stars have delicate cross glow
       if (s.isAnchor && alpha > 0.65) {
         ctx.strokeStyle = fill;
         ctx.lineWidth = 0.5;
@@ -265,4 +246,3 @@ export class CelestialPreset implements AmbientPreset {
     this.processedClickTimes.clear();
   }
 }
-

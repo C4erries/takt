@@ -5,6 +5,7 @@ import type { AmbientPresetName, AmbientIntensity } from './types';
 export interface AmbientCanvasProps {
   themeId?: string;
   intensity?: AmbientIntensity;
+  isInteractive?: boolean;
   className?: string;
 }
 
@@ -13,11 +14,13 @@ const THEME_TO_PRESET: Record<string, AmbientPresetName> = {
   tsukimi: 'autumn',
   celestial: 'celestial',
   'frost-pine': 'blizzard',
+  ocean: 'ocean',
 };
 
 export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({
   themeId,
   intensity = 'subtle',
+  isInteractive = true,
   className = 'fixed inset-0 pointer-events-none z-0',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -38,7 +41,7 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({
     };
   }, []);
 
-  // Sync preset and intensity
+  // Sync preset, intensity and interactivity
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
@@ -46,7 +49,8 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({
     const presetName = themeId ? THEME_TO_PRESET[themeId] ?? null : null;
     engine.setPreset(presetName);
     engine.setIntensity(intensity);
-  }, [themeId, intensity]);
+    engine.setInteractive(isInteractive);
+  }, [themeId, intensity, isInteractive]);
 
   // If no preset or intensity is off, we still keep canvas mounted with 0 opacity / hidden
   const hasActivePreset = Boolean(themeId && THEME_TO_PRESET[themeId] && intensity !== 'off');

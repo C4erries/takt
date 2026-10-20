@@ -77,3 +77,4 @@
    - 0 сырых цветов Tailwind.
 2. `cd frontend && npm run build` — **PASSED (0 ошибок, 0 предупреждений)**.
 3. `make test` — **PASSED (все бэкенд-тесты зеленые)**.
+

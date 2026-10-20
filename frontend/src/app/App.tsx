@@ -29,7 +29,7 @@ import { getStoredColumnAutomationConfig } from '@/features/kanban-board';
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
-  const { theme, ambientIntensity } = useThemeStore();
+  const { theme, ambientIntensity, ambientInteractive } = useThemeStore();
   const {
     user, workspace, setWorkspace, login, register, logout, refresh,
     isLoading: isAuthLoading,
@@ -227,7 +227,7 @@ export const App: React.FC = () => {
   return (
     <div className="h-screen w-screen overflow-hidden bg-canvas text-primary flex">
       {/* Background 2D Ambient Canvas (ADR-0007) */}
-      <AmbientCanvas themeId={theme} intensity={ambientIntensity} />
+      <AmbientCanvas themeId={theme} intensity={ambientIntensity} isInteractive={ambientInteractive} />
 
       {/* Sidebar with collapse support */}
       <Sidebar

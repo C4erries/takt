@@ -1,6 +1,6 @@
 // Takt Canvas 2D Ambient Engine — Types (ADR-0007, Sprint 0.7.4)
 
-export type AmbientPresetName = 'snow' | 'autumn' | 'celestial' | 'blizzard';
+export type AmbientPresetName = 'snow' | 'autumn' | 'celestial' | 'blizzard' | 'ocean';
 
 export type AmbientIntensity = 'off' | 'subtle' | 'vivid';
 
@@ -24,6 +24,7 @@ export interface PresetContext {
   height: number;
   dpr: number;
   intensity: AmbientIntensity;
+  isInteractive: boolean;
   mouse: MouseState;
   clicks: ClickPulse[];
 }

@@ -321,14 +321,44 @@
   --accent-bamboo: #4E9B73;
 }
 
+[data-theme="ocean"] {
+  /* 17. Ocean Sanctuary (Deep Sapphire & Bioluminescent Azure — Animated Dark) */
+  --bg-canvas: #0A141E;
+  --bg-canvas-subtle: #081018;
+  --bg-surface: #12202E;
+  --border-subtle: #1C3347;
+  --text-primary: #E0EEF8;
+  --text-muted: #6B88A3;
+  --accent-surface: #173647;
+  --accent-solid: #2DD4BF;
+  --accent-solid-hover: #26bba7;
+  --tag-persimmon: #3B2A26;
+  --tag-denim: #1B3545;
+  --tag-straw: #33392E;
+  --accent-denim: #38BDF8;
+  --accent-persimmon: #FB923C;
+  --accent-straw: #FBBF24;
+  --accent-bamboo: #2DD4BF;
+}
+
 /* Global smooth color transition for theme switching */
-body,
-aside,
-header,
-nav,
-main,
-[role="dialog"] {
+body, aside, header, nav, main, [role="dialog"] {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Frost pine frosted vignette effect across screen perimeter (D-075-1) */
+[data-theme="frost-pine"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: inset 0 0 100px 24px rgba(180, 215, 200, 0.08);
+  background:
+    radial-gradient(ellipse at top left, rgba(200, 230, 220, 0.06) 0%, transparent 40%),
+    radial-gradient(ellipse at top right, rgba(200, 230, 220, 0.06) 0%, transparent 40%),
+    radial-gradient(ellipse at bottom left, rgba(200, 230, 220, 0.05) 0%, transparent 35%),
+    radial-gradient(ellipse at bottom right, rgba(200, 230, 220, 0.05) 0%, transparent 35%);
 }
 
 /* Dark themes noise overlay adjustment: softer opacity with overlay blend */
@@ -336,7 +366,8 @@ main,
 [data-theme="cypress"] body::before,
 [data-theme="tsukimi"] body::before,
 [data-theme="celestial"] body::before,
-[data-theme="frost-pine"] body::before {
+[data-theme="frost-pine"] body::before,
+[data-theme="ocean"] body::before {
   opacity: 0.035;
   mix-blend-mode: overlay;
 }

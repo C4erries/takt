@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Sun, Moon, Sparkles } from 'lucide-react';
+import { Check, Sun, Moon, Sparkles, MousePointer } from 'lucide-react';
 import { Modal, Badge } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import { useThemeStore } from './themeStore';
@@ -14,10 +14,12 @@ export const ThemePickerModal: React.FC = () => {
   const {
     theme: currentTheme,
     ambientIntensity,
+    ambientInteractive,
     isPickerOpen,
     setPickerOpen,
     setTheme,
     setAmbientIntensity,
+    setAmbientInteractive,
   } = useThemeStore();
 
   const renderThemeCard = (t: ThemeDefinition) => {
@@ -134,6 +136,45 @@ export const ThemePickerModal: React.FC = () => {
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Cursor Interactivity Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-canvas/60 border border-subtle">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+              <MousePointer className="w-3.5 h-3.5 text-accent-solid" />
+              <span>Интерактивность с курсором</span>
+            </div>
+            <p className="text-[11px] text-muted">
+              Реакция частиц, листьев и созвездий на движение и клики мыши
+            </p>
+          </div>
+          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-surface border border-subtle self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setAmbientInteractive(true)}
+              className={cn(
+                'px-2.5 py-1 text-xs rounded-md transition-all duration-150 font-medium select-none',
+                ambientInteractive
+                  ? 'bg-accent-solid text-surface shadow-washi-sm'
+                  : 'text-muted hover:text-primary hover:bg-canvas/50'
+              )}
+            >
+              Вкл
+            </button>
+            <button
+              type="button"
+              onClick={() => setAmbientInteractive(false)}
+              className={cn(
+                'px-2.5 py-1 text-xs rounded-md transition-all duration-150 font-medium select-none',
+                !ambientInteractive
+                  ? 'bg-accent-solid text-surface shadow-washi-sm'
+                  : 'text-muted hover:text-primary hover:bg-canvas/50'
+              )}
+            >
+              Выкл
+            </button>
           </div>
         </div>
 

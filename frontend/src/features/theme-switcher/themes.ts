@@ -16,7 +16,8 @@ export type ThemeId =
   | 'kyoto-snow'
   | 'tsukimi'
   | 'celestial'
-  | 'frost-pine';
+  | 'frost-pine'
+  | 'ocean';
 
 export type ThemeCategory = 'light' | 'dark';
 
@@ -34,7 +35,7 @@ export interface ThemeDefinition {
   category: ThemeCategory;
   description: string;
   preview: ThemePreview;
-  ambientPreset?: 'snow' | 'autumn' | 'celestial' | 'blizzard';
+  ambientPreset?: 'snow' | 'autumn' | 'celestial' | 'blizzard' | 'ocean';
 }
 
 export const THEMES: readonly ThemeDefinition[] = [
@@ -251,6 +252,20 @@ export const THEMES: readonly ThemeDefinition[] = [
       accent: '#4E9B73',
       text: '#E5EFEA',
       border: '#30403A',
+    },
+  },
+  {
+    id: 'ocean',
+    name: 'Морской дзен',
+    category: 'dark',
+    description: 'Глубокий океанский сапфир, светящаяся лазурь, лучи света, жемчужные пузырьки и мирные тропические рыбки',
+    ambientPreset: 'ocean',
+    preview: {
+      canvas: '#0A141E',
+      surface: '#12202E',
+      accent: '#2DD4BF',
+      text: '#E0EEF8',
+      border: '#1C3347',
     },
   },
 ];

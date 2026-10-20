@@ -67,6 +67,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (task) {
@@ -83,6 +84,19 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isEditingTitle, isAddingTag, onClose]);
+
+  // Outside click to close TaskDrawer softly without breaking board interactions
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (drawerRef.current && drawerRef.current.contains(e.target as Node)) {
+        return;
+      }
+      onClose();
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, onClose]);
 
   const isFocused = currentTask?.focusOrder !== null && currentTask?.focusOrder !== undefined;
 
@@ -138,13 +152,14 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
 
       {isOpen && currentTask && (
         <motion.aside
+          ref={drawerRef}
           key="drawer-panel"
           variants={drawerVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
           className="fixed top-0 right-0 h-full w-full max-w-[560px] bg-surface z-40 border-l border-subtle shadow-washi-modal flex flex-col justify-between"
-          >
+        >
             <input type="file" ref={fileInputRef} onChange={handleFileInputChange} className="hidden" multiple />
 
             <div className="flex-1 flex flex-col overflow-y-auto p-6 space-y-5">

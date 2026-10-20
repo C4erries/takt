@@ -1,0 +1,212 @@
+/* Takt Ocean Ambient Crab Skeletal CSS Animations (Sprint 0.7.5h) */
+
+.ocean-crab-wrapper {
+  position: absolute;
+  bottom: 12px;
+  width: 96px;
+  height: 64px;
+  pointer-events: none;
+  z-index: 2;
+  will-change: left, transform;
+  transform-origin: center bottom;
+  transition: transform 0.25s ease-out;
+}
+
+.ocean-crab {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* 1. IDLE STATE */
+.ocean-crab-wrapper.is-idle .crab-body-group {
+  animation: crabBreathe 3.2s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-idle .crab-eye-l {
+  animation: crabEyeLookL 4.5s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-idle .crab-eye-r {
+  animation: crabEyeLookR 4.2s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-idle .crab-pincer-l {
+  animation: crabSnapIdle 5s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-idle .crab-pincer-r {
+  animation: crabSnapIdleR 6.5s ease-in-out infinite;
+}
+
+/* 2. WALKING STATE */
+.ocean-crab-wrapper.is-walking .leg-set-a {
+  animation: legWalkA 0.22s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-walking .leg-set-b {
+  animation: legWalkB 0.22s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-walking .crab-body-group {
+  animation: bodyBobWalk 0.22s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-walking .crab-claw-l {
+  animation: clawBobWalkL 0.44s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-walking .crab-claw-r {
+  animation: clawBobWalkR 0.44s ease-in-out infinite;
+}
+
+/* 3. FLEEING STATE (Double speed) */
+.ocean-crab-wrapper.is-fleeing .leg-set-a {
+  animation: legWalkA 0.11s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-fleeing .leg-set-b {
+  animation: legWalkB 0.11s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-fleeing .crab-body-group {
+  animation: bodyBobWalk 0.11s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-fleeing .crab-claw-l {
+  animation: clawBobWalkL 0.22s ease-in-out infinite;
+}
+
+.ocean-crab-wrapper.is-fleeing .crab-claw-r {
+  animation: clawBobWalkR 0.22s ease-in-out infinite;
+}
+
+/* 4. SPOOKED STATE (Claws raised defensively) */
+.ocean-crab-wrapper.is-spooked .crab-claw-l {
+  transform: rotate(-28deg);
+  transition: transform 0.2s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+.ocean-crab-wrapper.is-spooked .crab-claw-r {
+  transform: rotate(28deg);
+  transition: transform 0.2s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+.ocean-crab-wrapper.is-spooked .crab-pincer-l {
+  transform: rotate(-18deg);
+  transition: transform 0.2s ease-out;
+}
+
+.ocean-crab-wrapper.is-spooked .crab-pincer-r {
+  transform: rotate(18deg);
+  transition: transform 0.2s ease-out;
+}
+
+.ocean-crab-wrapper.is-spooked .crab-body-group {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease-out;
+}
+
+/* KEYFRAMES */
+@keyframes crabBreathe {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-1.5px) rotate(0.8deg);
+  }
+}
+
+@keyframes crabEyeLookL {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  30% {
+    transform: rotate(-7deg);
+  }
+  70% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes crabEyeLookR {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(6deg);
+  }
+  65% {
+    transform: rotate(-6deg);
+  }
+}
+
+@keyframes crabSnapIdle {
+  0%, 88%, 100% {
+    transform: rotate(0deg);
+  }
+  92% {
+    transform: rotate(-14deg);
+  }
+  96% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes crabSnapIdleR {
+  0%, 85%, 100% {
+    transform: rotate(0deg);
+  }
+  90% {
+    transform: rotate(14deg);
+  }
+  95% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes legWalkA {
+  0%, 100% {
+    transform: rotate(-14deg);
+  }
+  50% {
+    transform: rotate(14deg);
+  }
+}
+
+@keyframes legWalkB {
+  0%, 100% {
+    transform: rotate(14deg);
+  }
+  50% {
+    transform: rotate(-14deg);
+  }
+}
+
+@keyframes bodyBobWalk {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes clawBobWalkL {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-6deg);
+  }
+}
+
+@keyframes clawBobWalkR {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}

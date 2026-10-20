@@ -287,3 +287,4 @@ export class SnowPreset implements AmbientPreset {
     this.bokehCanvases = [];
   }
 }
+

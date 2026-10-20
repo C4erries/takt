@@ -35,5 +35,6 @@ export interface AmbientPreset {
   update(dt: number, context: PresetContext): void;
   render(context: PresetContext): void;
   destroy(): void;
+  setIntensity?(intensity: AmbientIntensity): void;
 }
 

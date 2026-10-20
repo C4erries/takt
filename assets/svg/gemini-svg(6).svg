@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 460" width="100%" height="100%">
+  <defs>
+    <!-- Основное тело коралла: от светящегося лососево-золотого на верхушках до глубокого бордо у корня -->
+    <linearGradient id="madre-body-grad" x1="0.3" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="22%" stop-color="#FB7185" />
+      <stop offset="58%" stop-color="#9F1239" />
+      <stop offset="100%" stop-color="#1F0818" />
+    </linearGradient>
+
+    <!-- Боковые зубчатые гребни полипов (чуть светлее тела для 3D-контура) -->
+    <linearGradient id="madre-frill-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FEF3C7" />
+      <stop offset="45%" stop-color="#FDA4AF" />
+      <stop offset="100%" stop-color="#881337" />
+    </linearGradient>
+
+    <!-- Выступающие чашечки полипов -->
+    <linearGradient id="polyp-cup-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFF1F2" />
+      <stop offset="50%" stop-color="#F43F5E" />
+      <stop offset="100%" stop-color="#4C0519" />
+    </linearGradient>
+
+    <!-- Контурная тушь в цвет глубокого рифа -->
+    <linearGradient id="madre-ink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4C0519" />
+      <stop offset="100%" stop-color="#0F0309" />
+    </linearGradient>
+
+    <!-- Переиспользуемый модуль: Боковой трубчатый полип (как в центре гравюры) -->
+    <g id="polyp-tube">
+      <path d="M-8,8 L-6,-6 C-6,-9 6,-9 6,-6 L8,8 C5,11 -5,11 -8,8 Z" fill="url(#polyp-cup-grad)" stroke="url(#madre-ink)" stroke-width="2" />
+      <ellipse cx="0" cy="-6" rx="6" ry="2.8" fill="#2E0512" stroke="#FFE4E6" stroke-width="1.2" />
+      <path d="M-4,-3 L-4,6 M0,-2 L0,7 M4,-3 L4,6" stroke="#4C0519" stroke-width="1.3" stroke-linecap="round" />
+    </g>
+
+    <!-- Переиспользуемый модуль: Звездчатый полип (как в нижней части гравюры) -->
+    <g id="polyp-star">
+      <circle cx="0" cy="0" r="11" fill="url(#polyp-cup-grad)" stroke="url(#madre-ink)" stroke-width="2.2" />
+      <circle cx="0" cy="0" r="8" fill="#FFF1F2" />
+      <path d="M-7,0 L7,0 M0,-7 L0,7 M-5,-5 L5,5 M-5,5 L5,-5" stroke="#4C0519" stroke-width="2" stroke-linecap="round" />
+      <circle cx="0" cy="0" r="2.2" fill="#2E0512" />
+    </g>
+  </defs>
+
+  <!-- 1. ЗАДНИЙ СЛОЙ: Зубчатые ребристые гребни вдоль краев ветвей (Точно как на гравюре) -->
+  <g class="coral-layer-back" fill="url(#madre-frill-grad)" stroke="url(#madre-ink)" stroke-width="2.2">
+    <!-- Гребни левой и верхней ветви -->
+    <path d="M74,118 Q62,126 74,136 Q62,146 74,156 Q62,166 74,176 Q64,186 76,196 Q64,206 76,216 L90,216 L90,118 Z" />
+    <path d="M168,142 Q184,150 174,162 Q186,170 176,182 Q184,192 168,198 L150,186 L160,136 Z" />
+    <path d="M12,282 Q2,294 16,302 Q10,314 26,318 Q22,330 38,334 Q34,346 52,348 L64,332 L24,272 Z" />
+    <!-- Гребни правой нижней ветви -->
+    <path d="M262,192 Q248,198 256,210 Q242,216 250,228 Q236,234 244,246 L262,252 L276,196 Z" />
+    <path d="M304,202 Q318,210 306,222 Q318,232 304,242 Q314,252 298,262 L284,254 L296,198 Z" />
+    <path d="M196,312 Q182,318 190,330 Q176,336 184,348 Q172,354 180,366 L198,368 L210,316 Z" />
+    <path d="M276,328 Q290,338 274,348 Q284,358 268,366 Q276,376 258,382 L246,368 L266,320 Z" />
+  </g>
+
+  <!-- 2. ОСНОВНОЙ СИЛУЭТ КОРАЛЛА (Точная геометрия ветвей warszawianka-Coral) -->
+  <g class="coral-layer-mid">
+    <path d="M124,454 C118,418 98,384 68,354 C38,324 8,298 6,274 C4,250 18,224 32,226 C46,228 62,254 74,258 C78,258 76,228 78,192 C80,156 64,102 72,82 C80,62 94,78 102,96 C108,96 114,68 112,42 C110,16 116,4 134,4 C152,4 150,36 154,54 C158,64 176,48 202,32 C228,16 244,18 248,34 C252,50 218,78 192,102 C166,126 168,136 176,138 C184,140 214,108 238,88 C262,68 282,82 280,104 C278,126 242,152 206,174 C170,196 152,210 148,242 C144,274 162,322 174,352 C182,354 196,312 222,268 C248,224 272,168 292,168 C312,168 314,198 298,236 C282,274 268,292 276,294 C284,296 298,278 308,284 C318,290 296,322 272,346 C248,370 232,396 228,454 Z" fill="url(#madre-body-grad)" stroke="url(#madre-ink)" stroke-width="3.8" stroke-linejoin="round" />
+
+    <!-- Мягкий световой объем вдоль центра стволов -->
+    <path d="M132,22 C136,78 118,164 114,248 C110,332 138,396 152,444 C128,392 100,328 104,244 C108,160 124,78 132,22 Z" fill="#FFF1F2" opacity="0.22" />
+  </g>
+
+  <!-- 3. ПЕРЕДНИЙ СЛОЙ: Детализированные кратеры полипов по всей поверхности -->
+  <g class="coral-layer-front">
+    <!-- Верхняя центральная и правая ветви -->
+    <use href="#polyp-tube" transform="translate(132, 34) rotate(-8) scale(0.9)" />
+    <use href="#polyp-tube" transform="translate(128, 64) rotate(5)" />
+    <use href="#polyp-tube" transform="translate(148, 82) rotate(18)" />
+    <use href="#polyp-tube" transform="translate(212, 48) rotate(38) scale(0.9)" />
+    <use href="#polyp-tube" transform="translate(186, 74) rotate(32)" />
+    <use href="#polyp-tube" transform="translate(164, 104) rotate(25)" />
+
+    <!-- Средняя правая ветвь -->
+    <use href="#polyp-tube" transform="translate(248, 104) rotate(42) scale(0.9)" />
+    <use href="#polyp-tube" transform="translate(222, 128) rotate(36)" />
+    <use href="#polyp-tube" transform="translate(194, 152) rotate(30)" />
+    <use href="#polyp-tube" transform="translate(164, 174) rotate(20)" />
+
+    <!-- Главный левый ствол -->
+    <use href="#polyp-tube" transform="translate(88, 108) rotate(-14) scale(0.9)" />
+    <use href="#polyp-tube" transform="translate(116, 114) rotate(4)" />
+    <use href="#polyp-tube" transform="translate(140, 128) rotate(12)" />
+    <use href="#polyp-tube" transform="translate(96, 144) rotate(-8)" />
+    <use href="#polyp-tube" transform="translate(122, 154) rotate(6)" />
+    <use href="#polyp-tube" transform="translate(144, 168) rotate(14)" />
+    <use href="#polyp-tube" transform="translate(98, 182) rotate(-6)" />
+    <use href="#polyp-tube" transform="translate(124, 192) rotate(8)" />
+    <use href="#polyp-tube" transform="translate(98, 218) rotate(-4)" />
+    <use href="#polyp-tube" transform="translate(126, 226) rotate(10)" />
+
+    <!-- Левый боковой отросток -->
+    <use href="#polyp-tube" transform="translate(28, 256) rotate(-42) scale(0.9)" />
+    <use href="#polyp-tube" transform="translate(52, 274) rotate(-32)" />
+    <use href="#polyp-tube" transform="translate(42, 302) rotate(-38)" />
+    <use href="#polyp-tube" transform="translate(72, 298) rotate(-25)" />
+    <use href="#polyp-tube" transform="translate(98, 262) rotate(-12)" />
+    <use href="#polyp-tube" transform="translate(126, 268) rotate(5)" />
+    <use href="#polyp-tube" transform="translate(98, 302) rotate(-18)" />
+    <use href="#polyp-tube" transform="translate(128, 308) rotate(-6)" />
+    <use href="#polyp-tube" transform="translate(92, 338) rotate(-24)" />
+    <use href="#polyp-tube" transform="translate(122, 344) rotate(-12)" />
+    <use href="#polyp-tube" transform="translate(150, 352) rotate(-4)" />
+
+    <!-- Правая нижняя ветвь -->
+    <use href="#polyp-tube" transform="translate(286, 198) rotate(22) scale(0.9)" />
+    <use href="#polyp-tube" transform="translate(272, 232) rotate(25)" />
+    <use href="#polyp-tube" transform="translate(250, 264) rotate(28)" />
+    <use href="#polyp-tube" transform="translate(226, 298) rotate(24)" />
+    <use href="#polyp-tube" transform="translate(258, 306) rotate(35)" />
+    <use href="#polyp-tube" transform="translate(284, 304) rotate(45) scale(0.85)" />
+    <use href="#polyp-tube" transform="translate(208, 336) rotate(18)" />
+    <use href="#polyp-tube" transform="translate(238, 344) rotate(28)" />
+    <use href="#polyp-tube" transform="translate(198, 372) rotate(14)" />
+    <use href="#polyp-tube" transform="translate(226, 378) rotate(22)" />
+
+    <!-- Нижнее основание: круглые звездчатые полипы (Точно как внизу оригинала!) -->
+    <use href="#polyp-star" transform="translate(118, 382) scale(0.95)" />
+    <use href="#polyp-star" transform="translate(148, 388)" />
+    <use href="#polyp-star" transform="translate(178, 396) scale(0.95)" />
+    <use href="#polyp-star" transform="translate(132, 414)" />
+    <use href="#polyp-star" transform="translate(164, 418)" />
+    <use href="#polyp-star" transform="translate(198, 418) scale(0.9)" />
+    <use href="#polyp-star" transform="translate(144, 442) scale(0.95)" />
+    <use href="#polyp-star" transform="translate(176, 442) scale(0.95)" />
+    <use href="#polyp-star" transform="translate(208, 440) scale(0.85)" />
+  </g>
+</svg>

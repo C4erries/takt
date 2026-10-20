@@ -246,3 +246,4 @@ export class CelestialPreset implements AmbientPreset {
     this.processedClickTimes.clear();
   }
 }
+

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { AmbientEngine } from './ambientEngine';
 import type { AmbientPresetName, AmbientIntensity } from './types';
+import { OceanCrabDOM } from './OceanCrabDOM';
+import './oceanCrab.css';
 
 export interface AmbientCanvasProps {
   themeId?: string;
@@ -56,14 +58,21 @@ export const AmbientCanvas: React.FC<AmbientCanvasProps> = ({
   const hasActivePreset = Boolean(themeId && THEME_TO_PRESET[themeId] && intensity !== 'off');
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
       className={className}
       style={{
         display: hasActivePreset ? 'block' : 'none',
       }}
       aria-hidden="true"
-    />
+    >
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none"
+      />
+      {hasActivePreset && themeId === 'ocean' && (
+        <OceanCrabDOM isInteractive={isInteractive} />
+      )}
+    </div>
   );
 };
 

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 300" width="100%" height="100%">
+  <defs>
+    <!-- Deep crimson shadow -->
+    <linearGradient id="pink-grad-back" x1="0.3" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#9F1239" />
+      <stop offset="40%" stop-color="#4C0519" />
+      <stop offset="100%" stop-color="#0E0205" />
+    </linearGradient>
+
+    <!-- Mid coral pink -->
+    <linearGradient id="pink-grad-mid" x1="0.2" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#FB7185" />
+      <stop offset="30%" stop-color="#E11D48" />
+      <stop offset="70%" stop-color="#881337" />
+      <stop offset="100%" stop-color="#1C030A" />
+    </linearGradient>
+
+    <!-- Front glowing pastel rose -->
+    <linearGradient id="pink-grad-front" x1="0.3" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#FECDD3" />
+      <stop offset="22%" stop-color="#F43F5E" />
+      <stop offset="65%" stop-color="#9F1239" />
+      <stop offset="100%" stop-color="#2D0610" />
+    </linearGradient>
+  </defs>
+
+  <g class="coral-layer-back">
+    <path d="M125,280 C120,230 95,190 75,152 C58,122 35,92 45,78 C55,65 72,92 88,122 C92,85 85,45 98,35 C112,25 118,68 116,105 C128,72 148,35 162,40 C175,45 155,88 145,125 C165,95 192,62 205,70 C218,78 188,120 174,152 C195,128 225,102 238,112 C250,122 210,165 188,202 C208,185 235,175 242,188 C250,200 205,235 180,280 Z" fill="url(#pink-grad-back)" />
+  </g>
+  <g class="coral-layer-mid">
+    <path d="M135,280 C130,238 112,205 95,168 C80,138 62,112 72,100 C82,88 95,112 105,138 C112,105 105,68 118,60 C130,52 135,92 135,125 C148,92 168,58 180,62 C192,68 178,105 168,135 C188,108 212,85 224,95 C235,105 210,142 192,175 C210,160 232,152 238,162 C244,175 208,212 188,280 Z" fill="url(#pink-grad-mid)" />
+  </g>
+  <g class="coral-layer-front">
+    <path d="M142,280 C138,245 125,215 112,182 C100,155 85,132 95,122 C105,112 115,132 122,155 C128,122 122,90 132,85 C142,80 145,112 145,140 C155,112 172,82 182,88 C192,92 180,122 172,150 C188,128 208,108 218,118 C228,125 208,158 195,188 C210,175 228,168 232,178 C238,188 208,225 195,280 Z" fill="url(#pink-grad-front)" />
+  </g>
+</svg>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 280" width="100%" height="100%">
+  <defs>
+    <!-- Deep indigo shadow layer -->
+    <linearGradient id="bush-grad-back" x1="0.3" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#4C1D95" />
+      <stop offset="35%" stop-color="#2E1065" />
+      <stop offset="75%" stop-color="#140628" />
+      <stop offset="100%" stop-color="#06020D" />
+    </linearGradient>
+
+    <!-- Mid violet cluster -->
+    <linearGradient id="bush-grad-mid" x1="0.2" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#A855F7" />
+      <stop offset="25%" stop-color="#7C3AED" />
+      <stop offset="65%" stop-color="#4C1D95" />
+      <stop offset="100%" stop-color="#1E073F" />
+    </linearGradient>
+
+    <!-- Front vibrant magenta-purple cluster with glowing tips -->
+    <linearGradient id="bush-grad-front" x1="0.3" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#E879F9" />
+      <stop offset="20%" stop-color="#C084FC" />
+      <stop offset="55%" stop-color="#6B21A8" />
+      <stop offset="100%" stop-color="#1D063A" />
+    </linearGradient>
+
+    <!-- Glow tips -->
+    <radialGradient id="bush-grad-tip" cx="50%" cy="30%" r="50%">
+      <stop offset="0%" stop-color="#F5D0FE" />
+      <stop offset="60%" stop-color="#E879F9" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#A855F7" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- 1. BACK DEEP FINGERS LAYER -->
+  <g class="bush-layer-back">
+    <path d="M75,260 C65,210 32,160 48,118 C62,78 92,108 98,142 C108,98 122,58 142,62 C162,66 150,118 145,155 C162,112 188,72 208,82 C225,92 205,142 195,178 C218,135 252,98 268,110 C284,122 258,172 242,208 C265,178 302,158 312,172 C325,188 288,235 272,260 Z" fill="url(#bush-grad-back)" />
+  </g>
+
+  <!-- 2. MID VIOLET FINGERS LAYER -->
+  <g class="bush-layer-mid">
+    <path d="M88,260 C80,215 58,175 75,138 C90,105 115,130 118,162 C132,125 152,88 170,95 C188,102 175,152 168,185 C192,142 225,115 238,128 C252,142 228,185 215,222 C238,192 272,175 282,190 C292,208 262,245 248,260 Z" fill="url(#bush-grad-mid)" />
+  </g>
+
+  <!-- 3. FRONT VIBRANT LAYER -->
+  <g class="bush-layer-front">
+    <path d="M112,260 C108,225 88,185 105,155 C120,128 142,152 144,185 C158,150 182,122 198,132 C214,142 198,188 190,218 C212,185 242,168 252,182 C262,198 235,238 222,260 Z" fill="url(#bush-grad-front)" />
+    <!-- Rounded highlight caps on tips -->
+    <ellipse cx="105" cy="155" rx="10" ry="7" fill="url(#bush-grad-tip)" />
+    <ellipse cx="144" cy="152" rx="11" ry="8" fill="url(#bush-grad-tip)" />
+    <ellipse cx="198" cy="132" rx="12" ry="8" fill="url(#bush-grad-tip)" />
+    <ellipse cx="252" cy="182" rx="9" ry="6" fill="url(#bush-grad-tip)" />
+  </g>
+</svg>

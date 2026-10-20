@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 340" width="100%" height="100%">
+  <defs>
+    <!-- Градиент дальних стеблей (глубокая тень) -->
+    <linearGradient id="kelp-back-grad" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#2DD4BF" stop-opacity="0.6" />
+      <stop offset="45%" stop-color="#0E5A63" />
+      <stop offset="100%" stop-color="#041A22" />
+    </linearGradient>
+
+    <!-- Градиент средних стеблей -->
+    <linearGradient id="kelp-mid-grad" x1="0.2" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#5EEAD4" />
+      <stop offset="35%" stop-color="#14B8A6" />
+      <stop offset="75%" stop-color="#0D4B52" />
+      <stop offset="100%" stop-color="#051921" />
+    </linearGradient>
+
+    <!-- Градиент передних стеблей (самые яркие и сочные) -->
+    <linearGradient id="kelp-front-grad" x1="0.3" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#99F6E4" />
+      <stop offset="25%" stop-color="#2DD4BF" />
+      <stop offset="65%" stop-color="#0F766E" />
+      <stop offset="100%" stop-color="#042F2E" />
+    </linearGradient>
+
+    <!-- Градиент песчаного холмика (основание) -->
+    <linearGradient id="sand-mound-grad" x1="0.3" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#F6AD55" />
+      <stop offset="45%" stop-color="#DD6B20" />
+      <stop offset="100%" stop-color="#7B341E" />
+    </linearGradient>
+
+    <!-- Градиент темных камней в основе -->
+    <linearGradient id="stone-grad" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#C05621" />
+      <stop offset="100%" stop-color="#53220E" />
+    </linearGradient>
+
+    <!-- Градиент для воздушных пузырьков -->
+    <radialGradient id="bubble-grad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="30%" stop-color="#81E6D9" stop-opacity="0.5" />
+      <stop offset="75%" stop-color="#2DD4BF" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#0D7490" stop-opacity="0.5" />
+    </radialGradient>
+  </defs>
+
+  <!-- =================================================================
+       СЛОЙ 1: ЗАДНИЕ СТЕБЛИ (Темные силуэты в глубине)
+       ================================================================= -->
+  <g class="kelp-layer-back" style="transform-origin: 170px 290px;">
+    <!-- Правый крайний темный лист -->
+    <path d="M185,285 C205,235 220,185 208,135 C196,85 165,55 182,32 C188,48 212,82 222,125 C232,168 218,218 198,280 Z" fill="url(#kelp-back-grad)" />
+    <!-- Левый средний фоновый лист -->
+    <path d="M152,288 C132,238 112,185 125,132 C138,79 175,52 162,28 C152,45 122,82 110,132 C98,182 122,232 142,285 Z" fill="url(#kelp-back-grad)" />
+  </g>
+
+  <!-- =================================================================
+       СЛОЙ 2: ПЕСЧАНЫЙ ХОЛМИК И КАМНИ У ОСНОВАНИЯ
+       ================================================================= -->
+  <g class="kelp-base-mound">
+    <!-- Задние темные камни -->
+    <ellipse cx="115" cy="295" rx="28" ry="14" fill="url(#stone-grad)" />
+    <ellipse cx="225" cy="292" rx="35" ry="16" fill="url(#stone-grad)" />
+    <!-- Основные песчаные бугры (в стиле референса) -->
+    <path d="M102,298 C92,275 112,252 142,255 C162,257 175,270 198,255 C222,240 252,262 258,290 C264,318 108,318 102,298 Z" fill="url(#sand-mound-grad)" />
+    <path d="M135,310 C125,288 152,272 182,278 C212,284 225,302 215,316 C205,330 142,325 135,310 Z" fill="#ED8936" opacity="0.75" />
+    <!-- Передние мелкие камни у подножия -->
+    <ellipse cx="145" cy="308" rx="24" ry="11" fill="url(#stone-grad)" />
+    <ellipse cx="202" cy="305" rx="32" ry="13" fill="url(#stone-grad)" />
+    <!-- Текстурные точки-песчинки на холмике -->
+    <g fill="#9C4221" opacity="0.4">
+      <circle cx="165" cy="272" r="2.5" />
+      <circle cx="182" cy="285" r="2" />
+      <circle cx="152" cy="290" r="3" />
+      <circle cx="210" cy="275" r="2" />
+      <circle cx="228" cy="288" r="2.5" />
+    </g>
+  </g>
+
+  <!-- =================================================================
+       СЛОЙ 3: СРЕДНИЕ СТЕБЛИ (Основная масса травы)
+       ================================================================= -->
+  <g class="kelp-layer-mid" style="transform-origin: 170px 290px;">
+    <!-- Главный центральный высокий стебель -->
+    <path d="M168,290 C155,230 185,170 165,110 C145,50 178,25 166,8 C158,25 125,75 148,135 C172,195 145,245 162,290 Z" fill="url(#kelp-mid-grad)" />
+    <!-- Правый изогнутый стебель -->
+    <path d="M192,290 C215,240 235,190 215,142 C195,94 155,75 172,48 C185,68 215,108 232,152 C248,195 222,242 188,290 Z" fill="url(#kelp-mid-grad)" />
+  </g>
+
+  <!-- =================================================================
+       СЛОЙ 4: ПЕРЕДНИЕ СТЕБЛИ (Самые сочные, перекрывающие центр)
+       ================================================================= -->
+  <g class="kelp-layer-front" style="transform-origin: 170px 290px;">
+    <!-- Левый изящный стебель с завитком -->
+    <path d="M138,292 C108,245 88,195 112,148 C136,102 112,72 92,52 C102,72 138,102 125,152 C112,202 152,248 152,292 Z" fill="url(#kelp-front-grad)" />
+    <!-- Передний правый динамичный стебель -->
+    <path d="M182,294 C195,250 175,200 195,155 C215,110 242,85 228,62 C218,82 182,125 168,168 C155,210 175,255 175,294 Z" fill="url(#kelp-front-grad)" />
+  </g>
+
+  <!-- =================================================================
+       СЛОЙ 5: ВОЗДУШНЫЕ ПУЗЫРЬКИ (Как на референсе)
+       ================================================================= -->
+  <g class="kelp-bubbles">
+    <!-- Большой пузырь слева внизу -->
+    <circle cx="65" cy="245" r="22" fill="url(#bubble-grad)" stroke="#99F6E4" stroke-width="1.2" opacity="0.85" />
+    <ellipse cx="57" cy="237" rx="5" ry="3" transform="rotate(-35 57 237)" fill="#FFFFFF" opacity="0.8" />
+
+    <!-- Средний пузырь справа наверху -->
+    <circle cx="268" cy="72" r="16" fill="url(#bubble-grad)" stroke="#99F6E4" stroke-width="1" opacity="0.85" />
+    <ellipse cx="262" cy="66" rx="3.5" ry="2" transform="rotate(-35 262 66)" fill="#FFFFFF" opacity="0.8" />
+
+    <!-- Маленький пузырь справа -->
+    <circle cx="288" cy="120" r="10" fill="url(#bubble-grad)" stroke="#99F6E4" stroke-width="0.8" opacity="0.8" />
+    <ellipse cx="284" cy="116" rx="2.5" ry="1.4" transform="rotate(-35 284 116)" fill="#FFFFFF" opacity="0.8" />
+  </g>
+</svg>

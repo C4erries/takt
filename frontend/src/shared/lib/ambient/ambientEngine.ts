@@ -105,7 +105,12 @@ export class AmbientEngine {
   }
 
   setIntensity(intensity: AmbientIntensity): void {
+    const changed = this.intensity !== intensity;
     this.intensity = intensity;
+    if (changed && this.canvas) {
+      this.updateDimensions();
+    }
+    this.activePreset?.setIntensity?.(intensity);
     if (intensity === 'off' && this.ctx && this.canvas) {
       this.ctx.clearRect(0, 0, this.width, this.height);
     }
@@ -120,7 +125,8 @@ export class AmbientEngine {
 
     this.width = window.innerWidth;
     this.height = window.innerHeight;
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const maxDpr = this.intensity === 'vivid' ? 2.0 : 1.0;
+    this.dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
 
     this.canvas.width = this.width * this.dpr;
     this.canvas.height = this.height * this.dpr;
@@ -128,7 +134,7 @@ export class AmbientEngine {
     this.canvas.style.height = `${this.height}px`;
 
     if (this.ctx) {
-      this.ctx.scale(this.dpr, this.dpr);
+      this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     }
 
     if (this.activePreset) {

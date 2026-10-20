@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 460" width="100%" height="100%">
+  <defs>
+    <!-- Внешний корпус ракушки: от теплого крема сверху к глубокой тени у острия -->
+    <linearGradient id="shell-body-grad" x1="0.15" y1="0.1" x2="0.85" y2="0.95">
+      <stop offset="0%" stop-color="#FFF5EB" />
+      <stop offset="32%" stop-color="#F3C6B6" />
+      <stop offset="68%" stop-color="#B86B77" />
+      <stop offset="100%" stop-color="#3D1A2C" />
+    </linearGradient>
+
+    <!-- Спиральные ярусы верхушки -->
+    <linearGradient id="shell-spire-grad" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#FFFDF9" />
+      <stop offset="45%" stop-color="#E8B4A6" />
+      <stop offset="100%" stop-color="#7A3E4D" />
+    </linearGradient>
+
+    <!-- Правое крыло (внутренняя перламутровая губа) -->
+    <linearGradient id="shell-lip-grad" x1="0.1" y1="0.3" x2="0.95" y2="0.7">
+      <stop offset="0%" stop-color="#381224" />
+      <stop offset="28%" stop-color="#7D2948" />
+      <stop offset="68%" stop-color="#E07A86" />
+      <stop offset="100%" stop-color="#FDE2E4" />
+    </linearGradient>
+
+    <!-- Гравюрные штрихи и контуры (вместо глухого черного — глубокий винно-коричневый) -->
+    <linearGradient id="shell-ink-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4A1D2F" />
+      <stop offset="100%" stop-color="#1A0812" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. ПРАВОЕ КРЫЛО / УСТЬЕ РАКУШКИ (Задний слой) -->
+  <g class="shell-layer-lip">
+    <path d="M182,138 C202,142 216,154 228,148 C242,142 252,158 250,188 C248,228 238,278 222,318 C208,352 192,368 174,374 C158,380 156,396 152,406 C146,418 118,418 104,432 C98,402 128,310 182,138 Z" fill="url(#shell-lip-grad)" stroke="url(#shell-ink-grad)" stroke-width="3.5" stroke-linejoin="round" />
+    
+    <!-- Характерные гравюрные ребра-штрихи вдоль правого края (как на оригинале) -->
+    <g fill="none" stroke="url(#shell-ink-grad)" stroke-width="3" stroke-linecap="round" opacity="0.85">
+      <path d="M204,168 C212,162 218,158 222,155" />
+      <path d="M202,182 C214,174 224,168 230,164" />
+      <path d="M202,196 C216,188 226,182 234,176" />
+      <path d="M204,210 C218,204 228,198 234,192" />
+      <path d="M200,224 C216,220 228,214 236,208" />
+      <path d="M206,236 C218,234 228,230 236,226" />
+      <path d="M206,248 C218,248 228,244 234,240" />
+      <path d="M200,260 C214,262 224,260 232,256" />
+      <path d="M196,272 C210,276 220,274 228,272" />
+      <path d="M190,284 C204,288 214,290 222,288" />
+      <path d="M182,296 C196,302 206,306 214,304" />
+      <path d="M176,308 C188,314 198,320 206,320" />
+      <path d="M170,320 C180,326 188,334 194,336" />
+      <path d="M162,332 C170,338 178,346 182,350" />
+      <path d="M154,344 C160,350 166,358 170,362" />
+      <path d="M144,356 C150,362 154,368 158,374" />
+      <path d="M124,382 C128,388 132,394 134,400" />
+    </g>
+  </g>
+
+  <!-- 2. СПИРАЛЬНАЯ ВЕРХУШКА (Каскад из 7 завитков) -->
+  <g class="shell-layer-spire" stroke="url(#shell-ink-grad)" stroke-width="3.5" stroke-linejoin="round">
+    <!-- Ярус 1 (самый верхний кончик) -->
+    <path d="M96,18 C96,10 108,8 110,16 C112,22 96,24 96,18 Z" fill="url(#shell-spire-grad)" />
+    <!-- Ярус 2 -->
+    <path d="M88,30 C86,20 112,16 116,26 C118,32 88,36 88,30 Z" fill="url(#shell-spire-grad)" />
+    <!-- Ярус 3 -->
+    <path d="M76,48 C74,34 116,24 124,38 C128,46 78,56 76,48 Z" fill="url(#shell-spire-grad)" />
+    <!-- Ярус 4 -->
+    <path d="M62,72 C58,52 122,36 136,52 C142,62 64,82 62,72 Z" fill="url(#shell-spire-grad)" />
+    <!-- Ярус 5 -->
+    <path d="M46,102 C40,78 130,54 152,72 C160,82 48,112 46,102 Z" fill="url(#shell-spire-grad)" />
+    <!-- Ярус 6 (с характерными вертикальными насечками слева) -->
+    <path d="M22,134 C18,104 142,72 172,96 C180,108 26,144 22,134 Z" fill="url(#shell-spire-grad)" />
+    <path d="M44,106 L40,126 M68,96 L64,116" stroke="url(#shell-ink-grad)" stroke-width="3" />
+  </g>
+
+  <!-- 3. ГЛАВНЫЙ КОНУС РАКУШКИ (Передний объемный слой) -->
+  <g class="shell-layer-cone">
+    <path d="M8,142 C4,126 42,108 98,98 C154,88 188,96 194,122 C200,148 172,216 150,274 C128,332 124,386 108,424 C96,450 86,456 78,454 C70,452 72,418 68,382 C64,346 42,324 28,268 C14,212 12,158 8,142 Z" fill="url(#shell-body-grad)" stroke="url(#shell-ink-grad)" stroke-width="3.8" stroke-linejoin="round" />
+
+    <!-- Световой перламутровый блик по левой выпуклой части конуса -->
+    <path d="M24,148 C56,126 112,114 158,118 C114,126 64,142 36,172 C28,218 42,284 62,342 C36,288 18,214 24,148 Z" fill="#FFFFFF" opacity="0.42" />
+
+    <!-- Оригинальные гравюрные штрихи объема и пятнышки на конусе -->
+    <g fill="none" stroke="url(#shell-ink-grad)" stroke-width="2.8" stroke-linecap="round" opacity="0.75">
+      <path d="M18,142 C24,138 30,136 36,134" />
+      <path d="M18,158 C22,158 26,158 30,158" />
+      <path d="M144,116 C158,116 168,118 176,122" />
+      <path d="M162,138 L168,138" />
+      <path d="M156,158 C162,156 168,158 172,162" />
+      <path d="M138,212 C146,212 152,214 156,218" />
+      <path d="M130,236 C136,236 140,238 144,242" />
+      <path d="M122,256 L128,256" />
+      <path d="M78,302 C86,298 94,294 102,292" />
+      <path d="M74,318 C78,320 82,320 86,318" />
+      <path d="M80,338 C88,334 94,332 100,330" />
+      <path d="M94,352 L100,350" />
+      <!-- Точки текстуры слева -->
+      <circle cx="56" cy="252" r="2" fill="#3D1A2C" />
+      <circle cx="46" cy="264" r="2" fill="#3D1A2C" />
+      <circle cx="72" cy="266" r="2.2" fill="#3D1A2C" />
+      <circle cx="100" cy="282" r="1.8" fill="#3D1A2C" />
+    </g>
+  </g>
+</svg>

@@ -297,7 +297,7 @@ export const BoardFilterBar: React.FC<BoardFilterBarProps> = ({
         <select
           value={filters.sortBy}
           onChange={(e) => onFilterChange({ ...filters, sortBy: e.target.value as SortOption })}
-          className="text-xs bg-surface/60 hover:bg-surface border border-subtle/80 text-primary rounded-lg px-2 py-1 focus:outline-none focus:border-accent-solid transition-colors shadow-washi-sm cursor-pointer"
+          className="text-xs bg-surface border border-subtle text-primary rounded-lg px-2 py-1 focus:outline-none focus:border-accent-solid transition-colors shadow-washi-sm cursor-pointer"
           title="Сортировка задач"
         >
           {SORT_OPTIONS.map((opt) => (

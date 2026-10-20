@@ -6,6 +6,8 @@ import {
   useProjectBoardsQuery,
   useProjectTasksQuery,
   useCreateBoardMutation,
+  useDeleteBoardMutation,
+  useUpdateBoardMutation,
   projectApi,
   type Column,
 } from '@/entities/project';
@@ -42,6 +44,8 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
   const tasks = tasksQuery.data ?? [];
 
   const createBoardMutation = useCreateBoardMutation(workspaceId, projectId);
+  const deleteBoardMutation = useDeleteBoardMutation(workspaceId, projectId);
+  const updateBoardMutation = useUpdateBoardMutation(workspaceId, projectId);
 
   // Pre-fetch columns for each board to count tasks and columns per board
   const columnQueries = useQueries({
@@ -235,6 +239,18 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
                 isActive={isActive}
                 canDelete={boards.length > 1}
                 onSelect={() => onSelectBoard(board.id)}
+                onRename={(newName) =>
+                  updateBoardMutation.mutate({ boardId: board.id, name: newName })
+                }
+                onDelete={async () => {
+                  await deleteBoardMutation.mutateAsync(board.id);
+                  if (board.id === activeBoardId) {
+                    const remaining = boards.filter((b) => b.id !== board.id);
+                    if (remaining.length > 0) {
+                      onSelectBoard(remaining[0].id);
+                    }
+                  }
+                }}
               />
             );
           })}

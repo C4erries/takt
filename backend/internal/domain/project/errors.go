@@ -14,6 +14,7 @@ var (
 	ErrInvalidStatusCategory = errors.New("invalid status category")
 	ErrInvalidPosition       = errors.New("position must be greater than zero")
 	ErrColumnNotEmpty        = errors.New("cannot delete column containing tasks")
+	ErrLastBoard             = errors.New("cannot delete the only board in a project")
 	ErrAccessDenied          = errors.New("access denied to project")
 )
 

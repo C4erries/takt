@@ -179,6 +179,79 @@ export const useCreateBoardMutation = (workspaceId?: string, projectId?: string)
   });
 };
 
+export const useDeleteBoardMutation = (workspaceId?: string, projectId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (boardId: string) => {
+      if (!workspaceId || !projectId || !getAuthToken()) {
+        const queryKey = ['boards', workspaceId, projectId];
+        const prev = queryClient.getQueryData<Board[]>(queryKey) ?? [];
+        queryClient.setQueryData<Board[]>(queryKey, prev.filter((b) => b.id !== boardId));
+        return;
+      }
+      return projectApi.deleteProjectBoard(workspaceId, projectId, boardId);
+    },
+    onMutate: async (boardId: string) => {
+      const queryKey = ['boards', workspaceId, projectId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousBoards = queryClient.getQueryData<Board[]>(queryKey);
+      queryClient.setQueryData<Board[]>(queryKey, (old = []) =>
+        old.filter((b) => b.id !== boardId)
+      );
+      return { previousBoards };
+    },
+    onError: (_err, _boardId, context) => {
+      if (context?.previousBoards) {
+        queryClient.setQueryData(['boards', workspaceId, projectId], context.previousBoards);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['boards', workspaceId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['projects', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'inbox'] });
+    },
+  });
+};
+
+export interface UpdateBoardVariables {
+  boardId: string;
+  name: string;
+}
+
+export const useUpdateBoardMutation = (workspaceId?: string, projectId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ boardId, name }: UpdateBoardVariables) => {
+      if (!workspaceId || !projectId || !getAuthToken()) {
+        const queryKey = ['boards', workspaceId, projectId];
+        const existing = queryClient.getQueryData<Board[]>(queryKey) ?? [];
+        const found = existing.find((b) => b.id === boardId);
+        return found ? { ...found, name } : ({ id: boardId, name } as Board);
+      }
+      return projectApi.updateProjectBoard(workspaceId, projectId, boardId, name);
+    },
+    onMutate: async ({ boardId, name }) => {
+      const queryKey = ['boards', workspaceId, projectId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousBoards = queryClient.getQueryData<Board[]>(queryKey);
+      queryClient.setQueryData<Board[]>(queryKey, (old = []) =>
+        old.map((b) => (b.id === boardId ? { ...b, name } : b))
+      );
+      return { previousBoards };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousBoards) {
+        queryClient.setQueryData(['boards', workspaceId, projectId], context.previousBoards);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['boards', workspaceId, projectId] });
+    },
+  });
+};
+
 export * from './columnQueries';
 
 export const useProjectTasksQuery = (workspaceId?: string, projectId?: string) => {

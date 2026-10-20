@@ -268,3 +268,39 @@ export const useCreateColumnMutation = (workspaceId?: string, boardId?: string) 
   });
 };
 
+export const useDeleteColumnMutation = (workspaceId?: string, boardId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (columnId: string) => {
+      if (!workspaceId || !boardId || !getAuthToken()) {
+        const queryKey = ['columns', workspaceId, boardId];
+        const existing = queryClient.getQueryData<Column[]>(queryKey) ?? DEMO_COLUMNS;
+        const filtered = existing.filter((c) => c.id !== columnId);
+        queryClient.setQueryData<Column[]>(queryKey, filtered);
+        const idx = DEMO_COLUMNS.findIndex((c) => c.id === columnId);
+        if (idx !== -1) DEMO_COLUMNS.splice(idx, 1);
+        return;
+      }
+      return projectApi.deleteBoardColumn(workspaceId, boardId, columnId);
+    },
+    onMutate: async (columnId: string) => {
+      const queryKey = ['columns', workspaceId, boardId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousColumns = queryClient.getQueryData<Column[]>(queryKey);
+      queryClient.setQueryData<Column[]>(queryKey, (old = []) =>
+        old.filter((c) => c.id !== columnId)
+      );
+      return { previousColumns };
+    },
+    onError: (_err, _columnId, context) => {
+      if (context?.previousColumns) {
+        queryClient.setQueryData(['columns', workspaceId, boardId], context.previousColumns);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['columns', workspaceId, boardId] });
+    },
+  });
+};
+

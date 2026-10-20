@@ -47,6 +47,7 @@ type ColumnRepository interface {
 type TaskMoveRepository interface {
 	MoveTaskToColumnAndPosition(ctx context.Context, taskID, workspaceID uuid.UUID, columnID, projectID *uuid.UUID, position float64) (*domainTask.Task, error)
 	ResetProjectTasksToInbox(ctx context.Context, projectID, workspaceID uuid.UUID) error
+	ResetBoardTasksToInbox(ctx context.Context, boardID, workspaceID uuid.UUID) error
 	ListTasksByProject(ctx context.Context, projectID, workspaceID uuid.UUID) ([]*domainTask.Task, error)
 	ListTasksByColumn(ctx context.Context, columnID, workspaceID uuid.UUID) ([]*domainTask.Task, error)
 }
@@ -59,6 +60,8 @@ type UseCases interface {
 	DeleteProject(ctx context.Context, projectID, workspaceID uuid.UUID) error
 	GetProjectBoards(ctx context.Context, projectID, workspaceID uuid.UUID) ([]*domainProject.Board, error)
 	CreateBoard(ctx context.Context, projectID, workspaceID uuid.UUID, name string) (*domainProject.Board, error)
+	UpdateBoard(ctx context.Context, projectID, boardID, workspaceID uuid.UUID, name string) (*domainProject.Board, error)
+	DeleteBoard(ctx context.Context, projectID, boardID, workspaceID uuid.UUID) error
 	GetBoardColumns(ctx context.Context, boardID, workspaceID uuid.UUID) ([]*domainProject.Column, error)
 	CreateColumn(ctx context.Context, input CreateColumnInput) (*domainProject.Column, error)
 	UpdateColumn(ctx context.Context, input UpdateColumnInput) (*domainProject.Column, error)

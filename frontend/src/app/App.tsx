@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth, AuthModal, AuthScreen } from '@/features/auth';
-import { useTaskNavigation, useTaskStore, useUrlSync } from '@/features/task-navigation';
+import { useTaskNavigation, useTaskStore, useUrlSync, useDynamicTitle } from '@/features/task-navigation';
 import {
   useInboxTasks, useCreateTaskMutation, useToggleTaskMutation,
   useDeleteTaskMutation, useTodayTasksQuery, TASKS_QUERY_KEY,
@@ -12,7 +12,7 @@ import { Sidebar } from '@/widgets/sidebar';
 import { BoardsRail } from '@/widgets/boards-panel';
 import { MainSheet } from '@/widgets/main-sheet';
 import { TaskDrawer } from '@/widgets/task-drawer';
-import { ThemePickerModal, useThemeStore } from '@/features/theme-switcher';
+import { ThemePickerModal, useThemeStore, useDynamicFavicon } from '@/features/theme-switcher';
 import { AmbientCanvas } from '@/shared/lib/ambient';
 import { UiCatalog } from './components/UiCatalog';
 import { StatesShowcase } from './components/StatesShowcase';
@@ -37,6 +37,8 @@ export const App: React.FC = () => {
 
   // Reactive URL routing, history sync and deep link resolution
   useUrlSync({ workspaceId: workspace?.id });
+  useDynamicFavicon();
+  useDynamicTitle(workspace?.id);
 
   const {
     selectedTaskId, setSelectedTaskId, isQuickCaptureOpen, setQuickCaptureOpen,
@@ -285,7 +287,7 @@ export const App: React.FC = () => {
                   Витрина компонентов и состояний
                 </h2>
                 <p className="text-xs text-muted">
-                  Атомарный дизайн-паспорт «Soft Editorial GTD»
+                  Атомарный дизайн-паспорт и компоненты Takt
                 </p>
               </div>
               <div className="flex items-center gap-2">

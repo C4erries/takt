@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, ArrowRight, GripVertical, Inbox, Check, Zap } from 'lucide-react';
+import { Plus, MoreHorizontal, ArrowRight, GripVertical, Inbox, Check, Zap, Trash2 } from 'lucide-react';
 import { Badge, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import { motion, AnimatePresence, cardExitVariants } from '@/shared/lib/motion';
@@ -10,6 +10,7 @@ import {
   useProjectBoardsQuery,
   useMoveColumnMutation,
   useUpdateColumnMutation,
+  useDeleteColumnMutation,
   type Column,
   type ColumnStatusCategory,
 } from '@/entities/project';
@@ -20,10 +21,8 @@ export interface KanbanColumnProps {
   column: Column;
   tasks: Task[];
   allColumns?: Column[];
-  projectId?: string;
-  workspaceId?: string;
-  onToggleTask?: (taskId: string) => void;
-  onSelectTask?: (taskId: string) => void;
+  projectId?: string; workspaceId?: string;
+  onToggleTask?: (taskId: string) => void; onSelectTask?: (taskId: string) => void;
   selectedTaskId?: string | null;
   onCreateTask?: (title: string, columnId: string) => Promise<void>;
   isOverlay?: boolean;
@@ -46,11 +45,7 @@ function getStoredColumnColor(columnId: string): string | null {
 }
 
 function setStoredColumnColor(columnId: string, color: string | null): void {
-  try {
-    const map = JSON.parse(localStorage.getItem('takt_column_colors') || '{}');
-    if (color) map[columnId] = color; else delete map[columnId];
-    localStorage.setItem('takt_column_colors', JSON.stringify(map));
-  } catch {}
+  try { const m = JSON.parse(localStorage.getItem('takt_column_colors') || '{}'); if (color) m[columnId] = color; else delete m[columnId]; localStorage.setItem('takt_column_colors', JSON.stringify(m)); } catch {}
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -82,15 +77,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const boardsQuery = useProjectBoardsQuery(workspaceId, projectId);
   const moveColumnMutation = useMoveColumnMutation(workspaceId, column.boardId);
   const updateColumnMutation = useUpdateColumnMutation(workspaceId, column.boardId);
+  const deleteColumnMutation = useDeleteColumnMutation(workspaceId, column.boardId);
   const otherBoards = (boardsQuery.data ?? []).filter((b) => b.id !== column.boardId);
 
   useEffect(() => {
     if (!isMenuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
+    const onOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
   }, [isMenuOpen]);
 
   useEffect(() => {
@@ -157,7 +153,24 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           </Badge>
         </div>
 
-        <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-0.5" onPointerDown={(e) => e.stopPropagation()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={tasks.length > 0 || deleteColumnMutation.isPending}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (tasks.length === 0 && window.confirm(`Удалить колонку «${column.name}»?`)) {
+                deleteColumnMutation.mutate(column.id);
+              }
+            }}
+            className={cn('h-6 w-6 p-0 transition-colors', tasks.length === 0 ? 'text-muted hover:text-destructive hover:bg-destructive/10' : 'text-muted/40 cursor-not-allowed')}
+            title={tasks.length > 0 ? 'Нельзя удалить колонку с задачами. Сначала переместите или удалите задачи.' : `Удалить колонку «${column.name}»`}
+            aria-label={`Удалить колонку ${column.name}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+
           <div className="relative" ref={menuRef}>
             <Button
               variant="ghost"
@@ -234,11 +247,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                       type="button"
                       onClick={() => handleSelectColor(c.hex)}
                       title={c.name}
-                      className={cn(
-                        'w-6 h-6 rounded-full flex items-center justify-center transition-all border shadow-washi-sm',
-                        c.hex === columnColor ? 'ring-2 ring-accent-solid scale-105 border-surface' : 'border-subtle/80 hover:scale-105',
-                        !c.hex && 'bg-canvas/60 text-muted'
-                      )}
+                      className={cn('w-6 h-6 rounded-full flex items-center justify-center transition-all border shadow-washi-sm', c.hex === columnColor ? 'ring-2 ring-accent-solid scale-105 border-surface' : 'border-subtle/80 hover:scale-105', !c.hex && 'bg-canvas/60 text-muted')}
                       style={c.hex ? { backgroundColor: c.hex } : undefined}
                     >
                       {!c.hex && <span className="text-[10px] font-mono leading-none">✕</span>}
@@ -268,12 +277,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 className="w-full px-2.5 py-1.5 text-xs bg-canvas/40 border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
               />
               <div className="flex items-center justify-end gap-1.5">
-                <Button type="button" variant="ghost" size="sm" onClick={() => { setIsAdding(false); setNewTitle(''); }} className="text-[11px] h-6 px-2 text-muted hover:text-primary">
-                  Отмена
-                </Button>
-                <Button type="submit" variant="solid" size="sm" isLoading={isSubmitting} disabled={!newTitle.trim()} className="text-[11px] h-6 px-2.5">
-                  Добавить
-                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setIsAdding(false); setNewTitle(''); }} className="text-[11px] h-6 px-2 text-muted hover:text-primary">Отмена</Button>
+                <Button type="submit" variant="solid" size="sm" isLoading={isSubmitting} disabled={!newTitle.trim()} className="text-[11px] h-6 px-2.5">Добавить</Button>
               </div>
             </form>
           ) : (

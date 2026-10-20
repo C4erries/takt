@@ -136,6 +136,49 @@ projectBoards:
       '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
       '404': { description: Project not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
+boardItem:
+  patch:
+    tags: [Projects]
+    summary: Update a board in a project
+    operationId: updateProjectBoard
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: project_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: board_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name]
+            properties:
+              name: { type: string, minLength: 1, maxLength: 255, example: "Основная доска" }
+    responses:
+      '200':
+        description: Board updated
+        content:
+          application/json:
+            schema: { $ref: '../schemas/project.yaml#/Board' }
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Board not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+  delete:
+    tags: [Projects]
+    summary: Delete a board from a project
+    operationId: deleteProjectBoard
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: project_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: board_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '204': { description: Board deleted }
+      '400': { description: Cannot delete the only board, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Board not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
 boardColumns:
   get:
     tags: [Projects]

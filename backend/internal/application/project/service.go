@@ -120,43 +120,6 @@ func (s *Service) DeleteProject(ctx context.Context, projectID, workspaceID uuid
 	})
 }
 
-func (s *Service) GetProjectBoards(ctx context.Context, projectID, workspaceID uuid.UUID) ([]*domainProject.Board, error) {
-	if _, err := s.projectRepo.GetByID(ctx, projectID, workspaceID); err != nil {
-		return nil, err
-	}
-	return s.boardRepo.ListByProject(ctx, projectID)
-}
-
-func (s *Service) CreateBoard(ctx context.Context, projectID, workspaceID uuid.UUID, name string) (*domainProject.Board, error) {
-	if _, err := s.projectRepo.GetByID(ctx, projectID, workspaceID); err != nil {
-		return nil, err
-	}
-
-	b, err := domainProject.NewBoard(projectID, name)
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.transactor.WithinTx(ctx, func(txCtx context.Context) error {
-		if err := s.boardRepo.Create(txCtx, b); err != nil {
-			return err
-		}
-
-		cols := domainProject.NewDefaultColumns(b.ID)
-		for _, col := range cols {
-			if err := s.columnRepo.Create(txCtx, col); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
 func (s *Service) GetBoardColumns(ctx context.Context, boardID, workspaceID uuid.UUID) ([]*domainProject.Column, error) {
 	b, err := s.boardRepo.GetByID(ctx, boardID)
 	if err != nil {

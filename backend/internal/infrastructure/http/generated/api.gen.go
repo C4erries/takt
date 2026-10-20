@@ -1174,6 +1174,12 @@ type CreateProjectBoardJSONBody struct {
 	Name string `json:"name"`
 }
 
+// UpdateProjectBoardJSONBody defines parameters for UpdateProjectBoard.
+type UpdateProjectBoardJSONBody struct {
+	// Name Example: Основная доска
+	Name string `json:"name"`
+}
+
 // SearchWorkspaceParams defines parameters for SearchWorkspace.
 type SearchWorkspaceParams struct {
 	Q string `form:"q" json:"q"`
@@ -1222,6 +1228,9 @@ type UpdateProjectJSONRequestBody = UpdateProjectRequest
 
 // CreateProjectBoardJSONRequestBody defines body for CreateProjectBoard for application/json ContentType.
 type CreateProjectBoardJSONRequestBody CreateProjectBoardJSONBody
+
+// UpdateProjectBoardJSONRequestBody defines body for UpdateProjectBoard for application/json ContentType.
+type UpdateProjectBoardJSONRequestBody UpdateProjectBoardJSONBody
 
 // CreateWorkspaceTagJSONRequestBody defines body for CreateWorkspaceTag for application/json ContentType.
 type CreateWorkspaceTagJSONRequestBody = CreateTagRequest
@@ -1345,6 +1354,12 @@ type ServerInterface interface {
 	// CreateProjectBoard Create a board in a project
 	// (POST /workspaces/{workspace_id}/projects/{project_id}/boards)
 	CreateProjectBoard(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID) error
+	// DeleteProjectBoard Delete a board from a project
+	// (DELETE /workspaces/{workspace_id}/projects/{project_id}/boards/{board_id})
+	DeleteProjectBoard(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID, boardId openapi_types.UUID) error
+	// UpdateProjectBoard Update a board in a project
+	// (PATCH /workspaces/{workspace_id}/projects/{project_id}/boards/{board_id})
+	UpdateProjectBoard(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID, boardId openapi_types.UUID) error
 	// ListProjectTasks List all tasks for a project
 	// (GET /workspaces/{workspace_id}/projects/{project_id}/tasks)
 	ListProjectTasks(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID) error
@@ -2036,6 +2051,70 @@ func (w *ServerInterfaceWrapper) CreateProjectBoard(ctx echo.Context) error {
 	return err
 }
 
+// DeleteProjectBoard converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteProjectBoard(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", ctx.Param("project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter project_id: %s", err))
+	}
+
+	// ------------- Path parameter "board_id" -------------
+	var boardId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "board_id", ctx.Param("board_id"), &boardId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter board_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteProjectBoard(ctx, workspaceId, projectId, boardId)
+	return err
+}
+
+// UpdateProjectBoard converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateProjectBoard(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", ctx.Param("project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter project_id: %s", err))
+	}
+
+	// ------------- Path parameter "board_id" -------------
+	var boardId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "board_id", ctx.Param("board_id"), &boardId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter board_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateProjectBoard(ctx, workspaceId, projectId, boardId)
+	return err
+}
+
 // ListProjectTasks converts echo context to params.
 func (w *ServerInterfaceWrapper) ListProjectTasks(ctx echo.Context) error {
 	var err error
@@ -2439,6 +2518,8 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id", wrapper.UpdateProject, options.OperationMiddlewares["updateProject"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards", wrapper.ListProjectBoards, options.OperationMiddlewares["listProjectBoards"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards", wrapper.CreateProjectBoard, options.OperationMiddlewares["createProjectBoard"]...)
+	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards/:board_id", wrapper.DeleteProjectBoard, options.OperationMiddlewares["deleteProjectBoard"]...)
+	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/boards/:board_id", wrapper.UpdateProjectBoard, options.OperationMiddlewares["updateProjectBoard"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/projects/:project_id/tasks", wrapper.ListProjectTasks, options.OperationMiddlewares["listProjectTasks"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/search", wrapper.SearchWorkspace, options.OperationMiddlewares["searchWorkspace"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/switch", wrapper.SwitchWorkspace, options.OperationMiddlewares["switchWorkspace"]...)

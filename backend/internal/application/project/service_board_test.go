@@ -246,3 +246,57 @@ func TestService_UpdateColumn(t *testing.T) {
 		})
 	}
 }
+
+func TestService_Boards_CRUD(t *testing.T) {
+	wsID := uuid.New()
+	projID := uuid.New()
+	boardID1 := uuid.New()
+	boardID2 := uuid.New()
+
+	existingProj := &domainProject.Project{ID: projID, WorkspaceID: wsID, Name: "Проект"}
+	board1 := &domainProject.Board{ID: boardID1, ProjectID: projID, Name: "Доска 1"}
+	board2 := &domainProject.Board{ID: boardID2, ProjectID: projID, Name: "Доска 2"}
+
+	t.Run("UpdateBoard успешно обновляет имя доски", func(t *testing.T) {
+		deps := newMockDeps(t)
+		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID1).Return(board1, nil).Once()
+		deps.boardRepo.EXPECT().Update(mock.Anything, mock.MatchedBy(func(b *domainProject.Board) bool {
+			return b.Name == "Новое название"
+		})).Return(nil).Once()
+
+		svc := deps.newService()
+		updated, err := svc.UpdateBoard(context.Background(), projID, boardID1, wsID, "Новое название")
+		require.NoError(t, err)
+		assert.Equal(t, "Новое название", updated.Name)
+	})
+
+	t.Run("DeleteBoard отклоняется с ErrLastBoard, если доска единственная", func(t *testing.T) {
+		deps := newMockDeps(t)
+		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID1).Return(board1, nil).Once()
+		deps.boardRepo.EXPECT().ListByProject(mock.Anything, projID).Return([]*domainProject.Board{board1}, nil).Once()
+
+		svc := deps.newService()
+		err := svc.DeleteBoard(context.Background(), projID, boardID1, wsID)
+		require.ErrorIs(t, err, domainProject.ErrLastBoard)
+	})
+
+	t.Run("DeleteBoard сбрасывает задачи в Inbox и удаляет доску", func(t *testing.T) {
+		deps := newMockDeps(t)
+		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID1).Return(board1, nil).Once()
+		deps.boardRepo.EXPECT().ListByProject(mock.Anything, projID).Return([]*domainProject.Board{board1, board2}, nil).Once()
+		deps.transactor.EXPECT().WithinTx(mock.Anything, mock.Anything).RunAndReturn(
+			func(ctx context.Context, fn func(context.Context) error) error {
+				return fn(ctx)
+			},
+		).Once()
+		deps.taskRepo.EXPECT().ResetBoardTasksToInbox(mock.Anything, boardID1, wsID).Return(nil).Once()
+		deps.boardRepo.EXPECT().Delete(mock.Anything, boardID1).Return(nil).Once()
+
+		svc := deps.newService()
+		err := svc.DeleteBoard(context.Background(), projID, boardID1, wsID)
+		require.NoError(t, err)
+	})
+}

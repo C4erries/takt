@@ -23,6 +23,8 @@ import (
 type mockProjectService struct {
 	createProjectFn func(ctx context.Context, input projectApp.CreateProjectInput) (*domainProject.Project, error)
 	getProjectsFn   func(ctx context.Context, wsID uuid.UUID) ([]*domainProject.Project, error)
+	updateBoardFn   func(ctx context.Context, projectID, boardID, wsID uuid.UUID, name string) (*domainProject.Board, error)
+	deleteBoardFn   func(ctx context.Context, projectID, boardID, wsID uuid.UUID) error
 	updateColumnFn  func(ctx context.Context, input projectApp.UpdateColumnInput) (*domainProject.Column, error)
 	deleteColumnFn  func(ctx context.Context, boardID, colID, wsID uuid.UUID) error
 	moveTaskFn      func(ctx context.Context, input projectApp.MoveTaskInput) (*domainTask.Task, error)
@@ -60,6 +62,20 @@ func (m *mockProjectService) GetProjectBoards(ctx context.Context, projectID, ws
 
 func (m *mockProjectService) CreateBoard(ctx context.Context, projectID, wsID uuid.UUID, name string) (*domainProject.Board, error) {
 	return nil, nil
+}
+
+func (m *mockProjectService) UpdateBoard(ctx context.Context, projectID, boardID, wsID uuid.UUID, name string) (*domainProject.Board, error) {
+	if m.updateBoardFn != nil {
+		return m.updateBoardFn(ctx, projectID, boardID, wsID, name)
+	}
+	return nil, nil
+}
+
+func (m *mockProjectService) DeleteBoard(ctx context.Context, projectID, boardID, wsID uuid.UUID) error {
+	if m.deleteBoardFn != nil {
+		return m.deleteBoardFn(ctx, projectID, boardID, wsID)
+	}
+	return nil
 }
 
 func (m *mockProjectService) GetBoardColumns(ctx context.Context, boardID, wsID uuid.UUID) ([]*domainProject.Column, error) {

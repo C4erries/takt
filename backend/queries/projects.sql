@@ -130,6 +130,13 @@ SET project_id = NULL,
     updated_at = NOW()
 WHERE project_id = $1 AND workspace_id = $2;
 
+-- name: ResetBoardTasksToInbox :exec
+UPDATE tasks
+SET project_id = NULL,
+    column_id = NULL,
+    updated_at = NOW()
+WHERE column_id IN (SELECT id FROM columns WHERE board_id = $1) AND workspace_id = $2;
+
 -- name: ListTasksByProject :many
 SELECT * FROM tasks
 WHERE project_id = $1 AND workspace_id = $2

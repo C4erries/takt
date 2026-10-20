@@ -18,6 +18,8 @@ func (h *Handler) respondDomainError(c echo.Context, err error) error {
 	switch {
 	case errors.Is(err, domainProject.ErrColumnNotEmpty):
 		status, code = http.StatusConflict, "COLUMN_NOT_EMPTY"
+	case errors.Is(err, domainProject.ErrLastBoard):
+		status, code = http.StatusBadRequest, "CANNOT_DELETE_LAST_BOARD"
 	case errors.Is(err, domainProject.ErrProjectNotFound):
 		status, code = http.StatusNotFound, "PROJECT_NOT_FOUND"
 	case errors.Is(err, domainProject.ErrBoardNotFound):
@@ -181,6 +183,25 @@ func (h *Handler) CreateProjectBoard(ctx echo.Context, workspaceId openapi_types
 		return h.respondDomainError(ctx, err)
 	}
 	return ctx.JSON(http.StatusCreated, mapDomainBoardToGenerated(b))
+}
+
+func (h *Handler) UpdateProjectBoard(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID, boardId openapi_types.UUID) error {
+	var req generated.UpdateProjectBoardJSONRequestBody
+	if err := ctx.Bind(&req); err != nil {
+		return ctx.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid payload"})
+	}
+	b, err := h.projectService.UpdateBoard(ctx.Request().Context(), projectId, boardId, workspaceId, req.Name)
+	if err != nil {
+		return h.respondDomainError(ctx, err)
+	}
+	return ctx.JSON(http.StatusOK, mapDomainBoardToGenerated(b))
+}
+
+func (h *Handler) DeleteProjectBoard(ctx echo.Context, workspaceId openapi_types.UUID, projectId openapi_types.UUID, boardId openapi_types.UUID) error {
+	if err := h.projectService.DeleteBoard(ctx.Request().Context(), projectId, boardId, workspaceId); err != nil {
+		return h.respondDomainError(ctx, err)
+	}
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) ListBoardColumns(ctx echo.Context, workspaceId openapi_types.UUID, boardId openapi_types.UUID) error {

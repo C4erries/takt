@@ -288,6 +288,69 @@ func (_c *MockTaskMoveRepository_MoveTaskToColumnAndPosition_Call) RunAndReturn(
 	return _c
 }
 
+// ResetBoardTasksToInbox provides a mock function for the type MockTaskMoveRepository
+func (_mock *MockTaskMoveRepository) ResetBoardTasksToInbox(ctx context.Context, boardID uuid.UUID, workspaceID uuid.UUID) error {
+	ret := _mock.Called(ctx, boardID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ResetBoardTasksToInbox")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, boardID, workspaceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTaskMoveRepository_ResetBoardTasksToInbox_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResetBoardTasksToInbox'
+type MockTaskMoveRepository_ResetBoardTasksToInbox_Call struct {
+	*mock.Call
+}
+
+// ResetBoardTasksToInbox is a helper method to define mock.On call
+//   - ctx context.Context
+//   - boardID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockTaskMoveRepository_Expecter) ResetBoardTasksToInbox(ctx any, boardID any, workspaceID any) *MockTaskMoveRepository_ResetBoardTasksToInbox_Call {
+	return &MockTaskMoveRepository_ResetBoardTasksToInbox_Call{Call: _e.mock.On("ResetBoardTasksToInbox", ctx, boardID, workspaceID)}
+}
+
+func (_c *MockTaskMoveRepository_ResetBoardTasksToInbox_Call) Run(run func(ctx context.Context, boardID uuid.UUID, workspaceID uuid.UUID)) *MockTaskMoveRepository_ResetBoardTasksToInbox_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskMoveRepository_ResetBoardTasksToInbox_Call) Return(err error) *MockTaskMoveRepository_ResetBoardTasksToInbox_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTaskMoveRepository_ResetBoardTasksToInbox_Call) RunAndReturn(run func(ctx context.Context, boardID uuid.UUID, workspaceID uuid.UUID) error) *MockTaskMoveRepository_ResetBoardTasksToInbox_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ResetProjectTasksToInbox provides a mock function for the type MockTaskMoveRepository
 func (_mock *MockTaskMoveRepository) ResetProjectTasksToInbox(ctx context.Context, projectID uuid.UUID, workspaceID uuid.UUID) error {
 	ret := _mock.Called(ctx, projectID, workspaceID)

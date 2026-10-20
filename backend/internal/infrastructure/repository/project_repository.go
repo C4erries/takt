@@ -347,6 +347,13 @@ func (r *TaskMoveRepository) ResetProjectTasksToInbox(ctx context.Context, proje
 	})
 }
 
+func (r *TaskMoveRepository) ResetBoardTasksToInbox(ctx context.Context, boardID, workspaceID uuid.UUID) error {
+	return getQuerier(ctx, r.queries).ResetBoardTasksToInbox(ctx, sqlc.ResetBoardTasksToInboxParams{
+		BoardID:     uuidToPg(boardID),
+		WorkspaceID: uuidToPg(workspaceID),
+	})
+}
+
 func (r *TaskMoveRepository) ListTasksByProject(ctx context.Context, projectID, workspaceID uuid.UUID) ([]*domainTask.Task, error) {
 	q := getQuerier(ctx, r.queries)
 	rows, err := q.ListTasksByProject(ctx, sqlc.ListTasksByProjectParams{

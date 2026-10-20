@@ -515,6 +515,24 @@ func (q *Queries) ResetBoardInboxColumns(ctx context.Context, boardID pgtype.UUI
 	return err
 }
 
+const resetBoardTasksToInbox = `-- name: ResetBoardTasksToInbox :exec
+UPDATE tasks
+SET project_id = NULL,
+    column_id = NULL,
+    updated_at = NOW()
+WHERE column_id IN (SELECT id FROM columns WHERE board_id = $1) AND workspace_id = $2
+`
+
+type ResetBoardTasksToInboxParams struct {
+	BoardID     pgtype.UUID `json:"board_id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+}
+
+func (q *Queries) ResetBoardTasksToInbox(ctx context.Context, arg ResetBoardTasksToInboxParams) error {
+	_, err := q.db.Exec(ctx, resetBoardTasksToInbox, arg.BoardID, arg.WorkspaceID)
+	return err
+}
+
 const resetProjectTasksToInbox = `-- name: ResetProjectTasksToInbox :exec
 UPDATE tasks
 SET project_id = NULL,

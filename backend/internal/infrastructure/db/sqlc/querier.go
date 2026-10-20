@@ -78,6 +78,7 @@ type Querier interface {
 	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)
 	RemoveTagFromTask(ctx context.Context, arg RemoveTagFromTaskParams) error
 	ResetBoardInboxColumns(ctx context.Context, boardID pgtype.UUID) error
+	ResetBoardTasksToInbox(ctx context.Context, arg ResetBoardTasksToInboxParams) error
 	ResetProjectTasksToInbox(ctx context.Context, arg ResetProjectTasksToInboxParams) error
 	SearchProjectsInWorkspace(ctx context.Context, arg SearchProjectsInWorkspaceParams) ([]Project, error)
 	SearchTasksInWorkspace(ctx context.Context, arg SearchTasksInWorkspaceParams) ([]Task, error)

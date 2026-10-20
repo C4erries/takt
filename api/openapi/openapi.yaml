@@ -64,6 +64,8 @@ paths:
     $ref: './paths/projects.yaml#/projectItem'
   /workspaces/{workspace_id}/projects/{project_id}/boards:
     $ref: './paths/projects.yaml#/projectBoards'
+  /workspaces/{workspace_id}/projects/{project_id}/boards/{board_id}:
+    $ref: './paths/projects.yaml#/boardItem'
   /workspaces/{workspace_id}/boards/{board_id}/columns:
     $ref: './paths/projects.yaml#/boardColumns'
   /workspaces/{workspace_id}/boards/{board_id}/columns/{column_id}:

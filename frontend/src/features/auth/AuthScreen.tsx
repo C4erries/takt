@@ -155,7 +155,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
       {/* Footer minimal info */}
       <div className="mt-6 text-center text-[11px] text-muted font-mono">
-        Editorial GTD · Палитра Washi & Matcha
+        Takt · Персональный воркспейс
       </div>
     </div>
   );

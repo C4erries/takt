@@ -1,6 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, LayoutGrid, Check } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
 import { getAuthToken } from '@/shared/api';
 import {
   useProjectBoardsQuery,
@@ -47,6 +60,23 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
   const deleteBoardMutation = useDeleteBoardMutation(workspaceId, projectId);
   const updateBoardMutation = useUpdateBoardMutation(workspaceId, projectId);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  const sortedBoards = useMemo(() => {
+    return [...boards].sort((a, b) => {
+      const posA = a.position ?? 0;
+      const posB = b.position ?? 0;
+      if (posA !== posB) return posA - posB;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  }, [boards]);
+
   // Pre-fetch columns for each board to count tasks and columns per board
   const columnQueries = useQueries({
     queries: boards.map((b) => ({
@@ -60,6 +90,43 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
       enabled: !!workspaceId && !!b.id,
     })),
   });
+
+  const columnsByBoardId = useMemo(() => {
+    const map = new Map<string, Column[]>();
+    boards.forEach((b, i) => {
+      map.set(b.id, columnQueries[i]?.data ?? []);
+    });
+    return map;
+  }, [boards, columnQueries]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    const activeIndex = sortedBoards.findIndex((b) => b.id === activeId);
+    const overIndex = sortedBoards.findIndex((b) => b.id === overId);
+
+    if (activeIndex === -1 || overIndex === -1 || activeIndex === overIndex) return;
+
+    const newBoards = arrayMove(sortedBoards, activeIndex, overIndex);
+    const targetIdx = newBoards.findIndex((b) => b.id === activeId);
+
+    let newPosition: number;
+    if (targetIdx === 0) {
+      newPosition = Math.max(0.1, (newBoards[1]?.position ?? 1000) / 2.0);
+    } else if (targetIdx === newBoards.length - 1) {
+      newPosition = (newBoards[targetIdx - 1]?.position ?? 0) + 1000.0;
+    } else {
+      const prevPos = newBoards[targetIdx - 1].position ?? 0;
+      const nextPos = newBoards[targetIdx + 1].position ?? 0;
+      newPosition = Math.abs(nextPos - prevPos) < 0.0001 ? prevPos + 0.5 : (prevPos + nextPos) / 2.0;
+    }
+
+    updateBoardMutation.mutate({ boardId: activeId, data: { position: newPosition } });
+  };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +201,7 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
               onChange={(e) => setNewBoardName(e.target.value)}
               placeholder="Название доски..."
               disabled={createBoardMutation.isPending}
-              className="w-full px-2 py-1 text-xs bg-canvas/40 border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
+              className="w-full px-2 py-1 text-xs bg-surface border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
             />
             <div className="flex items-center justify-end gap-1.5">
               <Button
@@ -222,38 +289,51 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
         )}
 
         {/* State 4: Success - Boards List */}
-        {!isLoading &&
-          !isError &&
-          boards.map((board, idx) => {
-            const boardCols = columnQueries[idx]?.data ?? [];
-            const colIds = new Set(boardCols.map((c) => c.id));
-            const count = tasks.filter((t) => t.columnId && colIds.has(t.columnId)).length;
-            const isActive = activeBoardId ? board.id === activeBoardId : idx === 0;
+        {!isLoading && !isError && (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={sortedBoards.map((b) => b.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-1.5">
+                {sortedBoards.map((board, idx) => {
+                  const boardCols = columnsByBoardId.get(board.id) ?? [];
+                  const colIds = new Set(boardCols.map((c) => c.id));
+                  const count = tasks.filter((t) => t.columnId && colIds.has(t.columnId)).length;
+                  const isActive = activeBoardId ? board.id === activeBoardId : idx === 0;
 
-            return (
-              <BoardCard
-                key={board.id}
-                board={board}
-                columnCount={boardCols.length}
-                taskCount={count}
-                isActive={isActive}
-                canDelete={boards.length > 1}
-                onSelect={() => onSelectBoard(board.id)}
-                onRename={(newName) =>
-                  updateBoardMutation.mutate({ boardId: board.id, name: newName })
-                }
-                onDelete={async () => {
-                  await deleteBoardMutation.mutateAsync(board.id);
-                  if (board.id === activeBoardId) {
-                    const remaining = boards.filter((b) => b.id !== board.id);
-                    if (remaining.length > 0) {
-                      onSelectBoard(remaining[0].id);
-                    }
-                  }
-                }}
-              />
-            );
-          })}
+                  return (
+                    <BoardCard
+                      key={board.id}
+                      board={board}
+                      columnCount={boardCols.length}
+                      taskCount={count}
+                      isActive={isActive}
+                      canDelete={boards.length > 1}
+                      onSelect={() => onSelectBoard(board.id)}
+                      onRename={(newName) =>
+                        updateBoardMutation.mutate({ boardId: board.id, data: { name: newName } })
+                      }
+                      onDelete={async () => {
+                        await deleteBoardMutation.mutateAsync(board.id);
+                        if (board.id === activeBoardId) {
+                          const remaining = boards.filter((b) => b.id !== board.id);
+                          if (remaining.length > 0) {
+                            onSelectBoard(remaining[0].id);
+                          }
+                        }
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
       </div>
     </aside>
   );

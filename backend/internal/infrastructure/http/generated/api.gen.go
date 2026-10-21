@@ -634,6 +634,9 @@ type Board struct {
 	// Name Example: Основная
 	Name string `json:"name"`
 
+	// Position Example: 1000
+	Position float64 `json:"position"`
+
 	// ProjectId Example: a0000000-0000-0000-0000-000000000001
 	ProjectId openapi_types.UUID `json:"projectId"`
 
@@ -1177,7 +1180,10 @@ type CreateProjectBoardJSONBody struct {
 // UpdateProjectBoardJSONBody defines parameters for UpdateProjectBoard.
 type UpdateProjectBoardJSONBody struct {
 	// Name Example: Основная доска
-	Name string `json:"name"`
+	Name *string `json:"name,omitempty"`
+
+	// Position Example: 2000
+	Position *float64 `json:"position,omitempty"`
 }
 
 // SearchWorkspaceParams defines parameters for SearchWorkspace.

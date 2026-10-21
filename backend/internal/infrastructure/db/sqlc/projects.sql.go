@@ -27,20 +27,22 @@ func (q *Queries) CountTasksInColumn(ctx context.Context, columnID pgtype.UUID) 
 const createBoard = `-- name: CreateBoard :one
 INSERT INTO boards (
     project_id,
-    name
+    name,
+    position
 ) VALUES (
-    $1, $2
+    $1, $2, $3
 )
-RETURNING id, project_id, name, created_at, updated_at
+RETURNING id, project_id, name, created_at, updated_at, position
 `
 
 type CreateBoardParams struct {
 	ProjectID pgtype.UUID `json:"project_id"`
 	Name      string      `json:"name"`
+	Position  float64     `json:"position"`
 }
 
 func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error) {
-	row := q.db.QueryRow(ctx, createBoard, arg.ProjectID, arg.Name)
+	row := q.db.QueryRow(ctx, createBoard, arg.ProjectID, arg.Name, arg.Position)
 	var i Board
 	err := row.Scan(
 		&i.ID,
@@ -48,6 +50,7 @@ func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (Board
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Position,
 	)
 	return i, err
 }
@@ -170,7 +173,7 @@ func (q *Queries) DeleteProject(ctx context.Context, arg DeleteProjectParams) er
 }
 
 const getBoardByID = `-- name: GetBoardByID :one
-SELECT id, project_id, name, created_at, updated_at FROM boards
+SELECT id, project_id, name, created_at, updated_at, position FROM boards
 WHERE id = $1
 `
 
@@ -183,6 +186,7 @@ func (q *Queries) GetBoardByID(ctx context.Context, id pgtype.UUID) (Board, erro
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Position,
 	)
 	return i, err
 }
@@ -234,9 +238,9 @@ func (q *Queries) GetProjectByID(ctx context.Context, arg GetProjectByIDParams) 
 }
 
 const listBoardsByProject = `-- name: ListBoardsByProject :many
-SELECT id, project_id, name, created_at, updated_at FROM boards
+SELECT id, project_id, name, created_at, updated_at, position FROM boards
 WHERE project_id = $1
-ORDER BY created_at ASC
+ORDER BY position ASC, created_at ASC
 `
 
 func (q *Queries) ListBoardsByProject(ctx context.Context, projectID pgtype.UUID) ([]Board, error) {
@@ -254,6 +258,7 @@ func (q *Queries) ListBoardsByProject(ctx context.Context, projectID pgtype.UUID
 			&i.Name,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Position,
 		); err != nil {
 			return nil, err
 		}
@@ -553,19 +558,21 @@ func (q *Queries) ResetProjectTasksToInbox(ctx context.Context, arg ResetProject
 
 const updateBoard = `-- name: UpdateBoard :one
 UPDATE boards
-SET name = $2,
+SET name = COALESCE($2, name),
+    position = COALESCE($3, position),
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, project_id, name, created_at, updated_at
+RETURNING id, project_id, name, created_at, updated_at, position
 `
 
 type UpdateBoardParams struct {
-	ID   pgtype.UUID `json:"id"`
-	Name string      `json:"name"`
+	ID       pgtype.UUID `json:"id"`
+	Name     string      `json:"name"`
+	Position float64     `json:"position"`
 }
 
 func (q *Queries) UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error) {
-	row := q.db.QueryRow(ctx, updateBoard, arg.ID, arg.Name)
+	row := q.db.QueryRow(ctx, updateBoard, arg.ID, arg.Name, arg.Position)
 	var i Board
 	err := row.Scan(
 		&i.ID,
@@ -573,6 +580,7 @@ func (q *Queries) UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Position,
 	)
 	return i, err
 }

@@ -20,6 +20,14 @@ type UpdateProjectInput struct {
 	Color       string
 }
 
+type UpdateBoardInput struct {
+	WorkspaceID uuid.UUID
+	ProjectID   uuid.UUID
+	BoardID     uuid.UUID
+	Name        *string
+	Position    *float64
+}
+
 type CreateColumnInput struct {
 	WorkspaceID    uuid.UUID
 	BoardID        uuid.UUID

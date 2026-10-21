@@ -24,27 +24,19 @@ func NewProjectRepository(queries *sqlc.Queries) *ProjectRepository {
 func (r *ProjectRepository) Create(ctx context.Context, p *domainProject.Project) error {
 	q := getQuerier(ctx, r.queries)
 	row, err := q.CreateProject(ctx, sqlc.CreateProjectParams{
-		WorkspaceID: uuidToPg(p.WorkspaceID),
-		Name:        p.Name,
-		Description: p.Description,
-		Color:       p.Color,
+		WorkspaceID: uuidToPg(p.WorkspaceID), Name: p.Name, Description: p.Description, Color: p.Color,
 	})
 	if err != nil {
 		return err
 	}
 
-	p.ID = pgToUUID(row.ID)
-	p.CreatedAt = pgToTime(row.CreatedAt)
-	p.UpdatedAt = pgToTime(row.UpdatedAt)
+	p.ID, p.CreatedAt, p.UpdatedAt = pgToUUID(row.ID), pgToTime(row.CreatedAt), pgToTime(row.UpdatedAt)
 	return nil
 }
 
 func (r *ProjectRepository) GetByID(ctx context.Context, id, workspaceID uuid.UUID) (*domainProject.Project, error) {
 	q := getQuerier(ctx, r.queries)
-	row, err := q.GetProjectByID(ctx, sqlc.GetProjectByIDParams{
-		ID:          uuidToPg(id),
-		WorkspaceID: uuidToPg(workspaceID),
-	})
+	row, err := q.GetProjectByID(ctx, sqlc.GetProjectByIDParams{ID: uuidToPg(id), WorkspaceID: uuidToPg(workspaceID)})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domainProject.ErrProjectNotFound
@@ -61,10 +53,9 @@ func (r *ProjectRepository) ListByWorkspace(ctx context.Context, workspaceID uui
 	if err != nil {
 		return nil, err
 	}
-
-	res := make([]*domainProject.Project, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, mapProjectRowToDomain(row))
+	res := make([]*domainProject.Project, len(rows))
+	for i, row := range rows {
+		res[i] = mapProjectRowToDomain(row)
 	}
 	return res, nil
 }
@@ -73,17 +64,14 @@ func (r *ProjectRepository) ListByWorkspace(ctx context.Context, workspaceID uui
 func (r *ProjectRepository) SearchProjects(ctx context.Context, workspaceID uuid.UUID, query string, limit int32) ([]*domainProject.Project, error) {
 	q := getQuerier(ctx, r.queries)
 	rows, err := q.SearchProjectsInWorkspace(ctx, sqlc.SearchProjectsInWorkspaceParams{
-		WorkspaceID: uuidToPg(workspaceID),
-		Query:       query,
-		LimitCount:  limit,
+		WorkspaceID: uuidToPg(workspaceID), Query: query, LimitCount: limit,
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	res := make([]*domainProject.Project, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, mapProjectRowToDomain(row))
+	res := make([]*domainProject.Project, len(rows))
+	for i, row := range rows {
+		res[i] = mapProjectRowToDomain(row)
 	}
 	return res, nil
 }
@@ -91,11 +79,7 @@ func (r *ProjectRepository) SearchProjects(ctx context.Context, workspaceID uuid
 func (r *ProjectRepository) Update(ctx context.Context, p *domainProject.Project) error {
 	q := getQuerier(ctx, r.queries)
 	row, err := q.UpdateProject(ctx, sqlc.UpdateProjectParams{
-		ID:          uuidToPg(p.ID),
-		WorkspaceID: uuidToPg(p.WorkspaceID),
-		Name:        p.Name,
-		Description: p.Description,
-		Color:       p.Color,
+		ID: uuidToPg(p.ID), WorkspaceID: uuidToPg(p.WorkspaceID), Name: p.Name, Description: p.Description, Color: p.Color,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -109,11 +93,7 @@ func (r *ProjectRepository) Update(ctx context.Context, p *domainProject.Project
 }
 
 func (r *ProjectRepository) Delete(ctx context.Context, id, workspaceID uuid.UUID) error {
-	q := getQuerier(ctx, r.queries)
-	return q.DeleteProject(ctx, sqlc.DeleteProjectParams{
-		ID:          uuidToPg(id),
-		WorkspaceID: uuidToPg(workspaceID),
-	})
+	return getQuerier(ctx, r.queries).DeleteProject(ctx, sqlc.DeleteProjectParams{ID: uuidToPg(id), WorkspaceID: uuidToPg(workspaceID)})
 }
 
 // BoardRepository handles board persistence.
@@ -128,16 +108,13 @@ func NewBoardRepository(queries *sqlc.Queries) *BoardRepository {
 func (r *BoardRepository) Create(ctx context.Context, b *domainProject.Board) error {
 	q := getQuerier(ctx, r.queries)
 	row, err := q.CreateBoard(ctx, sqlc.CreateBoardParams{
-		ProjectID: uuidToPg(b.ProjectID),
-		Name:      b.Name,
+		ProjectID: uuidToPg(b.ProjectID), Name: b.Name, Position: b.Position,
 	})
 	if err != nil {
 		return err
 	}
 
-	b.ID = pgToUUID(row.ID)
-	b.CreatedAt = pgToTime(row.CreatedAt)
-	b.UpdatedAt = pgToTime(row.UpdatedAt)
+	b.ID, b.CreatedAt, b.UpdatedAt = pgToUUID(row.ID), pgToTime(row.CreatedAt), pgToTime(row.UpdatedAt)
 	return nil
 }
 
@@ -160,10 +137,9 @@ func (r *BoardRepository) ListByProject(ctx context.Context, projectID uuid.UUID
 	if err != nil {
 		return nil, err
 	}
-
-	res := make([]*domainProject.Board, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, mapBoardRowToDomain(row))
+	res := make([]*domainProject.Board, len(rows))
+	for i, row := range rows {
+		res[i] = mapBoardRowToDomain(row)
 	}
 	return res, nil
 }
@@ -171,8 +147,7 @@ func (r *BoardRepository) ListByProject(ctx context.Context, projectID uuid.UUID
 func (r *BoardRepository) Update(ctx context.Context, b *domainProject.Board) error {
 	q := getQuerier(ctx, r.queries)
 	row, err := q.UpdateBoard(ctx, sqlc.UpdateBoardParams{
-		ID:   uuidToPg(b.ID),
-		Name: b.Name,
+		ID: uuidToPg(b.ID), Name: b.Name, Position: b.Position,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -186,8 +161,7 @@ func (r *BoardRepository) Update(ctx context.Context, b *domainProject.Board) er
 }
 
 func (r *BoardRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	q := getQuerier(ctx, r.queries)
-	return q.DeleteBoard(ctx, uuidToPg(id))
+	return getQuerier(ctx, r.queries).DeleteBoard(ctx, uuidToPg(id))
 }
 
 // ColumnRepository handles column persistence.
@@ -212,9 +186,7 @@ func (r *ColumnRepository) Create(ctx context.Context, c *domainProject.Column) 
 		return err
 	}
 
-	c.ID = pgToUUID(row.ID)
-	c.CreatedAt = pgToTime(row.CreatedAt)
-	c.UpdatedAt = pgToTime(row.UpdatedAt)
+	c.ID, c.CreatedAt, c.UpdatedAt = pgToUUID(row.ID), pgToTime(row.CreatedAt), pgToTime(row.UpdatedAt)
 	return nil
 }
 
@@ -237,10 +209,9 @@ func (r *ColumnRepository) ListByBoard(ctx context.Context, boardID uuid.UUID) (
 	if err != nil {
 		return nil, err
 	}
-
-	res := make([]*domainProject.Column, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, mapColumnRowToDomain(row))
+	res := make([]*domainProject.Column, len(rows))
+	for i, row := range rows {
+		res[i] = mapColumnRowToDomain(row)
 	}
 	return res, nil
 }
@@ -266,16 +237,13 @@ func (r *ColumnRepository) Update(ctx context.Context, c *domainProject.Column) 
 }
 
 func (r *ColumnRepository) ResetBoardInboxColumns(ctx context.Context, boardID uuid.UUID) error {
-	q := getQuerier(ctx, r.queries)
-	return q.ResetBoardInboxColumns(ctx, uuidToPg(boardID))
+	return getQuerier(ctx, r.queries).ResetBoardInboxColumns(ctx, uuidToPg(boardID))
 }
 
 func (r *ColumnRepository) MoveToBoard(ctx context.Context, columnID, newBoardID uuid.UUID, newPosition float64) error {
 	q := getQuerier(ctx, r.queries)
 	_, err := q.MoveColumnToBoard(ctx, sqlc.MoveColumnToBoardParams{
-		ID:       uuidToPg(columnID),
-		BoardID:  uuidToPg(newBoardID),
-		Position: newPosition,
+		ID: uuidToPg(columnID), BoardID: uuidToPg(newBoardID), Position: newPosition,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -287,13 +255,11 @@ func (r *ColumnRepository) MoveToBoard(ctx context.Context, columnID, newBoardID
 }
 
 func (r *ColumnRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	q := getQuerier(ctx, r.queries)
-	return q.DeleteColumn(ctx, uuidToPg(id))
+	return getQuerier(ctx, r.queries).DeleteColumn(ctx, uuidToPg(id))
 }
 
 func (r *ColumnRepository) CountTasksInColumn(ctx context.Context, columnID uuid.UUID) (int64, error) {
-	q := getQuerier(ctx, r.queries)
-	return q.CountTasksInColumn(ctx, uuidToPg(columnID))
+	return getQuerier(ctx, r.queries).CountTasksInColumn(ctx, uuidToPg(columnID))
 }
 
 // TaskMoveRepository handles task movement across columns and project boundaries.
@@ -324,11 +290,8 @@ func (r *TaskMoveRepository) MoveTaskToColumnAndPosition(
 	}
 
 	row, err := q.MoveTaskToColumnAndPosition(ctx, sqlc.MoveTaskToColumnAndPositionParams{
-		ColumnID:    colPg,
-		ProjectID:   projPg,
-		Position:    position,
-		ID:          uuidToPg(taskID),
-		WorkspaceID: uuidToPg(workspaceID),
+		ColumnID: colPg, ProjectID: projPg, Position: position,
+		ID: uuidToPg(taskID), WorkspaceID: uuidToPg(workspaceID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -341,32 +304,24 @@ func (r *TaskMoveRepository) MoveTaskToColumnAndPosition(
 }
 
 func (r *TaskMoveRepository) ResetProjectTasksToInbox(ctx context.Context, projectID, workspaceID uuid.UUID) error {
-	return getQuerier(ctx, r.queries).ResetProjectTasksToInbox(ctx, sqlc.ResetProjectTasksToInboxParams{
-		ProjectID:   uuidToPg(projectID),
-		WorkspaceID: uuidToPg(workspaceID),
-	})
+	return getQuerier(ctx, r.queries).ResetProjectTasksToInbox(ctx, sqlc.ResetProjectTasksToInboxParams{ProjectID: uuidToPg(projectID), WorkspaceID: uuidToPg(workspaceID)})
 }
 
 func (r *TaskMoveRepository) ResetBoardTasksToInbox(ctx context.Context, boardID, workspaceID uuid.UUID) error {
-	return getQuerier(ctx, r.queries).ResetBoardTasksToInbox(ctx, sqlc.ResetBoardTasksToInboxParams{
-		BoardID:     uuidToPg(boardID),
-		WorkspaceID: uuidToPg(workspaceID),
-	})
+	return getQuerier(ctx, r.queries).ResetBoardTasksToInbox(ctx, sqlc.ResetBoardTasksToInboxParams{BoardID: uuidToPg(boardID), WorkspaceID: uuidToPg(workspaceID)})
 }
 
 func (r *TaskMoveRepository) ListTasksByProject(ctx context.Context, projectID, workspaceID uuid.UUID) ([]*domainTask.Task, error) {
 	q := getQuerier(ctx, r.queries)
 	rows, err := q.ListTasksByProject(ctx, sqlc.ListTasksByProjectParams{
-		ProjectID:   uuidToPg(projectID),
-		WorkspaceID: uuidToPg(workspaceID),
+		ProjectID: uuidToPg(projectID), WorkspaceID: uuidToPg(workspaceID),
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	res := make([]*domainTask.Task, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, mapTaskRowToDomain(row))
+	res := make([]*domainTask.Task, len(rows))
+	for i, row := range rows {
+		res[i] = mapTaskRowToDomain(row)
 	}
 	if err := loadTagsForTasks(ctx, q, res); err != nil {
 		return nil, err
@@ -377,16 +332,14 @@ func (r *TaskMoveRepository) ListTasksByProject(ctx context.Context, projectID, 
 func (r *TaskMoveRepository) ListTasksByColumn(ctx context.Context, columnID, workspaceID uuid.UUID) ([]*domainTask.Task, error) {
 	q := getQuerier(ctx, r.queries)
 	rows, err := q.ListTasksByColumn(ctx, sqlc.ListTasksByColumnParams{
-		ColumnID:    uuidToPg(columnID),
-		WorkspaceID: uuidToPg(workspaceID),
+		ColumnID: uuidToPg(columnID), WorkspaceID: uuidToPg(workspaceID),
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	res := make([]*domainTask.Task, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, mapTaskRowToDomain(row))
+	res := make([]*domainTask.Task, len(rows))
+	for i, row := range rows {
+		res[i] = mapTaskRowToDomain(row)
 	}
 	if err := loadTagsForTasks(ctx, q, res); err != nil {
 		return nil, err

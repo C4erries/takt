@@ -37,6 +37,8 @@
   }
 
   /* Form controls defaults matching theme palette */
+  input,
+  textarea,
   select {
     background-color: var(--bg-surface);
     color: var(--text-primary);

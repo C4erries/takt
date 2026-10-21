@@ -131,6 +131,7 @@ func TestBoard(t *testing.T) {
 		b, err := NewDefaultBoard(projID)
 		require.NoError(t, err)
 		assert.Equal(t, DefaultBoardName, b.Name)
+		assert.Equal(t, DefaultBoardPosition, b.Position)
 		assert.Equal(t, projID, b.ProjectID)
 		assert.NotEqual(t, uuid.Nil, b.ID)
 	})
@@ -139,6 +140,7 @@ func TestBoard(t *testing.T) {
 		b, err := NewBoard(projID, "Спринт 1")
 		require.NoError(t, err)
 		assert.Equal(t, "Спринт 1", b.Name)
+		assert.Equal(t, DefaultBoardPosition, b.Position)
 	})
 
 	t.Run("error on empty board name", func(t *testing.T) {
@@ -161,6 +163,15 @@ func TestBoard(t *testing.T) {
 
 		err = b.Update("   ")
 		require.ErrorIs(t, err, ErrInvalidBoardName)
+	})
+
+	t.Run("update board position", func(t *testing.T) {
+		b, err := NewBoard(projID, "Доска 1")
+		require.NoError(t, err)
+		assert.Equal(t, DefaultBoardPosition, b.Position)
+
+		b.UpdatePosition(2500.0)
+		assert.Equal(t, 2500.0, b.Position)
 	})
 }
 

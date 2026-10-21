@@ -216,28 +216,40 @@ export const useDeleteBoardMutation = (workspaceId?: string, projectId?: string)
 
 export interface UpdateBoardVariables {
   boardId: string;
-  name: string;
+  name?: string;
+  data?: {
+    name?: string;
+    position?: number;
+  };
 }
 
 export const useUpdateBoardMutation = (workspaceId?: string, projectId?: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ boardId, name }: UpdateBoardVariables) => {
+    mutationFn: async ({ boardId, name, data }: UpdateBoardVariables) => {
+      const payload: { name?: string; position?: number } = {
+        ...(name !== undefined ? { name } : {}),
+        ...data,
+      };
       if (!workspaceId || !projectId || !getAuthToken()) {
         const queryKey = ['boards', workspaceId, projectId];
         const existing = queryClient.getQueryData<Board[]>(queryKey) ?? [];
         const found = existing.find((b) => b.id === boardId);
-        return found ? { ...found, name } : ({ id: boardId, name } as Board);
+        return found ? { ...found, ...payload } : ({ id: boardId, ...payload } as Board);
       }
-      return projectApi.updateProjectBoard(workspaceId, projectId, boardId, name);
+      return projectApi.updateProjectBoard(workspaceId, projectId, boardId, payload);
     },
-    onMutate: async ({ boardId, name }) => {
+    onMutate: async ({ boardId, name, data }) => {
+      const payload: { name?: string; position?: number } = {
+        ...(name !== undefined ? { name } : {}),
+        ...data,
+      };
       const queryKey = ['boards', workspaceId, projectId];
       await queryClient.cancelQueries({ queryKey });
       const previousBoards = queryClient.getQueryData<Board[]>(queryKey);
       queryClient.setQueryData<Board[]>(queryKey, (old = []) =>
-        old.map((b) => (b.id === boardId ? { ...b, name } : b))
+        old.map((b) => (b.id === boardId ? { ...b, ...payload } : b))
       );
       return { previousBoards };
     },

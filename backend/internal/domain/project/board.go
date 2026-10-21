@@ -8,13 +8,15 @@ import (
 )
 
 const (
-	DefaultBoardName = "Основная"
+	DefaultBoardName     = "Основная"
+	DefaultBoardPosition = 1000.0
 )
 
 type Board struct {
 	ID        uuid.UUID
 	ProjectID uuid.UUID
 	Name      string
+	Position  float64
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -30,6 +32,7 @@ func NewBoard(projectID uuid.UUID, name string) (*Board, error) {
 		ID:        uuid.New(),
 		ProjectID: projectID,
 		Name:      trimmedName,
+		Position:  DefaultBoardPosition,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}, nil
@@ -47,5 +50,10 @@ func (b *Board) Update(name string) error {
 	b.Name = trimmedName
 	b.UpdatedAt = time.Now().UTC()
 	return nil
+}
+
+func (b *Board) UpdatePosition(position float64) {
+	b.Position = position
+	b.UpdatedAt = time.Now().UTC()
 }
 

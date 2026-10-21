@@ -152,9 +152,9 @@ boardItem:
         application/json:
           schema:
             type: object
-            required: [name]
             properties:
               name: { type: string, minLength: 1, maxLength: 255, example: "Основная доска" }
+              position: { type: number, format: double, example: 2000.0 }
     responses:
       '200':
         description: Board updated

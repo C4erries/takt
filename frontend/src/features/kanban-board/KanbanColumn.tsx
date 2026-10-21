@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, ArrowRight, GripVertical, Inbox, Check, Zap, Trash2 } from 'lucide-react';
+import { Plus, MoreHorizontal, ArrowRight, GripVertical, Inbox, Check, Zap, Trash2, Pencil } from 'lucide-react';
 import { Badge, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import { motion, AnimatePresence, cardExitVariants } from '@/shared/lib/motion';
@@ -34,10 +34,8 @@ const CATEGORY_STYLES: Record<ColumnStatusCategory, { dot: string; label: string
 };
 
 const COLUMN_COLORS = [
-  { name: 'По умолчанию', hex: null }, { name: 'Матча', hex: '#566B44' },
-  { name: 'Хурма', hex: '#D97746' }, { name: 'Деним', hex: '#4A6B82' },
-  { name: 'Солома', hex: '#B8943F' }, { name: 'Бамбук', hex: '#7C8E64' },
-  { name: 'Слива', hex: '#7E6B8F' }, { name: 'Суми', hex: '#44483E' },
+  { name: 'По умолчанию', hex: null }, { name: 'Матча', hex: '#566B44' }, { name: 'Хурма', hex: '#D97746' }, { name: 'Деним', hex: '#4A6B82' },
+  { name: 'Солома', hex: '#B8943F' }, { name: 'Бамбук', hex: '#7C8E64' }, { name: 'Слива', hex: '#7E6B8F' }, { name: 'Суми', hex: '#44483E' },
 ] as const;
 
 function getStoredColumnColor(columnId: string): string | null {
@@ -49,16 +47,7 @@ function setStoredColumnColor(columnId: string, color: string | null): void {
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
-  column,
-  tasks,
-  allColumns,
-  projectId,
-  workspaceId,
-  onToggleTask,
-  onSelectTask,
-  selectedTaskId,
-  onCreateTask,
-  isOverlay = false,
+  column, tasks, allColumns, projectId, workspaceId, onToggleTask, onSelectTask, selectedTaskId, onCreateTask, isOverlay = false,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
     useSortable({ id: column.id, data: { type: 'Column', column }, disabled: isOverlay });
@@ -71,8 +60,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAutomationsOpen, setIsAutomationsOpen] = useState(false);
   const [columnColor, setColumnColor] = useState<string | null>(() => getStoredColumnColor(column.id));
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(column.name);
   const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   const boardsQuery = useProjectBoardsQuery(workspaceId, projectId);
   const moveColumnMutation = useMoveColumnMutation(workspaceId, column.boardId);
@@ -92,6 +84,34 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   useEffect(() => {
     if (isAdding) inputRef.current?.focus();
   }, [isAdding]);
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [isEditingTitle]);
+
+  const startRename = () => {
+    setEditedTitle(column.name);
+    setIsEditingTitle(true);
+  };
+
+  const handleSaveTitle = () => {
+    if (!isEditingTitle) return;
+    setIsEditingTitle(false);
+    const trimmed = editedTitle.trim();
+    if (trimmed && trimmed !== column.name) {
+      updateColumnMutation.mutate({ columnId: column.id, data: { name: trimmed } });
+    } else {
+      setEditedTitle(column.name);
+    }
+  };
+
+  const handleCancelTitle = () => {
+    setIsEditingTitle(false);
+    setEditedTitle(column.name);
+  };
 
   const categoryConfig = CATEGORY_STYLES[column.statusCategory] || CATEGORY_STYLES.todo;
 
@@ -132,9 +152,9 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       {/* Column Header */}
       <div className="flex items-center justify-between px-1 pb-2.5 select-none">
         <div
-          {...(!isOverlay ? { ...attributes, ...listeners } : {})}
+          {...(!isOverlay && !isEditingTitle ? { ...attributes, ...listeners } : {})}
           className="flex items-center gap-2 min-w-0 cursor-grab active:cursor-grabbing flex-1 mr-1"
-          title={`Перетащить колонку ${column.name}`}
+          title={isEditingTitle ? undefined : `Перетащить колонку ${column.name}`}
         >
           {!isOverlay && (
             <div className="text-muted/40 hover:text-muted p-0.5 -ml-1 rounded transition-colors shrink-0">
@@ -142,7 +162,31 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             </div>
           )}
           <span className={cn('w-2 h-2 rounded-full shrink-0', categoryConfig.dot)} />
-          <h3 className="text-xs font-semibold tracking-wide uppercase text-primary truncate">{column.name}</h3>
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onBlur={handleSaveTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); handleSaveTitle(); }
+                else if (e.key === 'Escape') { e.preventDefault(); handleCancelTitle(); }
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-surface border border-subtle rounded px-2 py-0.5 text-xs font-semibold text-primary uppercase focus:outline-none focus:border-accent-solid min-w-0 flex-1"
+              autoFocus
+            />
+          ) : (
+            <h3
+              onDoubleClick={(e) => { e.stopPropagation(); startRename(); }}
+              className="text-xs font-semibold tracking-wide uppercase text-primary truncate cursor-text"
+              title="Двойной клик для переименования"
+            >
+              {column.name}
+            </h3>
+          )}
           {column.isInbox && (
             <span title="Входящая колонка проекта" className="inline-flex items-center shrink-0">
               <Inbox className="w-3.5 h-3.5 text-accent-solid" />
@@ -185,6 +229,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
             {isMenuOpen && (
               <div className="absolute right-0 top-full mt-1 w-56 z-30 bg-surface border border-subtle rounded-xl shadow-washi p-1.5 space-y-1 text-xs animate-in fade-in zoom-in-95 duration-100">
+                {/* 0. Rename Column */}
+                <button
+                  type="button"
+                  onClick={() => { setIsMenuOpen(false); startRename(); }}
+                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-muted group-hover:text-primary shrink-0" />
+                  <span>Переименовать</span>
+                </button>
+
                 {/* 1. Toggle Inbox Status */}
                 <button
                   type="button"
@@ -274,7 +328,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 onKeyDown={(e) => { if (e.key === 'Escape') { setIsAdding(false); setNewTitle(''); } }}
                 placeholder="Название задачи... (Enter)"
                 disabled={isSubmitting}
-                className="w-full px-2.5 py-1.5 text-xs bg-canvas/40 border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
+                className="w-full px-2.5 py-1.5 text-xs bg-surface border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
               />
               <div className="flex items-center justify-end gap-1.5">
                 <Button type="button" variant="ghost" size="sm" onClick={() => { setIsAdding(false); setNewTitle(''); }} className="text-[11px] h-6 px-2 text-muted hover:text-primary">Отмена</Button>
@@ -299,14 +353,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         <div className="flex-1 min-h-[140px] space-y-2 overflow-y-auto pr-0.5">
           <AnimatePresence initial={false}>
             {tasks.map((task) => (
-              <motion.div
-                key={task.id}
-                layout={!isOverlay && !isDragging}
-                variants={cardExitVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-              >
+              <motion.div key={task.id} layout={!isOverlay && !isDragging} variants={cardExitVariants} initial="initial" animate="animate" exit="exit">
                 <KanbanCard
                   task={task}
                   workspaceId={workspaceId}

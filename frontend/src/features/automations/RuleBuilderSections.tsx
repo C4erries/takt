@@ -115,7 +115,7 @@ const TagAutocomplete: React.FC<{
         type="text" value={query} onFocus={() => setIsOpen(true)}
         onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setIsOpen(true); }}
         onKeyDown={handleKeyDown} placeholder={placeholder}
-        className="w-full bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary focus:outline-none"
+        className="w-full bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary focus:outline-none"
       />
       {isOpen && (
         <div className="absolute left-0 top-full mt-1 w-full max-h-36 overflow-y-auto bg-surface border border-subtle rounded-lg shadow-washi-sm z-50 p-1 text-xs space-y-0.5">
@@ -173,7 +173,7 @@ const ConditionValuePicker: React.FC<{
 
   if (cond.field === 'due_date_status') {
     return (
-      <select value={String(cond.value || 'overdue')} onChange={(e) => onUpdate({ value: e.target.value })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
+      <select value={String(cond.value || 'overdue')} onChange={(e) => onUpdate({ value: e.target.value })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
         {DUE_DATE_STATUS_OPTIONS.map((st) => (<option key={st.value} value={st.value}>{st.label}</option>))}
       </select>
     );
@@ -186,7 +186,7 @@ const ConditionValuePicker: React.FC<{
       return (
         <div className="flex items-center gap-1 flex-wrap flex-1">
           {PRIORITIES.map((p) => (
-            <button key={p.value} type="button" onClick={() => toggle(p.value)} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', selected.includes(p.value) ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>
+            <button key={p.value} type="button" onClick={() => toggle(p.value)} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', selected.includes(p.value) ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle bg-canvas text-muted hover:text-primary')}>
               {selected.includes(p.value) ? `✓ ${p.label}` : p.label}
             </button>
           ))}
@@ -194,7 +194,7 @@ const ConditionValuePicker: React.FC<{
       );
     }
     return (
-      <select value={String(cond.value || 'high')} onChange={(e) => onUpdate({ value: e.target.value })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
+      <select value={String(cond.value || 'high')} onChange={(e) => onUpdate({ value: e.target.value })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
         {PRIORITIES.map((p) => (<option key={p.value} value={p.value}>{p.label}</option>))}
       </select>
     );
@@ -206,10 +206,10 @@ const ConditionValuePicker: React.FC<{
       <div className="flex items-center gap-1 flex-wrap flex-1">
         <div className="flex items-center gap-1">
           {[{ id: 'today', l: 'Сегодня' }, { id: 'tomorrow', l: 'Завтра' }, { id: 'overdue', l: 'Просрочен' }].map((pr) => (
-            <button key={pr.id} type="button" onClick={() => onUpdate({ value: pr.id })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', val === pr.id ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>{pr.l}</button>
+            <button key={pr.id} type="button" onClick={() => onUpdate({ value: pr.id })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', val === pr.id ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas text-muted hover:text-primary')}>{pr.l}</button>
           ))}
         </div>
-        <input type="date" value={val.match(/^\d{4}-\d{2}-\d{2}$/) ? val : ''} onChange={(e) => onUpdate({ value: e.target.value })} className="bg-canvas/50 border border-subtle rounded px-1.5 py-0.5 text-[11px] text-primary" />
+        <input type="date" value={val.match(/^\d{4}-\d{2}-\d{2}$/) ? val : ''} onChange={(e) => onUpdate({ value: e.target.value })} className="bg-surface border border-subtle rounded px-1.5 py-0.5 text-[11px] text-primary" />
       </div>
     );
   }
@@ -218,8 +218,8 @@ const ConditionValuePicker: React.FC<{
     const hours = Number(cond.value) || 24;
     return (
       <div className="flex items-center gap-1 flex-wrap flex-1">
-        {[24, 48, 72].map((h) => (<button key={h} type="button" onClick={() => onUpdate({ value: h })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', hours === h ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas/40 text-muted hover:text-primary')}>{h} ч</button>))}
-        <input type="number" min={1} max={720} value={hours} onChange={(e) => onUpdate({ value: Number(e.target.value) || 24 })} className="w-14 bg-canvas/50 border border-subtle rounded px-1.5 py-0.5 text-xs text-primary" />
+        {[24, 48, 72].map((h) => (<button key={h} type="button" onClick={() => onUpdate({ value: h })} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', hours === h ? 'border-accent-solid bg-accent-surface/60 font-medium text-primary shadow-washi-sm' : 'border-subtle bg-canvas text-muted hover:text-primary')}>{h} ч</button>))}
+        <input type="number" min={1} max={720} value={hours} onChange={(e) => onUpdate({ value: Number(e.target.value) || 24 })} className="w-14 bg-surface border border-subtle rounded px-1.5 py-0.5 text-xs text-primary" />
         <span className="text-[10px] text-muted">ч</span>
       </div>
     );
@@ -233,7 +233,7 @@ const ConditionValuePicker: React.FC<{
   }
 
   return (
-    <input type="text" value={String(cond.value || '')} onChange={(e) => onUpdate({ value: e.target.value })} placeholder="Значение..." className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1 focus:outline-none" />
+    <input type="text" value={String(cond.value || '')} onChange={(e) => onUpdate({ value: e.target.value })} placeholder="Значение..." className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1 focus:outline-none" />
   );
 };
 
@@ -297,11 +297,11 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
                   const defVal = f === 'is_completed' ? true : f === 'due_date_status' ? 'overdue' : f === 'priority' ? 'high' : '';
                   onUpdate(index, { field: f, operator: nextOp, value: defVal });
                 }}
-                className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary"
+                className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary"
               >
                 {CONDITION_FIELDS.map((f) => (<option key={f.field} value={f.field}>{f.label}</option>))}
               </select>
-              <select value={cond.operator} onChange={(e) => onUpdate(index, { operator: e.target.value as AutomationConditionOperator })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary">
+              <select value={cond.operator} onChange={(e) => onUpdate(index, { operator: e.target.value as AutomationConditionOperator })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary">
                 {availableOperators.map((op) => (<option key={op.operator} value={op.operator}>{op.label}</option>))}
               </select>
 
@@ -347,12 +347,12 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
       {actions.map((act, index) => (
         <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-subtle text-xs flex-wrap sm:flex-nowrap">
           <span className="text-[10px] font-mono text-muted shrink-0 w-6">{index + 1}.</span>
-          <select value={act.type} onChange={(e) => onUpdate(index, { type: e.target.value as AutomationActionType, params: {} })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary">
+          <select value={act.type} onChange={(e) => onUpdate(index, { type: e.target.value as AutomationActionType, params: {} })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary">
             {ACTION_TYPES.map((a) => (<option key={a.type} value={a.type}>{a.label}</option>))}
           </select>
 
           {act.type === 'move_to_column' && (
-            <select value={String(act.params?.target_column_id || '')} onChange={(e) => onUpdate(index, { params: { ...act.params, target_column_id: e.target.value } })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
+            <select value={String(act.params?.target_column_id || '')} onChange={(e) => onUpdate(index, { params: { ...act.params, target_column_id: e.target.value } })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
               <option value="">Выберите колонку...</option>
               {boardColumnGroups && boardColumnGroups.length > 0 ? (
                 boardColumnGroups.map((g) => (
@@ -366,14 +366,14 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
             </select>
           )}
           {act.type === 'set_priority' && (
-            <select value={String(act.params?.priority || 'high')} onChange={(e) => onUpdate(index, { params: { ...act.params, priority: e.target.value } })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
+            <select value={String(act.params?.priority || 'high')} onChange={(e) => onUpdate(index, { params: { ...act.params, priority: e.target.value } })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
               {PRIORITIES.map((p) => (<option key={p.value} value={p.value}>{p.label}</option>))}
             </select>
           )}
           {act.type === 'add_tag' && (<TagAutocomplete value={String(act.params?.name || '')} onChange={(val) => onUpdate(index, { params: { ...act.params, name: val } })} workspaceId={workspaceId} placeholder="Имя тега (напр. @бэкенд)" allowCreate />)}
           {act.type === 'remove_tag' && (<TagAutocomplete value={String(act.params?.name || '')} onChange={(val) => onUpdate(index, { params: { ...act.params, name: val } })} workspaceId={workspaceId} placeholder="Выберите тег для снятия" allowCreate={false} />)}
           {act.type === 'set_due_date' && (
-            <select value={String(act.params?.preset || 'today')} onChange={(e) => onUpdate(index, { params: { ...act.params, preset: e.target.value } })} className="bg-canvas/50 border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
+            <select value={String(act.params?.preset || 'today')} onChange={(e) => onUpdate(index, { params: { ...act.params, preset: e.target.value } })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
               <option value="today">Сегодня</option><option value="tomorrow">Завтра</option><option value="clear">Очистить срок</option>
             </select>
           )}

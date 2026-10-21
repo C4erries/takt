@@ -69,13 +69,14 @@ export const projectApi = {
     workspaceId: string,
     projectId: string,
     boardId: string,
-    name: string
+    data: { name?: string; position?: number } | string
   ): Promise<Board> {
+    const body = typeof data === 'string' ? { name: data } : data;
     return request<Board>(
       `/workspaces/${workspaceId}/projects/${projectId}/boards/${boardId}`,
       {
         method: 'PATCH',
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(body),
       }
     );
   },

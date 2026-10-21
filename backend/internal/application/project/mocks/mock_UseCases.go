@@ -900,8 +900,8 @@ func (_c *MockUseCases_MoveTask_Call) RunAndReturn(run func(ctx context.Context,
 }
 
 // UpdateBoard provides a mock function for the type MockUseCases
-func (_mock *MockUseCases) UpdateBoard(ctx context.Context, projectID uuid.UUID, boardID uuid.UUID, workspaceID uuid.UUID, name string) (*project.Board, error) {
-	ret := _mock.Called(ctx, projectID, boardID, workspaceID, name)
+func (_mock *MockUseCases) UpdateBoard(ctx context.Context, input project0.UpdateBoardInput) (*project.Board, error) {
+	ret := _mock.Called(ctx, input)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateBoard")
@@ -909,18 +909,18 @@ func (_mock *MockUseCases) UpdateBoard(ctx context.Context, projectID uuid.UUID,
 
 	var r0 *project.Board
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string) (*project.Board, error)); ok {
-		return returnFunc(ctx, projectID, boardID, workspaceID, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, project0.UpdateBoardInput) (*project.Board, error)); ok {
+		return returnFunc(ctx, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string) *project.Board); ok {
-		r0 = returnFunc(ctx, projectID, boardID, workspaceID, name)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, project0.UpdateBoardInput) *project.Board); ok {
+		r0 = returnFunc(ctx, input)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*project.Board)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string) error); ok {
-		r1 = returnFunc(ctx, projectID, boardID, workspaceID, name)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, project0.UpdateBoardInput) error); ok {
+		r1 = returnFunc(ctx, input)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -934,42 +934,24 @@ type MockUseCases_UpdateBoard_Call struct {
 
 // UpdateBoard is a helper method to define mock.On call
 //   - ctx context.Context
-//   - projectID uuid.UUID
-//   - boardID uuid.UUID
-//   - workspaceID uuid.UUID
-//   - name string
-func (_e *MockUseCases_Expecter) UpdateBoard(ctx any, projectID any, boardID any, workspaceID any, name any) *MockUseCases_UpdateBoard_Call {
-	return &MockUseCases_UpdateBoard_Call{Call: _e.mock.On("UpdateBoard", ctx, projectID, boardID, workspaceID, name)}
+//   - input project0.UpdateBoardInput
+func (_e *MockUseCases_Expecter) UpdateBoard(ctx any, input any) *MockUseCases_UpdateBoard_Call {
+	return &MockUseCases_UpdateBoard_Call{Call: _e.mock.On("UpdateBoard", ctx, input)}
 }
 
-func (_c *MockUseCases_UpdateBoard_Call) Run(run func(ctx context.Context, projectID uuid.UUID, boardID uuid.UUID, workspaceID uuid.UUID, name string)) *MockUseCases_UpdateBoard_Call {
+func (_c *MockUseCases_UpdateBoard_Call) Run(run func(ctx context.Context, input project0.UpdateBoardInput)) *MockUseCases_UpdateBoard_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 uuid.UUID
+		var arg1 project0.UpdateBoardInput
 		if args[1] != nil {
-			arg1 = args[1].(uuid.UUID)
-		}
-		var arg2 uuid.UUID
-		if args[2] != nil {
-			arg2 = args[2].(uuid.UUID)
-		}
-		var arg3 uuid.UUID
-		if args[3] != nil {
-			arg3 = args[3].(uuid.UUID)
-		}
-		var arg4 string
-		if args[4] != nil {
-			arg4 = args[4].(string)
+			arg1 = args[1].(project0.UpdateBoardInput)
 		}
 		run(
 			arg0,
 			arg1,
-			arg2,
-			arg3,
-			arg4,
 		)
 	})
 	return _c
@@ -980,7 +962,7 @@ func (_c *MockUseCases_UpdateBoard_Call) Return(board *project.Board, err error)
 	return _c
 }
 
-func (_c *MockUseCases_UpdateBoard_Call) RunAndReturn(run func(ctx context.Context, projectID uuid.UUID, boardID uuid.UUID, workspaceID uuid.UUID, name string) (*project.Board, error)) *MockUseCases_UpdateBoard_Call {
+func (_c *MockUseCases_UpdateBoard_Call) RunAndReturn(run func(ctx context.Context, input project0.UpdateBoardInput) (*project.Board, error)) *MockUseCases_UpdateBoard_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -34,9 +34,10 @@ WHERE id = $1 AND workspace_id = $2;
 -- name: CreateBoard :one
 INSERT INTO boards (
     project_id,
-    name
+    name,
+    position
 ) VALUES (
-    $1, $2
+    $1, $2, $3
 )
 RETURNING *;
 
@@ -47,11 +48,12 @@ WHERE id = $1;
 -- name: ListBoardsByProject :many
 SELECT * FROM boards
 WHERE project_id = $1
-ORDER BY created_at ASC;
+ORDER BY position ASC, created_at ASC;
 
 -- name: UpdateBoard :one
 UPDATE boards
-SET name = $2,
+SET name = COALESCE($2, name),
+    position = COALESCE($3, position),
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;

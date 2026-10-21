@@ -268,7 +268,7 @@ export const TaskInspector: React.FC<TaskInspectorProps> = ({
               onChange={(e) =>
                 updateTaskMutation.mutate({ taskId: task.id, data: { dueDate: e.target.value || null } })
               }
-              className="w-full text-xs font-mono bg-canvas/40 border border-subtle rounded-md px-2 py-1 text-primary focus:outline-none focus:border-accent-solid"
+              className="w-full text-xs font-mono bg-surface border border-subtle rounded-md px-2 py-1 text-primary focus:outline-none focus:border-accent-solid"
             />
           </div>
 
@@ -281,7 +281,7 @@ export const TaskInspector: React.FC<TaskInspectorProps> = ({
               onChange={(e) =>
                 updateTaskMutation.mutate({ taskId: task.id, data: { projectId: e.target.value || null } })
               }
-              className="w-full text-xs bg-canvas/40 border border-subtle rounded-md px-1.5 py-1 text-primary focus:outline-none focus:border-accent-solid"
+              className="w-full text-xs bg-surface border border-subtle rounded-md px-1.5 py-1 text-primary focus:outline-none focus:border-accent-solid"
             >
               <option value="">(Входящие)</option>
               {projects.map((proj) => (

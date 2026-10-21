@@ -265,7 +265,7 @@ export const MarkdownNotes: React.FC<MarkdownNotesProps> = ({
           }}
           onKeyDown={handleKeyDown}
           placeholder="Подробное описание задачи в Markdown... (Ctrl+V для вставки скриншота)"
-          className="w-full text-xs font-sans bg-canvas/50 border border-subtle rounded-lg p-2.5 text-primary focus:outline-none focus:border-accent-solid resize-y leading-relaxed"
+          className="w-full text-xs font-sans bg-surface border border-subtle rounded-lg p-2.5 text-primary focus:outline-none focus:border-accent-solid resize-y leading-relaxed"
         />
       ) : (
         <div

@@ -101,7 +101,7 @@ func mapProjectRowToDomain(row sqlc.Project) *domainProject.Project {
 func mapBoardRowToDomain(row sqlc.Board) *domainProject.Board {
 	return &domainProject.Board{
 		ID: pgToUUID(row.ID), ProjectID: pgToUUID(row.ProjectID),
-		Name: row.Name, CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
+		Name: row.Name, Position: row.Position, CreatedAt: pgToTime(row.CreatedAt), UpdatedAt: pgToTime(row.UpdatedAt),
 	}
 }
 

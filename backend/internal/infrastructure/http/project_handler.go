@@ -63,6 +63,7 @@ func mapDomainBoardToGenerated(b *domainProject.Board) generated.Board {
 		Id:        b.ID,
 		ProjectId: b.ProjectID,
 		Name:      b.Name,
+		Position:  b.Position,
 		CreatedAt: b.CreatedAt,
 		UpdatedAt: b.UpdatedAt,
 	}
@@ -190,7 +191,13 @@ func (h *Handler) UpdateProjectBoard(ctx echo.Context, workspaceId openapi_types
 	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid payload"})
 	}
-	b, err := h.projectService.UpdateBoard(ctx.Request().Context(), projectId, boardId, workspaceId, req.Name)
+	b, err := h.projectService.UpdateBoard(ctx.Request().Context(), projectApp.UpdateBoardInput{
+		WorkspaceID: workspaceId,
+		ProjectID:   projectId,
+		BoardID:     boardId,
+		Name:        req.Name,
+		Position:    req.Position,
+	})
 	if err != nil {
 		return h.respondDomainError(ctx, err)
 	}

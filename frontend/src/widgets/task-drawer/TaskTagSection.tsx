@@ -154,7 +154,7 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                   setIsDropdownOpen(true);
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
-                className="text-xs bg-canvas/40 border-subtle h-8 w-full"
+                className="text-xs bg-surface border-subtle h-8 w-full"
               />
             </div>
             <Button type="submit" size="sm" variant="solid" className="h-8 text-xs px-3 shrink-0">

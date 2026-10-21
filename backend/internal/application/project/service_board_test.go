@@ -257,18 +257,50 @@ func TestService_Boards_CRUD(t *testing.T) {
 	board1 := &domainProject.Board{ID: boardID1, ProjectID: projID, Name: "Доска 1"}
 	board2 := &domainProject.Board{ID: boardID2, ProjectID: projID, Name: "Доска 2"}
 
-	t.Run("UpdateBoard успешно обновляет имя доски", func(t *testing.T) {
+	t.Run("UpdateBoard успешно обновляет имя и позицию доски", func(t *testing.T) {
 		deps := newMockDeps(t)
+		bCopy := &domainProject.Board{ID: boardID1, ProjectID: projID, Name: "Доска 1", Position: 1000.0}
 		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
-		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID1).Return(board1, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID1).Return(bCopy, nil).Once()
 		deps.boardRepo.EXPECT().Update(mock.Anything, mock.MatchedBy(func(b *domainProject.Board) bool {
-			return b.Name == "Новое название"
+			return b.Name == "Новое название" && b.Position == 2500.0
 		})).Return(nil).Once()
 
 		svc := deps.newService()
-		updated, err := svc.UpdateBoard(context.Background(), projID, boardID1, wsID, "Новое название")
+		newName := "Новое название"
+		newPos := 2500.0
+		updated, err := svc.UpdateBoard(context.Background(), projectapp.UpdateBoardInput{
+			WorkspaceID: wsID,
+			ProjectID:   projID,
+			BoardID:     boardID1,
+			Name:        &newName,
+			Position:    &newPos,
+		})
 		require.NoError(t, err)
 		assert.Equal(t, "Новое название", updated.Name)
+		assert.Equal(t, 2500.0, updated.Position)
+	})
+
+	t.Run("UpdateBoard обновляет только позицию", func(t *testing.T) {
+		deps := newMockDeps(t)
+		bCopy := &domainProject.Board{ID: boardID1, ProjectID: projID, Name: "Доска 1", Position: 1000.0}
+		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID1).Return(bCopy, nil).Once()
+		deps.boardRepo.EXPECT().Update(mock.Anything, mock.MatchedBy(func(b *domainProject.Board) bool {
+			return b.Name == "Доска 1" && b.Position == 3000.0
+		})).Return(nil).Once()
+
+		svc := deps.newService()
+		newPos := 3000.0
+		updated, err := svc.UpdateBoard(context.Background(), projectapp.UpdateBoardInput{
+			WorkspaceID: wsID,
+			ProjectID:   projID,
+			BoardID:     boardID1,
+			Position:    &newPos,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, "Доска 1", updated.Name)
+		assert.Equal(t, 3000.0, updated.Position)
 	})
 
 	t.Run("DeleteBoard отклоняется с ErrLastBoard, если доска единственная", func(t *testing.T) {

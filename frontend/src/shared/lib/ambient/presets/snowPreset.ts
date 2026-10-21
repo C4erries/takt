@@ -42,6 +42,9 @@ export class SnowPreset implements AmbientPreset {
   private bokehCanvases: HTMLCanvasElement[] = [];
   private windPhase = 0;
   private windTime = 0;
+  private gustIntensity = 0;
+  private gustTarget = 0;
+  private gustTimer = 0;
 
   constructor(private isBlizzard = false) {}
 
@@ -156,16 +159,52 @@ export class SnowPreset implements AmbientPreset {
     this.windTime += clampedDt;
     this.windPhase += clampedDt * 2.2;
 
-    const gust = this.isBlizzard ? Math.sin(this.windPhase) * Math.cos(this.windTime * 0.7) * 95 : 0;
+    let baseWindX = 0;
+    let baseWindY = 0;
+    let totalGustX = 0;
+
+    if (this.isBlizzard) {
+      // 1. Slow drifting mean direction and base wind speed
+      baseWindX = 16 + Math.sin(this.windTime * 0.14) * 12 + Math.cos(this.windTime * 0.057 + 1.3) * 8;
+      baseWindY = Math.sin(this.windTime * 0.09) * 5;
+
+      // 2. Stochastic gusts with irregular quiet intervals
+      this.gustTimer -= clampedDt;
+      if (this.gustTimer <= 0) {
+        const isCalm = Math.random() < 0.52;
+        if (isCalm) {
+          this.gustTarget = 0;
+          this.gustTimer = 2.0 + Math.random() * 3.5; // Calm duration: 2 - 5.5s
+        } else {
+          this.gustTarget = 45 + Math.random() * 95; // Gust impulse: 45 - 140
+          this.gustTimer = 0.8 + Math.random() * 1.8; // Gust duration: 0.8 - 2.6s
+        }
+      }
+
+      // Smooth interpolation toward target gust
+      const lerpSpeed = this.gustTarget > this.gustIntensity ? 3.5 : 1.6;
+      this.gustIntensity += (this.gustTarget - this.gustIntensity) * Math.min(clampedDt * lerpSpeed, 1);
+
+      // Incommensurate multi-frequency turbulence
+      const wave1 = Math.sin(this.windTime * 0.77);
+      const wave2 = Math.sin(this.windTime * 1.63 + 0.9);
+      const wave3 = Math.cos(this.windTime * 2.91 + 2.1);
+      const turbulence = wave1 * 20 + wave2 * 12 + wave3 * 6;
+
+      totalGustX = this.gustIntensity + turbulence * (0.25 + 0.75 * Math.min(1, this.gustIntensity / 60));
+    }
+
     const { mouse, isInteractive } = context;
 
     for (let i = 0; i < this.flakes.length; i++) {
       const f = this.flakes[i];
-      f.y += f.speedY * clampedDt;
+      f.y += (f.speedY + baseWindY) * clampedDt;
 
       if (this.isBlizzard) {
         f.swirlPhase += f.swirlSpeed * clampedDt;
-        f.x += (f.speedX + gust) * clampedDt;
+        // High-frequency micro-eddies for snowflakes
+        const microEddyX = Math.sin(f.swirlPhase * 2.1 + this.windTime * 3.8) * (3 + Math.abs(totalGustX) * 0.06);
+        f.x += (f.speedX + baseWindX + totalGustX + microEddyX) * clampedDt;
 
         if (isInteractive && mouse.isOver) {
           const dx = f.x - mouse.x, dy = f.y - mouse.y;
@@ -178,6 +217,9 @@ export class SnowPreset implements AmbientPreset {
         }
         if (f.x > this.width + 40) {
           f.x = -40;
+          f.y = Math.random() * this.height;
+        } else if (f.x < -40) {
+          f.x = this.width + 40;
           f.y = Math.random() * this.height;
         }
       } else {
@@ -193,12 +235,23 @@ export class SnowPreset implements AmbientPreset {
 
     for (let i = 0; i < this.needles.length; i++) {
       const n = this.needles[i];
-      n.swirlPhase += clampedDt * 3;
-      n.x += (n.speedX + gust) * clampedDt;
-      n.y += (n.speedY + Math.sin(n.swirlPhase) * 20) * clampedDt;
-      n.angle += n.rotSpeed * clampedDt;
+      // Live dynamic response for pine needles:
+      // Gust pushes needles horizontally, adds high-frequency vortex oscillations, accelerates tumbling
+      const gustRatio = Math.max(0.15, (totalGustX + baseWindX) / 60);
+      n.swirlPhase += clampedDt * (2.8 + gustRatio * 2.2);
+
+      const microVortexX = Math.sin(n.swirlPhase * 2.7) * (6 + gustRatio * 10);
+      const microVortexY = Math.cos(n.swirlPhase * 2.1) * (12 + gustRatio * 16);
+
+      n.x += (n.speedX + baseWindX + totalGustX + microVortexX) * clampedDt;
+      n.y += (n.speedY + baseWindY + microVortexY) * clampedDt;
+      n.angle += (n.rotSpeed * (0.5 + gustRatio * 0.9)) * clampedDt;
+
       if (n.x > this.width + 30) {
         n.x = -30;
+        n.y = Math.random() * this.height;
+      } else if (n.x < -30) {
+        n.x = this.width + 30;
         n.y = Math.random() * this.height;
       }
       if (n.y > this.height + 20) {
@@ -285,6 +338,9 @@ export class SnowPreset implements AmbientPreset {
     this.flakes = [];
     this.needles = [];
     this.bokehCanvases = [];
+    this.gustIntensity = 0;
+    this.gustTarget = 0;
+    this.gustTimer = 0;
   }
 }
 

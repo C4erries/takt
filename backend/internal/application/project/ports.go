@@ -60,7 +60,7 @@ type UseCases interface {
 	DeleteProject(ctx context.Context, projectID, workspaceID uuid.UUID) error
 	GetProjectBoards(ctx context.Context, projectID, workspaceID uuid.UUID) ([]*domainProject.Board, error)
 	CreateBoard(ctx context.Context, projectID, workspaceID uuid.UUID, name string) (*domainProject.Board, error)
-	UpdateBoard(ctx context.Context, projectID, boardID, workspaceID uuid.UUID, name string) (*domainProject.Board, error)
+	UpdateBoard(ctx context.Context, input UpdateBoardInput) (*domainProject.Board, error)
 	DeleteBoard(ctx context.Context, projectID, boardID, workspaceID uuid.UUID) error
 	GetBoardColumns(ctx context.Context, boardID, workspaceID uuid.UUID) ([]*domainProject.Column, error)
 	CreateColumn(ctx context.Context, input CreateColumnInput) (*domainProject.Column, error)

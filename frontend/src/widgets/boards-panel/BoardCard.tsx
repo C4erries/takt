@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreHorizontal, Pencil, Trash2, Check, X } from 'lucide-react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { MoreHorizontal, Pencil, Trash2, Check, X, GripVertical } from 'lucide-react';
 import { Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Board } from '@/entities/project';
@@ -48,6 +50,16 @@ export const BoardCard: React.FC<BoardCardProps> = ({
   const [editedName, setEditedName] = useState(board.name);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: board.id,
+    disabled: isEditing,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+  };
+
   // Close menu on click outside
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -87,6 +99,8 @@ export const BoardCard: React.FC<BoardCardProps> = ({
     return (
       <form
         onSubmit={handleSaveRename}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         className="p-2.5 rounded-xl bg-surface border border-accent-solid/60 shadow-washi flex items-center gap-1.5"
       >
         <input
@@ -97,7 +111,7 @@ export const BoardCard: React.FC<BoardCardProps> = ({
           onKeyDown={(e) => {
             if (e.key === 'Escape') handleCancelRename();
           }}
-          className="flex-1 min-w-0 px-2 py-1 text-xs bg-canvas/40 border border-subtle rounded-md text-primary focus:outline-none focus:border-accent-solid"
+          className="flex-1 min-w-0 px-2 py-1 text-xs bg-surface border border-subtle rounded-md text-primary focus:outline-none focus:border-accent-solid"
         />
         <Button
           type="submit"
@@ -124,16 +138,24 @@ export const BoardCard: React.FC<BoardCardProps> = ({
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
       onClick={onSelect}
       className={cn(
-        'group relative flex flex-col justify-between p-2.5 min-h-[58px] rounded-xl border transition-all duration-150 cursor-pointer select-none text-xs',
+        'group relative flex flex-col justify-between p-2.5 min-h-[58px] rounded-xl border transition-all duration-150 cursor-grab active:cursor-grabbing select-none text-xs',
+        isDragging && 'opacity-30 border-dashed border-subtle/80 shadow-none',
         isActive
           ? 'bg-surface border-accent-solid/70 shadow-washi-sm text-primary'
           : 'border-transparent bg-surface/30 text-muted hover:text-primary hover:bg-surface/70 hover:border-subtle/50'
       )}
     >
       <div className="flex items-center justify-between gap-1 w-full">
-        <div className="flex items-center gap-2 min-w-0 pr-1">
+        <div className="flex items-center gap-1.5 min-w-0 pr-1">
+          <div className="text-muted/30 group-hover:text-muted/70 transition-colors shrink-0 -ml-0.5">
+            <GripVertical className="w-3.5 h-3.5" />
+          </div>
           <span
             className={cn(
               'w-2 h-2 rounded-full shrink-0 transition-colors',
@@ -143,7 +165,7 @@ export const BoardCard: React.FC<BoardCardProps> = ({
           <span className="font-medium text-sm text-primary truncate">{board.name}</span>
         </div>
 
-        <div className="relative shrink-0" ref={menuRef}>
+        <div className="relative shrink-0" ref={menuRef} onPointerDown={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={(e) => {

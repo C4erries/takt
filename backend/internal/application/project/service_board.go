@@ -45,22 +45,27 @@ func (s *Service) CreateBoard(ctx context.Context, projectID, workspaceID uuid.U
 	return b, nil
 }
 
-func (s *Service) UpdateBoard(ctx context.Context, projectID, boardID, workspaceID uuid.UUID, name string) (*domainProject.Board, error) {
-	if _, err := s.projectRepo.GetByID(ctx, projectID, workspaceID); err != nil {
+func (s *Service) UpdateBoard(ctx context.Context, input UpdateBoardInput) (*domainProject.Board, error) {
+	if _, err := s.projectRepo.GetByID(ctx, input.ProjectID, input.WorkspaceID); err != nil {
 		return nil, err
 	}
 
-	b, err := s.boardRepo.GetByID(ctx, boardID)
+	b, err := s.boardRepo.GetByID(ctx, input.BoardID)
 	if err != nil {
 		return nil, err
 	}
 
-	if b.ProjectID != projectID {
+	if b.ProjectID != input.ProjectID {
 		return nil, domainProject.ErrBoardNotFound
 	}
 
-	if err := b.Update(name); err != nil {
-		return nil, err
+	if input.Name != nil {
+		if err := b.Update(*input.Name); err != nil {
+			return nil, err
+		}
+	}
+	if input.Position != nil {
+		b.UpdatePosition(*input.Position)
 	}
 
 	if err := s.boardRepo.Update(ctx, b); err != nil {

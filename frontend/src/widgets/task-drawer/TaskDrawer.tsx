@@ -209,7 +209,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                         if (e.key === 'Enter') handleTitleBlur();
                         if (e.key === 'Escape') { setTitle(currentTask.title); setIsEditingTitle(false); }
                       }}
-                      className="text-lg font-serif bg-canvas/40 border-subtle"
+                      className="text-lg font-serif bg-surface border-subtle"
                     />
                   ) : (
                     <h2
@@ -278,7 +278,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 <select
                   value={currentTask.projectId ?? ''}
                   onChange={(e) => updateTaskMutation.mutate({ taskId: currentTask.id, data: { projectId: e.target.value || null } })}
-                  className="w-full text-xs bg-canvas/40 border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
+                  className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
                 >
                   <option value="">(Входящие)</option>
                   {projects.map((proj) => (

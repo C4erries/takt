@@ -27,7 +27,8 @@ func respondTaskDomainError(c echo.Context, err error) error {
 		errors.Is(err, domainTask.ErrInvalidPriority),
 		errors.Is(err, domainTask.ErrInvalidTagName),
 		errors.Is(err, domainTask.ErrInvalidTagColor),
-		errors.Is(err, domainTask.ErrInvalidFocusOrder):
+		errors.Is(err, domainTask.ErrInvalidFocusOrder),
+		errors.Is(err, domainTask.ErrSelfParenting):
 		status, code = http.StatusBadRequest, "BAD_REQUEST"
 	case errors.Is(err, domainTask.ErrTagAlreadyAttached):
 		status, code = http.StatusConflict, "TAG_ALREADY_ATTACHED"
@@ -64,32 +65,42 @@ func mapDomainTaskToGenerated(t *domainTask.Task) generated.Task {
 		tags = &mapped
 	}
 
+	var subCount, subDoneCount *int
+	if t.SubtasksCount > 0 {
+		c := t.SubtasksCount
+		subCount = &c
+	}
+	if t.SubtasksCompletedCount > 0 || t.SubtasksCount > 0 {
+		c := t.SubtasksCompletedCount
+		subDoneCount = &c
+	}
+
 	return generated.Task{
-		Id:                  t.ID,
-		WorkspaceId:         t.WorkspaceID,
-		ProjectId:           t.ProjectID,
-		ColumnId:            t.ColumnID,
-		Title:               t.Title,
-		DescriptionMarkdown: t.DescriptionMarkdown,
-		IsCompleted:         t.IsCompleted,
-		CompletedAt:         t.CompletedAt,
-		DueDate:             dueDate,
-		Priority:            generated.TaskPriority(t.Priority),
-		FocusOrder:          t.FocusOrder,
-		Position:            float64(t.Position),
-		Tags:                tags,
-		CreatedAt:           t.CreatedAt,
-		UpdatedAt:           t.UpdatedAt,
+		Id:                     t.ID,
+		WorkspaceId:            t.WorkspaceID,
+		ParentId:               t.ParentID,
+		ProjectId:              t.ProjectID,
+		ColumnId:               t.ColumnID,
+		Title:                  t.Title,
+		DescriptionMarkdown:    t.DescriptionMarkdown,
+		IsCompleted:            t.IsCompleted,
+		CompletedAt:            t.CompletedAt,
+		DueDate:                dueDate,
+		Priority:               generated.TaskPriority(t.Priority),
+		FocusOrder:             t.FocusOrder,
+		Position:               float64(t.Position),
+		SubtasksCount:          subCount,
+		SubtasksCompletedCount: subDoneCount,
+		Tags:                   tags,
+		CreatedAt:              t.CreatedAt,
+		UpdatedAt:              t.UpdatedAt,
 	}
 }
 
 func (h *Handler) GetInboxTasks(c echo.Context) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, generated.Error{
-			Code:    "UNAUTHORIZED",
-			Message: err.Error(),
-		})
+		return c.JSON(http.StatusUnauthorized, generated.Error{Code: "UNAUTHORIZED", Message: err.Error()})
 	}
 
 	tasks, err := h.taskService.GetInboxTasks(c.Request().Context(), workspaceID)
@@ -101,33 +112,23 @@ func (h *Handler) GetInboxTasks(c echo.Context) error {
 	for _, t := range tasks {
 		resp = append(resp, mapDomainTaskToGenerated(t))
 	}
-
 	return c.JSON(http.StatusOK, resp)
 }
 
 func (h *Handler) CreateInboxTask(c echo.Context) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, generated.Error{
-			Code:    "UNAUTHORIZED",
-			Message: err.Error(),
-		})
+		return c.JSON(http.StatusUnauthorized, generated.Error{Code: "UNAUTHORIZED", Message: err.Error()})
 	}
 
 	var req generated.CreateInboxTaskJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Invalid request payload",
-		})
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
 	}
 
 	title := strings.TrimSpace(req.Title)
 	if title == "" {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Title cannot be empty",
-		})
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Title cannot be empty"})
 	}
 
 	var dueDate *time.Time
@@ -152,6 +153,7 @@ func (h *Handler) CreateInboxTask(c echo.Context) error {
 		DescriptionMarkdown: desc,
 		Priority:            priority,
 		DueDate:             dueDate,
+		ParentID:            req.ParentId,
 	})
 	if err != nil {
 		return respondTaskDomainError(c, err)
@@ -163,28 +165,20 @@ func (h *Handler) CreateInboxTask(c echo.Context) error {
 func (h *Handler) ToggleTaskCompletion(c echo.Context, id openapi_types.UUID) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, generated.Error{
-			Code:    "UNAUTHORIZED",
-			Message: err.Error(),
-		})
+		return c.JSON(http.StatusUnauthorized, generated.Error{Code: "UNAUTHORIZED", Message: err.Error()})
 	}
 
 	t, err := h.taskService.ToggleTask(c.Request().Context(), id, workspaceID)
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-
 	return c.JSON(http.StatusOK, mapDomainTaskToGenerated(t))
 }
 
-// ToggleTask provides backward compatibility for callers not using ServerInterface directly.
 func (h *Handler) ToggleTask(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Invalid task ID format",
-		})
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid task ID format"})
 	}
 	return h.ToggleTaskCompletion(c, id)
 }
@@ -192,21 +186,30 @@ func (h *Handler) ToggleTask(c echo.Context) error {
 func (h *Handler) DeleteTask(c echo.Context, id openapi_types.UUID) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, generated.Error{
-			Code:    "UNAUTHORIZED",
-			Message: err.Error(),
-		})
+		return c.JSON(http.StatusUnauthorized, generated.Error{Code: "UNAUTHORIZED", Message: err.Error()})
 	}
 
 	if err := h.taskService.DeleteTask(c.Request().Context(), id, workspaceID); err != nil {
 		return respondTaskDomainError(c, err)
 	}
-
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) GetTodayTasks(c echo.Context, workspaceId openapi_types.UUID) error {
 	tasks, err := h.taskService.GetTodayTasks(c.Request().Context(), workspaceId)
+	if err != nil {
+		return respondTaskDomainError(c, err)
+	}
+
+	resp := make([]generated.Task, 0, len(tasks))
+	for _, t := range tasks {
+		resp = append(resp, mapDomainTaskToGenerated(t))
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) ListSubtasks(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error {
+	tasks, err := h.taskService.ListSubtasks(c.Request().Context(), workspaceId, taskId)
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
@@ -227,10 +230,7 @@ func (h *Handler) UpdateTask(c echo.Context, workspaceId openapi_types.UUID, tas
 
 	var req generated.UpdateTaskJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Invalid request payload",
-		})
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
 	}
 
 	input := taskApp.UpdateTaskInput{
@@ -241,22 +241,21 @@ func (h *Handler) UpdateTask(c echo.Context, workspaceId openapi_types.UUID, tas
 		FocusOrder:          req.FocusOrder,
 		ProjectID:           req.ProjectId,
 		ColumnID:            req.ColumnId,
+		ParentID:            req.ParentId,
 	}
 
 	if len(bodyBytes) > 0 {
 		var rawMap map[string]interface{}
 		if err := json.Unmarshal(bodyBytes, &rawMap); err == nil {
-			if val, exists := rawMap["dueDate"]; exists && val == nil {
-				input.ClearDueDate = true
-			} else if val, exists := rawMap["due_date"]; exists && val == nil {
-				input.ClearDueDate = true
-			}
+			if v, ok := rawMap["dueDate"]; ok && v == nil { input.ClearDueDate = true }
+			if v, ok := rawMap["due_date"]; ok && v == nil { input.ClearDueDate = true }
+			if v, ok := rawMap["parentId"]; ok && v == nil { input.ClearParentID = true }
+			if v, ok := rawMap["parent_id"]; ok && v == nil { input.ClearParentID = true }
 		}
 	}
 
 	if req.DueDate != nil {
-		d := req.DueDate.Time
-		input.DueDate = &d
+		input.DueDate = &req.DueDate.Time
 	}
 	if req.Priority != nil {
 		p := domainTask.Priority(*req.Priority)
@@ -274,10 +273,7 @@ func (h *Handler) UpdateTask(c echo.Context, workspaceId openapi_types.UUID, tas
 func (h *Handler) SetTaskFocus(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error {
 	var req generated.SetTaskFocusJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Invalid request payload",
-		})
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
 	}
 
 	t, err := h.taskService.SetTaskFocus(c.Request().Context(), taskApp.SetFocusInput{
@@ -308,10 +304,7 @@ func (h *Handler) ListWorkspaceTags(c echo.Context, workspaceId openapi_types.UU
 func (h *Handler) CreateWorkspaceTag(c echo.Context, workspaceId openapi_types.UUID) error {
 	var req generated.CreateWorkspaceTagJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Invalid request payload",
-		})
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
 	}
 
 	color := ""

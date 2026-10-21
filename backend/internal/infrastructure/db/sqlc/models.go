@@ -94,6 +94,7 @@ type Task struct {
 	Position            float64            `json:"position"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	ParentID            pgtype.UUID        `json:"parent_id"`
 }
 
 type TaskTag struct {

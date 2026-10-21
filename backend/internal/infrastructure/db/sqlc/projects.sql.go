@@ -340,8 +340,8 @@ func (q *Queries) ListProjectsByWorkspace(ctx context.Context, workspaceID pgtyp
 }
 
 const listTasksByColumn = `-- name: ListTasksByColumn :many
-SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at FROM tasks
-WHERE column_id = $1 AND workspace_id = $2
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
+WHERE column_id = $1 AND workspace_id = $2 AND parent_id IS NULL
 ORDER BY position ASC, created_at DESC
 `
 
@@ -374,6 +374,7 @@ func (q *Queries) ListTasksByColumn(ctx context.Context, arg ListTasksByColumnPa
 			&i.Position,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ParentID,
 		); err != nil {
 			return nil, err
 		}
@@ -386,8 +387,8 @@ func (q *Queries) ListTasksByColumn(ctx context.Context, arg ListTasksByColumnPa
 }
 
 const listTasksByProject = `-- name: ListTasksByProject :many
-SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at FROM tasks
-WHERE project_id = $1 AND workspace_id = $2
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
+WHERE project_id = $1 AND workspace_id = $2 AND parent_id IS NULL
 ORDER BY position ASC, created_at DESC
 `
 
@@ -420,6 +421,7 @@ func (q *Queries) ListTasksByProject(ctx context.Context, arg ListTasksByProject
 			&i.Position,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ParentID,
 		); err != nil {
 			return nil, err
 		}
@@ -469,7 +471,7 @@ SET column_id = $1,
     position = $3,
     updated_at = NOW()
 WHERE id = $4 AND workspace_id = $5
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
 `
 
 type MoveTaskToColumnAndPositionParams struct {
@@ -504,6 +506,7 @@ func (q *Queries) MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskT
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }

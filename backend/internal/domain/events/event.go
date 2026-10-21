@@ -26,6 +26,7 @@ const (
 type TaskCreatedEvent struct {
 	TaskID         uuid.UUID
 	WorkspaceIDVal uuid.UUID
+	ParentID       *uuid.UUID
 	ProjectID      *uuid.UUID
 	ColumnID       *uuid.UUID
 	Title          string
@@ -43,6 +44,7 @@ func (e TaskCreatedEvent) IsFromAutomation() bool  { return e.FromAutomation }
 type TaskUpdatedEvent struct {
 	TaskID            uuid.UUID
 	WorkspaceIDVal    uuid.UUID
+	ParentID          *uuid.UUID
 	ProjectID         *uuid.UUID
 	ColumnID          *uuid.UUID
 	Title             string
@@ -63,6 +65,7 @@ func (e TaskUpdatedEvent) IsFromAutomation() bool  { return e.FromAutomation }
 type TaskCompletedEvent struct {
 	TaskID         uuid.UUID
 	WorkspaceIDVal uuid.UUID
+	ParentID       *uuid.UUID
 	ProjectID      *uuid.UUID
 	ColumnID       *uuid.UUID
 	CompletedAt    time.Time

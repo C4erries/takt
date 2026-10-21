@@ -34,6 +34,10 @@ export interface CreateTagRequest {
 export interface Task {
   id: string;
   workspaceId: string;
+  parentId?: string | null;
+  subtasksCount?: number;
+  subtasksCompletedCount?: number;
+  subtasks?: Task[];
   projectId?: string | null;
   columnId?: string | null;
   title: string;
@@ -57,6 +61,7 @@ export interface UpdateTaskRequest {
   focusOrder?: number | null;
   projectId?: string | null;
   columnId?: string | null;
+  parentId?: string | null;
 }
 
 export interface SetFocusRequest {
@@ -90,6 +95,7 @@ export interface CreateInboxTaskRequest {
   descriptionMarkdown?: string;
   priority?: Priority;
   dueDate?: string | null;
+  parentId?: string | null;
 }
 
 export interface Attachment {

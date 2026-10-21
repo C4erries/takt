@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, AlertCircle, Clock, Calendar, MoreHorizontal } from 'lucide-react';
+import { GripVertical, AlertCircle, Clock, Calendar, MoreHorizontal, GitFork } from 'lucide-react';
 import { Checkbox, Badge } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import { motion, strikeThroughVariants } from '@/shared/lib/motion';
@@ -11,6 +11,7 @@ import {
   useProjectAllColumnsQuery,
   useMoveTaskMutation,
 } from '@/entities/project';
+import { useSubtasksQuery, formatTaskNumber } from '@/entities/task';
 
 export interface KanbanCardProps {
   task: Task;
@@ -40,11 +41,7 @@ const PRIORITY_STYLES: Record<Priority, string> = {
   none: 'border-l-transparent',
 };
 
-function getDueDateInfo(dueDateStr?: string | null): {
-  isOverdue: boolean;
-  isSoon: boolean;
-  text: string;
-} | null {
+function getDueDateInfo(dueDateStr?: string | null) {
   if (!dueDateStr) return null;
   const due = new Date(dueDateStr);
   if (isNaN(due.getTime())) return null;
@@ -55,27 +52,12 @@ function getDueDateInfo(dueDateStr?: string | null): {
   const dueMidnight = new Date(due.getFullYear(), due.getMonth(), due.getDate());
 
   if (dueMidnight.getTime() < startOfToday.getTime()) {
-    return {
-      isOverdue: true,
-      isSoon: false,
-      text: due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
-    };
+    return { isOverdue: true, isSoon: false, text: due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) };
   }
-
   if (due.getTime() <= endOfTomorrow.getTime()) {
-    const isToday = dueMidnight.getTime() === startOfToday.getTime();
-    return {
-      isOverdue: false,
-      isSoon: true,
-      text: isToday ? 'Сегодня' : 'Завтра',
-    };
+    return { isOverdue: false, isSoon: true, text: dueMidnight.getTime() === startOfToday.getTime() ? 'Сегодня' : 'Завтра' };
   }
-
-  return {
-    isOverdue: false,
-    isSoon: false,
-    text: due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
-  };
+  return { isOverdue: false, isSoon: false, text: due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) };
 }
 
 export const KanbanCard: React.FC<KanbanCardProps> = ({
@@ -93,6 +75,15 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const { data: boardGroups = [] } = useProjectAllColumnsQuery(workspaceId, boards);
   const moveTaskMutation = useMoveTaskMutation(workspaceId, effectiveProjectId);
 
+  const subtasksQuery = useSubtasksQuery(
+    (task.subtasksCount ?? 0) > 0 ? workspaceId : undefined,
+    (task.subtasksCount ?? 0) > 0 ? task.id : undefined
+  );
+  const subtaskList = task.subtasks ?? subtasksQuery.data ?? [];
+  const subtasksCount = task.subtasksCount ?? subtaskList.length;
+  const subtasksCompletedCount = task.subtasksCompletedCount ?? subtaskList.filter((s) => s.isCompleted).length;
+  const hasSubtasks = subtasksCount > 0;
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMarkingCompleted, setIsMarkingCompleted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -100,60 +91,38 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
   useEffect(() => {
     return () => {
-      if (completionTimerRef.current) {
-        clearTimeout(completionTimerRef.current);
-      }
+      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
     };
   }, []);
 
   useEffect(() => {
-    if (task.isCompleted) {
-      setIsMarkingCompleted(false);
-    }
+    if (task.isCompleted) setIsMarkingCompleted(false);
   }, [task.isCompleted]);
 
   const handleToggle = () => {
     if (task.isCompleted) {
       setIsMarkingCompleted(false);
-      if (completionTimerRef.current) {
-        clearTimeout(completionTimerRef.current);
-      }
+      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
       onToggle?.(task.id);
     } else {
       setIsMarkingCompleted(true);
-      if (completionTimerRef.current) {
-        clearTimeout(completionTimerRef.current);
-      }
-      completionTimerRef.current = setTimeout(() => {
-        onToggle?.(task.id);
-      }, 350);
+      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
+      completionTimerRef.current = setTimeout(() => onToggle?.(task.id), 350);
     }
   };
 
   useEffect(() => {
     if (!isMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsMenuOpen(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
-    data: {
-      type: 'Task',
-      task,
-    },
+    data: { type: 'Task', task },
     disabled: isOverlay,
   });
 
@@ -165,6 +134,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const priorityBadge = PRIORITY_BADGES[task.priority];
   const priorityStyle = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.none;
   const dueDateInfo = getDueDateInfo(task.dueDate);
+  const taskShortNumber = formatTaskNumber(task.id);
 
   return (
     <div
@@ -222,6 +192,11 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
           {/* Badges / Metadata */}
           <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
+            {/* WEEEK-style task ID badge */}
+            <span className="font-mono text-[10px] text-muted font-medium bg-canvas/60 px-1.5 py-0.5 rounded border border-subtle/50">
+              {taskShortNumber}
+            </span>
+
             {priorityBadge && (
               <Badge variant={priorityBadge.variant} size="sm">
                 {priorityBadge.label}
@@ -268,6 +243,57 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               </div>
             )}
           </div>
+
+          {/* Subtasks Progress & Compact List (WEEEK-style) */}
+          {hasSubtasks && (
+            <div className="pt-1.5 space-y-1.5 border-t border-subtle/40">
+              {/* Progress bar and counter */}
+              <div className="flex items-center gap-1.5 text-[10px] font-mono text-muted">
+                <GitFork className="w-3 h-3 text-muted shrink-0" />
+                <div className="flex-1 bg-canvas h-1 rounded-full overflow-hidden border border-subtle/40">
+                  <div
+                    className="bg-accent-solid h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${subtasksCount > 0 ? (subtasksCompletedCount / subtasksCount) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
+                <span className="shrink-0">{subtasksCompletedCount}/{subtasksCount}</span>
+              </div>
+
+              {/* Inline compact subtasks list with quick round checkboxes */}
+              {subtaskList.length > 0 && (
+                <div className="space-y-1 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                  {subtaskList.map((st) => (
+                    <div
+                      key={st.id}
+                      className="flex items-center gap-2 group/st py-0.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div
+                        className="shrink-0 scale-90"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={st.isCompleted}
+                          onChange={() => onToggle?.(st.id)}
+                          aria-label={`Завершить подзадачу ${st.title}`}
+                        />
+                      </div>
+                      <span
+                        className={cn(
+                          'text-[11px] leading-tight truncate transition-colors',
+                          st.isCompleted ? 'line-through text-muted/70' : 'text-primary'
+                        )}
+                      >
+                        {st.title}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Actions & Checkbox */}
@@ -311,32 +337,32 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                           return (
                             <button
                               key={c.id}
-                            type="button"
-                            disabled={isCurrent}
-                            onClick={() => {
-                              moveTaskMutation.mutate({
-                                taskId: task.id,
-                                data: {
-                                  columnId: c.id,
-                                  position: task.position,
-                                  projectId: effectiveProjectId,
-                                },
-                              });
-                              setIsMenuOpen(false);
-                            }}
-                            className={cn(
-                              'w-full text-left px-2.5 py-1 rounded-md text-xs transition-colors flex items-center justify-between',
-                              isCurrent
-                                ? 'text-muted/60 bg-canvas/20 cursor-default'
-                                : 'text-primary hover:bg-canvas hover:text-accent-solid'
-                            )}
-                          >
-                            <span>{c.name}</span>
-                            {isCurrent && <span className="text-[9px] text-muted font-mono">(здесь)</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
+                              type="button"
+                              disabled={isCurrent}
+                              onClick={() => {
+                                moveTaskMutation.mutate({
+                                  taskId: task.id,
+                                  data: {
+                                    columnId: c.id,
+                                    position: task.position,
+                                    projectId: effectiveProjectId,
+                                  },
+                                });
+                                setIsMenuOpen(false);
+                              }}
+                              className={cn(
+                                'w-full text-left px-2.5 py-1 rounded-md text-xs transition-colors flex items-center justify-between',
+                                isCurrent
+                                  ? 'text-muted/60 bg-canvas/20 cursor-default'
+                                  : 'text-primary hover:bg-canvas hover:text-accent-solid'
+                              )}
+                            >
+                              <span>{c.name}</span>
+                              {isCurrent && <span className="text-[9px] text-muted font-mono">(здесь)</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
                     ))
                   )}
                 </div>

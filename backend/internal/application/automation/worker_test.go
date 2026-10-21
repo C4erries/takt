@@ -34,6 +34,14 @@ func (m *mockTaskReader) GetTaskByID(ctx context.Context, taskID, wsID uuid.UUID
 	return nil, args.Error(1)
 }
 
+func (m *mockTaskReader) ListSubtasks(ctx context.Context, parentID uuid.UUID) ([]*appAutomation.TaskInfo, error) {
+	args := m.Called(ctx, parentID)
+	if tasks := args.Get(0); tasks != nil {
+		return tasks.([]*appAutomation.TaskInfo), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func TestWorker_Tick(t *testing.T) {
 	t.Parallel()
 

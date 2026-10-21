@@ -1,0 +1,76 @@
+package task
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+	domainTask "takt/internal/domain/task"
+)
+
+func (s *Service) loadTaskTags(ctx context.Context, tasks []*domainTask.Task) {
+	if s.tagRepo == nil {
+		return
+	}
+	for _, t := range tasks {
+		tags, err := s.tagRepo.GetTaskTags(ctx, t.ID)
+		if err == nil && tags != nil {
+			t.Tags = tags
+		} else if t.Tags == nil {
+			t.Tags = []*domainTask.Tag{}
+		}
+	}
+}
+
+func (s *Service) loadSingleTaskTags(ctx context.Context, t *domainTask.Task) {
+	if s.tagRepo == nil || t == nil {
+		return
+	}
+	tags, err := s.tagRepo.GetTaskTags(ctx, t.ID)
+	if err == nil && tags != nil {
+		t.Tags = tags
+	} else if t.Tags == nil {
+		t.Tags = []*domainTask.Tag{}
+	}
+}
+
+func (s *Service) CreateTag(ctx context.Context, input CreateTagInput) (*domainTask.Tag, error) {
+	tag, err := domainTask.NewTag(input.WorkspaceID, input.Name, input.ColorHex)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.tagRepo.CreateTag(ctx, tag); err != nil {
+		return nil, err
+	}
+	return tag, nil
+}
+
+func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error) {
+	return s.tagRepo.ListWorkspaceTags(ctx, workspaceID)
+}
+
+func (s *Service) DeleteTag(ctx context.Context, tagID, workspaceID uuid.UUID) error {
+	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
+		return err
+	}
+	return s.tagRepo.DeleteTag(ctx, tagID, workspaceID)
+}
+
+func (s *Service) AddTagToTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error {
+	if _, err := s.taskRepo.GetByID(ctx, taskID, workspaceID); err != nil {
+		return err
+	}
+	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
+		return err
+	}
+	return s.tagRepo.AddTagToTask(ctx, taskID, tagID)
+}
+
+func (s *Service) RemoveTagFromTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error {
+	if _, err := s.taskRepo.GetByID(ctx, taskID, workspaceID); err != nil {
+		return err
+	}
+	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
+		return err
+	}
+	return s.tagRepo.RemoveTagFromTask(ctx, taskID, tagID)
+}

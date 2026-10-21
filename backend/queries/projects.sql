@@ -141,11 +141,11 @@ WHERE column_id IN (SELECT id FROM columns WHERE board_id = $1) AND workspace_id
 
 -- name: ListTasksByProject :many
 SELECT * FROM tasks
-WHERE project_id = $1 AND workspace_id = $2
+WHERE project_id = $1 AND workspace_id = $2 AND parent_id IS NULL
 ORDER BY position ASC, created_at DESC;
 
 -- name: ListTasksByColumn :many
 SELECT * FROM tasks
-WHERE column_id = $1 AND workspace_id = $2
+WHERE column_id = $1 AND workspace_id = $2 AND parent_id IS NULL
 ORDER BY position ASC, created_at DESC;
 

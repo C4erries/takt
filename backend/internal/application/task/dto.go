@@ -13,7 +13,11 @@ type CreateInboxTaskInput struct {
 	DescriptionMarkdown string
 	Priority            domainTask.Priority
 	DueDate             *time.Time
+	ParentID            *uuid.UUID
 }
+
+// CreateTaskInput alias for consistency across general task creation endpoints.
+type CreateTaskInput = CreateInboxTaskInput
 
 type UpdateTaskInput struct {
 	TaskID              uuid.UUID
@@ -29,6 +33,8 @@ type UpdateTaskInput struct {
 	ClearProjectID      bool
 	ColumnID            *uuid.UUID
 	ClearColumnID       bool
+	ParentID            *uuid.UUID
+	ClearParentID       bool
 }
 
 type SetFocusInput struct {
@@ -42,4 +48,3 @@ type CreateTagInput struct {
 	Name        string
 	ColorHex    string
 }
-

@@ -204,9 +204,21 @@ export const App: React.FC = () => {
   });
 
   const allAvailableTasks = [...tasks, ...todayTasks, ...projectTasks];
-  const selectedTask = selectedTaskId
+  let selectedTask = selectedTaskId
     ? allAvailableTasks.find((t) => t.id === selectedTaskId) ?? null
     : null;
+  if (!selectedTask && selectedTaskId) {
+    const subtaskQueries = queryClient.getQueriesData<Task[]>({ queryKey: ['subtasks'] });
+    for (const [, list] of subtaskQueries) {
+      if (Array.isArray(list)) {
+        const found = list.find((st) => st.id === selectedTaskId);
+        if (found) {
+          selectedTask = found;
+          break;
+        }
+      }
+    }
+  }
 
   if (isAuthLoading) {
     return (
@@ -338,6 +350,7 @@ export const App: React.FC = () => {
         onClose={() => setSelectedTaskId(null)}
         onToggleTask={(id) => toggleTaskMutation.mutate(id)}
         onDeleteTask={(id) => deleteTaskMutation.mutate(id)}
+        onSelectTask={(id) => setSelectedTaskId(id)}
       />
 
       {/* Global Modals */}

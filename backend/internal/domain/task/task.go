@@ -32,21 +32,24 @@ func ValidatePriority(p Priority) bool {
 }
 
 type Task struct {
-	ID                  uuid.UUID
-	WorkspaceID         uuid.UUID
-	ProjectID           *uuid.UUID
-	ColumnID            *uuid.UUID
-	Title               string
-	DescriptionMarkdown string
-	IsCompleted         bool
-	CompletedAt         *time.Time
-	DueDate             *time.Time
-	Priority            Priority
-	FocusOrder          *int
-	Position            int
-	Tags                []*Tag
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	ID                     uuid.UUID
+	WorkspaceID            uuid.UUID
+	ParentID               *uuid.UUID
+	ProjectID              *uuid.UUID
+	ColumnID               *uuid.UUID
+	Title                  string
+	DescriptionMarkdown    string
+	IsCompleted            bool
+	CompletedAt            *time.Time
+	DueDate                *time.Time
+	Priority               Priority
+	FocusOrder             *int
+	Position               int
+	SubtasksCount          int
+	SubtasksCompletedCount int
+	Tags                   []*Tag
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 func NewInboxTask(
@@ -71,21 +74,24 @@ func NewInboxTask(
 
 	now := time.Now().UTC()
 	return &Task{
-		ID:                  uuid.New(),
-		WorkspaceID:         workspaceID,
-		ProjectID:           nil,
-		ColumnID:            nil,
-		Title:               trimmedTitle,
-		DescriptionMarkdown: descriptionMarkdown,
-		IsCompleted:         false,
-		CompletedAt:         nil,
-		DueDate:             dueDate,
-		Priority:            priority,
-		FocusOrder:          nil,
-		Position:            position,
-		Tags:                []*Tag{},
-		CreatedAt:           now,
-		UpdatedAt:           now,
+		ID:                     uuid.New(),
+		WorkspaceID:            workspaceID,
+		ParentID:               nil,
+		ProjectID:              nil,
+		ColumnID:               nil,
+		Title:                  trimmedTitle,
+		DescriptionMarkdown:    descriptionMarkdown,
+		IsCompleted:            false,
+		CompletedAt:            nil,
+		DueDate:                dueDate,
+		Priority:               priority,
+		FocusOrder:             nil,
+		Position:               position,
+		SubtasksCount:          0,
+		SubtasksCompletedCount: 0,
+		Tags:                   []*Tag{},
+		CreatedAt:              now,
+		UpdatedAt:              now,
 	}, nil
 }
 
@@ -136,3 +142,27 @@ func (t *Task) SetFocusOrder(order *int) error {
 	t.UpdatedAt = time.Now().UTC()
 	return nil
 }
+
+// SetParent updates or clears the parent task ID.
+// Returns ErrSelfParenting if the task attempts to be its own parent.
+func (t *Task) SetParent(parentID *uuid.UUID) error {
+	if parentID != nil && *parentID == t.ID {
+		return ErrSelfParenting
+	}
+	t.ParentID = parentID
+	t.UpdatedAt = time.Now().UTC()
+	return nil
+}
+
+// SetSubtaskCounts updates the aggregated subtask counts.
+func (t *Task) SetSubtaskCounts(total, completed int) {
+	if total < 0 {
+		total = 0
+	}
+	if completed < 0 {
+		completed = 0
+	}
+	t.SubtasksCount = total
+	t.SubtasksCompletedCount = completed
+}
+

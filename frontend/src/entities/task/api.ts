@@ -5,11 +5,19 @@ import type {
   CreateTagRequest,
   UpdateTaskRequest,
   SetFocusRequest,
+  CreateInboxTaskRequest,
+  CreateTaskData,
 } from './types';
 
 export const taskDetailApi = {
   async getTodayTasks(workspaceId: string): Promise<Task[]> {
     return request<Task[]>(`/workspaces/${workspaceId}/tasks/today`, {
+      method: 'GET',
+    });
+  },
+
+  async listSubtasks(workspaceId: string, taskId: string): Promise<Task[]> {
+    return request<Task[]>(`/workspaces/${workspaceId}/tasks/${taskId}/subtasks`, {
       method: 'GET',
     });
   },
@@ -87,3 +95,37 @@ export const taskDetailApi = {
     );
   },
 };
+
+export async function listSubtasks(workspaceId: string, taskId: string): Promise<Task[]> {
+  return taskDetailApi.listSubtasks(workspaceId, taskId);
+}
+
+export async function createInboxTask(data: CreateInboxTaskRequest): Promise<Task> {
+  const body: Record<string, unknown> = {
+    title: data.title,
+  };
+  if (data.descriptionMarkdown !== undefined) body.descriptionMarkdown = data.descriptionMarkdown;
+  if (data.priority !== undefined) body.priority = data.priority;
+  if (data.dueDate !== undefined) body.dueDate = data.dueDate;
+  if (data.parentId !== undefined && data.parentId !== null) body.parentId = data.parentId;
+
+  return request<Task>('/tasks/inbox', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function createTask(_workspaceId: string, data: CreateTaskData): Promise<Task> {
+  const body: Record<string, unknown> = {
+    title: data.title,
+  };
+  if (data.descriptionMarkdown !== undefined) body.descriptionMarkdown = data.descriptionMarkdown;
+  if (data.priority !== undefined) body.priority = data.priority;
+  if (data.dueDate !== undefined) body.dueDate = data.dueDate;
+  if (data.parentId !== undefined && data.parentId !== null) body.parentId = data.parentId;
+
+  return request<Task>('/tasks/inbox', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}

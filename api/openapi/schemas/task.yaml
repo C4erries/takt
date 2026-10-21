@@ -20,6 +20,17 @@ Task:
       type: string
       format: uuid
       example: "123e4567-e89b-12d3-a456-426614174001"
+    parentId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+    subtasksCount:
+      type: integer
+      example: 2
+    subtasksCompletedCount:
+      type: integer
+      example: 0
     projectId:
       type: string
       format: uuid
@@ -98,6 +109,41 @@ CreateInboxTaskRequest:
       format: date
       nullable: true
       example: "2026-10-15"
+    parentId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
+
+CreateTaskRequest:
+  type: object
+  required:
+    - title
+  properties:
+    title:
+      type: string
+      minLength: 1
+      maxLength: 500
+      example: "Купить чай сенча"
+    descriptionMarkdown:
+      type: string
+      nullable: true
+      example: ""
+    priority:
+      type: string
+      enum: [none, low, medium, high, pending, urgent]
+      default: "none"
+      example: "none"
+    dueDate:
+      type: string
+      format: date
+      nullable: true
+      example: "2026-10-15"
+    parentId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
 
 UpdateTaskRequest:
   type: object
@@ -133,6 +179,11 @@ UpdateTaskRequest:
       format: uuid
       nullable: true
       example: "c0000000-0000-0000-0000-000000000001"
+    parentId:
+      type: string
+      format: uuid
+      nullable: true
+      example: null
 
 SetFocusRequest:
   type: object
@@ -141,4 +192,3 @@ SetFocusRequest:
       type: integer
       nullable: true
       example: 1
-

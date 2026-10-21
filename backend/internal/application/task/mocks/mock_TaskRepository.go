@@ -444,6 +444,74 @@ func (_c *MockTaskRepository_GetTodayTasks_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// ListSubtasks provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) ListSubtasks(ctx context.Context, parentID uuid.UUID) ([]*task.Task, error) {
+	ret := _mock.Called(ctx, parentID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListSubtasks")
+	}
+
+	var r0 []*task.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*task.Task, error)); ok {
+		return returnFunc(ctx, parentID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*task.Task); ok {
+		r0 = returnFunc(ctx, parentID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, parentID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_ListSubtasks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListSubtasks'
+type MockTaskRepository_ListSubtasks_Call struct {
+	*mock.Call
+}
+
+// ListSubtasks is a helper method to define mock.On call
+//   - ctx context.Context
+//   - parentID uuid.UUID
+func (_e *MockTaskRepository_Expecter) ListSubtasks(ctx any, parentID any) *MockTaskRepository_ListSubtasks_Call {
+	return &MockTaskRepository_ListSubtasks_Call{Call: _e.mock.On("ListSubtasks", ctx, parentID)}
+}
+
+func (_c *MockTaskRepository_ListSubtasks_Call) Run(run func(ctx context.Context, parentID uuid.UUID)) *MockTaskRepository_ListSubtasks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_ListSubtasks_Call) Return(tasks []*task.Task, err error) *MockTaskRepository_ListSubtasks_Call {
+	_c.Call.Return(tasks, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_ListSubtasks_Call) RunAndReturn(run func(ctx context.Context, parentID uuid.UUID) ([]*task.Task, error)) *MockTaskRepository_ListSubtasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SetFocusOrder provides a mock function for the type MockTaskRepository
 func (_mock *MockTaskRepository) SetFocusOrder(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID, focusOrder *int) (*task.Task, error) {
 	ret := _mock.Called(ctx, id, workspaceID, focusOrder)

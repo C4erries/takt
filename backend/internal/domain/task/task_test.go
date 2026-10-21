@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewInboxTask_Valid(t *testing.T) {
@@ -113,3 +115,105 @@ func TestValidatePriority(t *testing.T) {
 		})
 	}
 }
+
+func TestTask_SetParent(t *testing.T) {
+	wsID := uuid.New()
+	task, err := NewInboxTask(wsID, "My Task", "", PriorityLow, nil, 0)
+	require.NoError(t, err)
+
+	parentID := uuid.New()
+	anotherParentID := uuid.New()
+
+	tests := []struct {
+		name        string
+		parentID    *uuid.UUID
+		expectedErr error
+		checkParent *uuid.UUID
+	}{
+		{
+			name:        "set valid parent",
+			parentID:    &parentID,
+			expectedErr: nil,
+			checkParent: &parentID,
+		},
+		{
+			name:        "change parent to another",
+			parentID:    &anotherParentID,
+			expectedErr: nil,
+			checkParent: &anotherParentID,
+		},
+		{
+			name:        "clear parent",
+			parentID:    nil,
+			expectedErr: nil,
+			checkParent: nil,
+		},
+		{
+			name:        "self as parent returns error",
+			parentID:    &task.ID,
+			expectedErr: ErrSelfParenting,
+			checkParent: nil, // unchanged
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := task.SetParent(tt.parentID)
+			if tt.expectedErr != nil {
+				require.ErrorIs(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tt.checkParent, task.ParentID)
+		})
+	}
+}
+
+func TestTask_SubtasksCount(t *testing.T) {
+	wsID := uuid.New()
+	task, err := NewInboxTask(wsID, "Parent Task", "", PriorityLow, nil, 0)
+	require.NoError(t, err)
+
+	assert.Equal(t, 0, task.SubtasksCount)
+	assert.Equal(t, 0, task.SubtasksCompletedCount)
+	assert.Nil(t, task.ParentID)
+
+	tests := []struct {
+		name              string
+		total             int
+		completed         int
+		expectedTotal     int
+		expectedCompleted int
+	}{
+		{
+			name:              "valid positive counts",
+			total:             5,
+			completed:         2,
+			expectedTotal:     5,
+			expectedCompleted: 2,
+		},
+		{
+			name:              "all completed",
+			total:             3,
+			completed:         3,
+			expectedTotal:     3,
+			expectedCompleted: 3,
+		},
+		{
+			name:              "negative counts normalized to zero",
+			total:             -1,
+			completed:         -5,
+			expectedTotal:     0,
+			expectedCompleted: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			task.SetSubtaskCounts(tt.total, tt.completed)
+			assert.Equal(t, tt.expectedTotal, task.SubtasksCount)
+			assert.Equal(t, tt.expectedCompleted, task.SubtasksCompletedCount)
+		})
+	}
+}
+

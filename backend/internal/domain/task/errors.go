@@ -12,4 +12,6 @@ var (
 	ErrTagNotFound        = errors.New("tag not found")
 	ErrTagAlreadyAttached = errors.New("tag already attached to task")
 	ErrInvalidFocusOrder  = errors.New("focus order must be non-negative")
+	ErrSelfParenting      = errors.New("task cannot be its own parent")
+	ErrInvalidParent      = ErrSelfParenting
 )

@@ -22,12 +22,10 @@ func NewTaskRepository(queries *sqlc.Queries) *TaskRepository {
 func (r *TaskRepository) Create(ctx context.Context, t *domainTask.Task) error {
 	q := getQuerier(ctx, r.queries)
 
-	var projectID pgtype.UUID
+	var projectID, columnID pgtype.UUID
 	if t.ProjectID != nil {
 		projectID = uuidToPg(*t.ProjectID)
 	}
-
-	var columnID pgtype.UUID
 	if t.ColumnID != nil {
 		columnID = uuidToPg(*t.ColumnID)
 	}
@@ -54,6 +52,7 @@ func (r *TaskRepository) Create(ctx context.Context, t *domainTask.Task) error {
 		Priority:            string(t.Priority),
 		FocusOrder:          focusOrder,
 		Position:            float64(t.Position),
+		ParentID:            uuidPtrToPg(t.ParentID),
 	})
 	if err != nil {
 		return err
@@ -76,6 +75,9 @@ func (r *TaskRepository) GetInboxTasks(ctx context.Context, workspaceID uuid.UUI
 	for _, row := range rows {
 		tasks = append(tasks, mapTaskRowToDomain(row))
 	}
+	if err := loadSubtaskCountsForTasks(ctx, q, tasks); err != nil {
+		return nil, err
+	}
 	return tasks, nil
 }
 
@@ -92,7 +94,26 @@ func (r *TaskRepository) GetByID(ctx context.Context, id, workspaceID uuid.UUID)
 		return nil, err
 	}
 
-	return mapTaskRowToDomain(row), nil
+	task := mapTaskRowToDomain(row)
+	_ = loadSubtaskCountsForTasks(ctx, q, []*domainTask.Task{task})
+	return task, nil
+}
+
+func (r *TaskRepository) ListSubtasks(ctx context.Context, parentID uuid.UUID) ([]*domainTask.Task, error) {
+	q := getQuerier(ctx, r.queries)
+	rows, err := q.ListSubtasksByParent(ctx, uuidToPg(parentID))
+	if err != nil {
+		return nil, err
+	}
+
+	tasks := make([]*domainTask.Task, 0, len(rows))
+	for _, row := range rows {
+		tasks = append(tasks, mapTaskRowToDomain(row))
+	}
+	if err := loadSubtaskCountsForTasks(ctx, q, tasks); err != nil {
+		return nil, err
+	}
+	return tasks, nil
 }
 
 func (r *TaskRepository) Toggle(ctx context.Context, id, workspaceID uuid.UUID) (*domainTask.Task, error) {
@@ -108,7 +129,9 @@ func (r *TaskRepository) Toggle(ctx context.Context, id, workspaceID uuid.UUID) 
 		return nil, err
 	}
 
-	return mapTaskRowToDomain(row), nil
+	task := mapTaskRowToDomain(row)
+	_ = loadSubtaskCountsForTasks(ctx, q, []*domainTask.Task{task})
+	return task, nil
 }
 
 func (r *TaskRepository) Delete(ctx context.Context, id, workspaceID uuid.UUID) error {
@@ -142,18 +165,19 @@ func (r *TaskRepository) GetTodayTasks(ctx context.Context, workspaceID uuid.UUI
 	for _, row := range rows {
 		tasks = append(tasks, mapTaskRowToDomain(row))
 	}
+	if err := loadSubtaskCountsForTasks(ctx, q, tasks); err != nil {
+		return nil, err
+	}
 	return tasks, nil
 }
 
 func (r *TaskRepository) Update(ctx context.Context, t *domainTask.Task) error {
 	q := getQuerier(ctx, r.queries)
 
-	var projectID pgtype.UUID
+	var projectID, columnID pgtype.UUID
 	if t.ProjectID != nil {
 		projectID = uuidToPg(*t.ProjectID)
 	}
-
-	var columnID pgtype.UUID
 	if t.ColumnID != nil {
 		columnID = uuidToPg(*t.ColumnID)
 	}
@@ -173,6 +197,7 @@ func (r *TaskRepository) Update(ctx context.Context, t *domainTask.Task) error {
 		FocusOrder:          focusOrder,
 		ProjectID:           projectID,
 		ColumnID:            columnID,
+		ParentID:            uuidPtrToPg(t.ParentID),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -297,55 +322,6 @@ func (r *TaskRepository) ClearTaskTags(ctx context.Context, taskID uuid.UUID) er
 	return q.ClearTaskTags(ctx, uuidToPg(taskID))
 }
 
-func mapTagRowToDomain(row sqlc.Tag) *domainTask.Tag {
-	return &domainTask.Tag{
-		ID:          pgToUUID(row.ID),
-		WorkspaceID: pgToUUID(row.WorkspaceID),
-		Name:        row.Name,
-		ColorHex:    row.ColorHex,
-		CreatedAt:   pgToTime(row.CreatedAt),
-	}
-}
-
-func mapTaskRowToDomain(row sqlc.Task) *domainTask.Task {
-	var projectID *uuid.UUID
-	if row.ProjectID.Valid {
-		pid := uuid.UUID(row.ProjectID.Bytes)
-		projectID = &pid
-	}
-
-	var columnID *uuid.UUID
-	if row.ColumnID.Valid {
-		cid := uuid.UUID(row.ColumnID.Bytes)
-		columnID = &cid
-	}
-
-	var focusOrder *int
-	if row.FocusOrder.Valid {
-		fo := int(row.FocusOrder.Int32)
-		focusOrder = &fo
-	}
-
-	return &domainTask.Task{
-		ID:                  pgToUUID(row.ID),
-		WorkspaceID:         pgToUUID(row.WorkspaceID),
-		ProjectID:           projectID,
-		ColumnID:            columnID,
-		Title:               row.Title,
-		DescriptionMarkdown: row.DescriptionMarkdown,
-		IsCompleted:         row.IsCompleted,
-		CompletedAt:         pgToTimePtr(row.CompletedAt),
-		DueDate:             pgToDatePtr(row.DueDate),
-		Priority:            domainTask.Priority(row.Priority),
-		FocusOrder:          focusOrder,
-		Position:            int(row.Position),
-		Tags:                []*domainTask.Tag{},
-		CreatedAt:           pgToTime(row.CreatedAt),
-		UpdatedAt:           pgToTime(row.UpdatedAt),
-	}
-}
-
-// SearchTasks finds tasks matching the query in title or description.
 func (r *TaskRepository) SearchTasks(ctx context.Context, workspaceID uuid.UUID, query string, limit int32) ([]*domainTask.Task, error) {
 	q := getQuerier(ctx, r.queries)
 	rows, err := q.SearchTasksInWorkspace(ctx, sqlc.SearchTasksInWorkspaceParams{

@@ -54,7 +54,7 @@ func (q *Queries) SearchProjectsInWorkspace(ctx context.Context, arg SearchProje
 }
 
 const searchTasksInWorkspace = `-- name: SearchTasksInWorkspace :many
-SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at FROM tasks
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
 WHERE workspace_id = $1
   AND (title ILIKE '%' || $2::text || '%' OR description_markdown ILIKE '%' || $2::text || '%')
 ORDER BY created_at DESC
@@ -91,6 +91,7 @@ func (q *Queries) SearchTasksInWorkspace(ctx context.Context, arg SearchTasksInW
 			&i.Position,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ParentID,
 		); err != nil {
 			return nil, err
 		}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	domainProject "takt/internal/domain/project"
 	domainTask "takt/internal/domain/task"
 	"takt/internal/infrastructure/db/sqlc"
@@ -279,15 +278,8 @@ func (r *TaskMoveRepository) MoveTaskToColumnAndPosition(
 ) (*domainTask.Task, error) {
 	q := getQuerier(ctx, r.queries)
 
-	var colPg pgtype.UUID
-	if columnID != nil {
-		colPg = uuidToPg(*columnID)
-	}
-
-	var projPg pgtype.UUID
-	if projectID != nil {
-		projPg = uuidToPg(*projectID)
-	}
+	colPg := uuidPtrToPg(columnID)
+	projPg := uuidPtrToPg(projectID)
 
 	row, err := q.MoveTaskToColumnAndPosition(ctx, sqlc.MoveTaskToColumnAndPositionParams{
 		ColumnID: colPg, ProjectID: projPg, Position: position,
@@ -326,6 +318,9 @@ func (r *TaskMoveRepository) ListTasksByProject(ctx context.Context, projectID, 
 	if err := loadTagsForTasks(ctx, q, res); err != nil {
 		return nil, err
 	}
+	if err := loadSubtaskCountsForTasks(ctx, q, res); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
@@ -342,6 +337,9 @@ func (r *TaskMoveRepository) ListTasksByColumn(ctx context.Context, columnID, wo
 		res[i] = mapTaskRowToDomain(row)
 	}
 	if err := loadTagsForTasks(ctx, q, res); err != nil {
+		return nil, err
+	}
+	if err := loadSubtaskCountsForTasks(ctx, q, res); err != nil {
 		return nil, err
 	}
 	return res, nil

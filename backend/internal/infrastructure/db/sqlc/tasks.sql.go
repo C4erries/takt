@@ -23,11 +23,12 @@ INSERT INTO tasks (
     due_date,
     priority,
     focus_order,
-    position
+    position,
+    parent_id
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
 )
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
 `
 
 type CreateTaskParams struct {
@@ -42,6 +43,7 @@ type CreateTaskParams struct {
 	Priority            string             `json:"priority"`
 	FocusOrder          pgtype.Int4        `json:"focus_order"`
 	Position            float64            `json:"position"`
+	ParentID            pgtype.UUID        `json:"parent_id"`
 }
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
@@ -57,6 +59,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		arg.Priority,
 		arg.FocusOrder,
 		arg.Position,
+		arg.ParentID,
 	)
 	var i Task
 	err := row.Scan(
@@ -74,6 +77,7 @@ func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, e
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }
@@ -94,10 +98,11 @@ func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) error {
 }
 
 const getInboxTasks = `-- name: GetInboxTasks :many
-SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at FROM tasks
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
 WHERE workspace_id = $1
   AND project_id IS NULL
   AND column_id IS NULL
+  AND parent_id IS NULL
 ORDER BY position ASC, created_at DESC
 `
 
@@ -125,6 +130,7 @@ func (q *Queries) GetInboxTasks(ctx context.Context, workspaceID pgtype.UUID) ([
 			&i.Position,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ParentID,
 		); err != nil {
 			return nil, err
 		}
@@ -142,6 +148,7 @@ FROM tasks
 WHERE workspace_id = $1
   AND project_id IS NULL
   AND column_id IS NULL
+  AND parent_id IS NULL
 `
 
 func (q *Queries) GetMaxInboxPosition(ctx context.Context, workspaceID pgtype.UUID) (int32, error) {
@@ -151,8 +158,41 @@ func (q *Queries) GetMaxInboxPosition(ctx context.Context, workspaceID pgtype.UU
 	return max_position, err
 }
 
+const getSubtaskCountsByParentIds = `-- name: GetSubtaskCountsByParentIds :many
+SELECT parent_id, COUNT(*)::bigint AS total_count, COUNT(*) FILTER (WHERE is_completed = true)::bigint AS completed_count
+FROM tasks
+WHERE parent_id = ANY($1::uuid[])
+GROUP BY parent_id
+`
+
+type GetSubtaskCountsByParentIdsRow struct {
+	ParentID       pgtype.UUID `json:"parent_id"`
+	TotalCount     int64       `json:"total_count"`
+	CompletedCount int64       `json:"completed_count"`
+}
+
+func (q *Queries) GetSubtaskCountsByParentIds(ctx context.Context, dollar_1 []pgtype.UUID) ([]GetSubtaskCountsByParentIdsRow, error) {
+	rows, err := q.db.Query(ctx, getSubtaskCountsByParentIds, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetSubtaskCountsByParentIdsRow{}
+	for rows.Next() {
+		var i GetSubtaskCountsByParentIdsRow
+		if err := rows.Scan(&i.ParentID, &i.TotalCount, &i.CompletedCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTaskByID = `-- name: GetTaskByID :one
-SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at FROM tasks
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
 WHERE id = $1 AND workspace_id = $2
 `
 
@@ -179,14 +219,16 @@ func (q *Queries) GetTaskByID(ctx context.Context, arg GetTaskByIDParams) (Task,
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }
 
 const getTodayTasks = `-- name: GetTodayTasks :many
-SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at FROM tasks
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
 WHERE workspace_id = $1
   AND is_completed = FALSE
+  AND parent_id IS NULL
   AND (due_date <= CURRENT_DATE OR focus_order IS NOT NULL)
 ORDER BY focus_order ASC NULLS LAST, due_date ASC, priority DESC
 `
@@ -215,6 +257,49 @@ func (q *Queries) GetTodayTasks(ctx context.Context, workspaceID pgtype.UUID) ([
 			&i.Position,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ParentID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSubtasksByParent = `-- name: ListSubtasksByParent :many
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
+WHERE parent_id = $1
+ORDER BY position ASC, created_at ASC
+`
+
+func (q *Queries) ListSubtasksByParent(ctx context.Context, parentID pgtype.UUID) ([]Task, error) {
+	rows, err := q.db.Query(ctx, listSubtasksByParent, parentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Task{}
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.ProjectID,
+			&i.ColumnID,
+			&i.Title,
+			&i.DescriptionMarkdown,
+			&i.IsCompleted,
+			&i.CompletedAt,
+			&i.DueDate,
+			&i.Priority,
+			&i.FocusOrder,
+			&i.Position,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ParentID,
 		); err != nil {
 			return nil, err
 		}
@@ -232,7 +317,7 @@ SET is_completed = $3,
     completed_at = CASE WHEN $3 = true THEN NOW() ELSE NULL END,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
 `
 
 type SetTaskCompletionParams struct {
@@ -259,6 +344,7 @@ func (q *Queries) SetTaskCompletion(ctx context.Context, arg SetTaskCompletionPa
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }
@@ -268,7 +354,7 @@ UPDATE tasks
 SET due_date = $3,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
 `
 
 type SetTaskDueDateParams struct {
@@ -295,6 +381,7 @@ func (q *Queries) SetTaskDueDate(ctx context.Context, arg SetTaskDueDateParams) 
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }
@@ -304,7 +391,7 @@ UPDATE tasks
 SET focus_order = $3,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
 `
 
 type SetTaskFocusParams struct {
@@ -331,6 +418,7 @@ func (q *Queries) SetTaskFocus(ctx context.Context, arg SetTaskFocusParams) (Tas
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }
@@ -340,7 +428,7 @@ UPDATE tasks
 SET priority = $3,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
 `
 
 type SetTaskPriorityParams struct {
@@ -367,6 +455,7 @@ func (q *Queries) SetTaskPriority(ctx context.Context, arg SetTaskPriorityParams
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }
@@ -377,7 +466,7 @@ SET is_completed = NOT is_completed,
     completed_at = CASE WHEN is_completed = false THEN NOW() ELSE NULL END,
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
 `
 
 type ToggleTaskCompletionParams struct {
@@ -403,6 +492,7 @@ func (q *Queries) ToggleTaskCompletion(ctx context.Context, arg ToggleTaskComple
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }
@@ -416,9 +506,10 @@ SET title = $3,
     focus_order = $7,
     project_id = $8,
     column_id = $9,
+    parent_id = COALESCE($10, parent_id),
     updated_at = NOW()
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
 `
 
 type UpdateTaskParams struct {
@@ -431,6 +522,7 @@ type UpdateTaskParams struct {
 	FocusOrder          pgtype.Int4 `json:"focus_order"`
 	ProjectID           pgtype.UUID `json:"project_id"`
 	ColumnID            pgtype.UUID `json:"column_id"`
+	ParentID            pgtype.UUID `json:"parent_id"`
 }
 
 func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error) {
@@ -444,6 +536,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		arg.FocusOrder,
 		arg.ProjectID,
 		arg.ColumnID,
+		arg.ParentID,
 	)
 	var i Task
 	err := row.Scan(
@@ -461,6 +554,7 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.Position,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ParentID,
 	)
 	return i, err
 }

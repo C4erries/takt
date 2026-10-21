@@ -147,3 +147,76 @@ func loadTagsForTasks(ctx context.Context, q *sqlc.Queries, tasks []*domainTask.
 	return nil
 }
 
+func pgToIntPtr(v pgtype.Int4) *int {
+	if !v.Valid {
+		return nil
+	}
+	res := int(v.Int32)
+	return &res
+}
+
+func intPtrToPg(v *int) pgtype.Int4 {
+	if v == nil {
+		return pgtype.Int4{Valid: false}
+	}
+	return pgtype.Int4{Int32: int32(*v), Valid: true}
+}
+
+func mapTagRowToDomain(row sqlc.Tag) *domainTask.Tag {
+	return &domainTask.Tag{
+		ID:          pgToUUID(row.ID),
+		WorkspaceID: pgToUUID(row.WorkspaceID),
+		Name:        row.Name,
+		ColorHex:    row.ColorHex,
+		CreatedAt:   pgToTime(row.CreatedAt),
+	}
+}
+
+func mapTaskRowToDomain(row sqlc.Task) *domainTask.Task {
+	return &domainTask.Task{
+		ID:                  pgToUUID(row.ID),
+		WorkspaceID:         pgToUUID(row.WorkspaceID),
+		ParentID:            pgToUUIDPtr(row.ParentID),
+		ProjectID:           pgToUUIDPtr(row.ProjectID),
+		ColumnID:            pgToUUIDPtr(row.ColumnID),
+		Title:               row.Title,
+		DescriptionMarkdown: row.DescriptionMarkdown,
+		IsCompleted:         row.IsCompleted,
+		CompletedAt:         pgToTimePtr(row.CompletedAt),
+		DueDate:             pgToDatePtr(row.DueDate),
+		Priority:            domainTask.Priority(row.Priority),
+		FocusOrder:          pgToIntPtr(row.FocusOrder),
+		Position:            int(row.Position),
+		Tags:                []*domainTask.Tag{},
+		CreatedAt:           pgToTime(row.CreatedAt),
+		UpdatedAt:           pgToTime(row.UpdatedAt),
+	}
+}
+
+func loadSubtaskCountsForTasks(ctx context.Context, q *sqlc.Queries, tasks []*domainTask.Task) error {
+	if len(tasks) == 0 {
+		return nil
+	}
+	taskIDs := make([]pgtype.UUID, len(tasks))
+	taskMap := make(map[uuid.UUID]*domainTask.Task, len(tasks))
+	for i, t := range tasks {
+		taskIDs[i] = uuidToPg(t.ID)
+		taskMap[t.ID] = t
+	}
+	rows, err := q.GetSubtaskCountsByParentIds(ctx, taskIDs)
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if !row.ParentID.Valid {
+			continue
+		}
+		pID := pgToUUID(row.ParentID)
+		if t, ok := taskMap[pID]; ok {
+			t.SetSubtaskCounts(int(row.TotalCount), int(row.CompletedCount))
+		}
+	}
+	return nil
+}
+
+

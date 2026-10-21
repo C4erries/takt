@@ -16,4 +16,5 @@ type TaskRepository interface {
 	Toggle(ctx context.Context, id, workspaceID uuid.UUID) (*Task, error)
 	Delete(ctx context.Context, id, workspaceID uuid.UUID) error
 	GetMaxInboxPosition(ctx context.Context, workspaceID uuid.UUID) (int, error)
+	ListSubtasks(ctx context.Context, parentID uuid.UUID) ([]*Task, error)
 }

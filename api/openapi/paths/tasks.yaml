@@ -291,3 +291,54 @@ focus:
             schema:
               $ref: '../schemas/error.yaml'
 
+subtasks:
+  get:
+    tags:
+      - Tasks
+    summary: List subtasks of a task
+    description: Returns subtasks for the specified parent task ordered by position.
+    operationId: listSubtasks
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: List of subtasks
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../schemas/task.yaml#/Task'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Task not found in workspace
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+

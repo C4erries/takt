@@ -27,6 +27,7 @@ type mockTaskService struct {
 	getTodayFn          func(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Task, error)
 	updateFn            func(ctx context.Context, input taskApp.UpdateTaskInput) (*domainTask.Task, error)
 	setFocusFn          func(ctx context.Context, input taskApp.SetFocusInput) (*domainTask.Task, error)
+	listSubtasksFn      func(ctx context.Context, wsID, parentID uuid.UUID) ([]*domainTask.Task, error)
 	createTagFn         func(ctx context.Context, input taskApp.CreateTagInput) (*domainTask.Tag, error)
 	listTagsFn          func(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Tag, error)
 	deleteTagFn         func(ctx context.Context, tagID, wsID uuid.UUID) error
@@ -83,6 +84,13 @@ func (m *mockTaskService) UpdateTask(ctx context.Context, input taskApp.UpdateTa
 func (m *mockTaskService) SetTaskFocus(ctx context.Context, input taskApp.SetFocusInput) (*domainTask.Task, error) {
 	if m.setFocusFn != nil {
 		return m.setFocusFn(ctx, input)
+	}
+	return nil, nil
+}
+
+func (m *mockTaskService) ListSubtasks(ctx context.Context, wsID, parentID uuid.UUID) ([]*domainTask.Task, error) {
+	if m.listSubtasksFn != nil {
+		return m.listSubtasksFn(ctx, wsID, parentID)
 	}
 	return nil, nil
 }

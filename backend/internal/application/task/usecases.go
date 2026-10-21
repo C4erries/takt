@@ -19,6 +19,7 @@ type UseCases interface {
 	GetTodayTasks(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Task, error)
 	UpdateTask(ctx context.Context, input UpdateTaskInput) (*domainTask.Task, error)
 	SetTaskFocus(ctx context.Context, input SetFocusInput) (*domainTask.Task, error)
+	ListSubtasks(ctx context.Context, workspaceID, parentID uuid.UUID) ([]*domainTask.Task, error)
 	CreateTag(ctx context.Context, input CreateTagInput) (*domainTask.Tag, error)
 	ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error)
 	DeleteTag(ctx context.Context, tagID, workspaceID uuid.UUID) error
@@ -50,32 +51,6 @@ func (s *Service) SetEventPublisher(pub EventPublisher) {
 	s.eventBus = pub
 }
 
-func (s *Service) loadTaskTags(ctx context.Context, tasks []*domainTask.Task) {
-	if s.tagRepo == nil {
-		return
-	}
-	for _, t := range tasks {
-		tags, err := s.tagRepo.GetTaskTags(ctx, t.ID)
-		if err == nil && tags != nil {
-			t.Tags = tags
-		} else if t.Tags == nil {
-			t.Tags = []*domainTask.Tag{}
-		}
-	}
-}
-
-func (s *Service) loadSingleTaskTags(ctx context.Context, t *domainTask.Task) {
-	if s.tagRepo == nil || t == nil {
-		return
-	}
-	tags, err := s.tagRepo.GetTaskTags(ctx, t.ID)
-	if err == nil && tags != nil {
-		t.Tags = tags
-	} else if t.Tags == nil {
-		t.Tags = []*domainTask.Tag{}
-	}
-}
-
 func (s *Service) GetInboxTasks(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Task, error) {
 	tasks, err := s.taskRepo.GetInboxTasks(ctx, workspaceID)
 	if err != nil {
@@ -86,6 +61,15 @@ func (s *Service) GetInboxTasks(ctx context.Context, workspaceID uuid.UUID) ([]*
 }
 
 func (s *Service) CreateInboxTask(ctx context.Context, input CreateInboxTaskInput) (*domainTask.Task, error) {
+	var parent *domainTask.Task
+	if input.ParentID != nil {
+		p, err := s.taskRepo.GetByID(ctx, *input.ParentID, input.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		parent = p
+	}
+
 	maxPos, err := s.taskRepo.GetMaxInboxPosition(ctx, input.WorkspaceID)
 	if err != nil {
 		maxPos = -1
@@ -103,6 +87,14 @@ func (s *Service) CreateInboxTask(ctx context.Context, input CreateInboxTaskInpu
 		return nil, err
 	}
 
+	if parent != nil {
+		if err := t.SetParent(input.ParentID); err != nil {
+			return nil, err
+		}
+		t.ProjectID = parent.ProjectID
+		t.ColumnID = parent.ColumnID
+	}
+
 	if err := s.taskRepo.Create(ctx, t); err != nil {
 		return nil, err
 	}
@@ -113,6 +105,7 @@ func (s *Service) CreateInboxTask(ctx context.Context, input CreateInboxTaskInpu
 		_ = s.eventBus.Publish(ctx, events.TaskCreatedEvent{
 			TaskID:         t.ID,
 			WorkspaceIDVal: t.WorkspaceID,
+			ParentID:       t.ParentID,
 			ProjectID:      t.ProjectID,
 			ColumnID:       t.ColumnID,
 			Title:          t.Title,
@@ -141,6 +134,7 @@ func (s *Service) ToggleTask(ctx context.Context, id, workspaceID uuid.UUID) (*d
 			_ = s.eventBus.Publish(ctx, events.TaskCompletedEvent{
 				TaskID:         t.ID,
 				WorkspaceIDVal: t.WorkspaceID,
+				ParentID:       t.ParentID,
 				ProjectID:      t.ProjectID,
 				ColumnID:       t.ColumnID,
 				CompletedAt:    completedAt,
@@ -151,6 +145,7 @@ func (s *Service) ToggleTask(ctx context.Context, id, workspaceID uuid.UUID) (*d
 			_ = s.eventBus.Publish(ctx, events.TaskUpdatedEvent{
 				TaskID:         t.ID,
 				WorkspaceIDVal: t.WorkspaceID,
+				ParentID:       t.ParentID,
 				ProjectID:      t.ProjectID,
 				ColumnID:       t.ColumnID,
 				Title:          t.Title,
@@ -191,6 +186,18 @@ func (s *Service) CreateInitialInboxTasks(ctx context.Context, workspaceID uuid.
 
 func (s *Service) GetTodayTasks(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Task, error) {
 	tasks, err := s.taskRepo.GetTodayTasks(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	s.loadTaskTags(ctx, tasks)
+	return tasks, nil
+}
+
+func (s *Service) ListSubtasks(ctx context.Context, workspaceID, parentID uuid.UUID) ([]*domainTask.Task, error) {
+	if _, err := s.taskRepo.GetByID(ctx, parentID, workspaceID); err != nil {
+		return nil, err
+	}
+	tasks, err := s.taskRepo.ListSubtasks(ctx, parentID)
 	if err != nil {
 		return nil, err
 	}
@@ -245,6 +252,23 @@ func (s *Service) UpdateTask(ctx context.Context, input UpdateTaskInput) (*domai
 	} else if input.ColumnID != nil {
 		t.ColumnID = input.ColumnID
 	}
+	if input.ClearParentID {
+		_ = t.SetParent(nil)
+	} else if input.ParentID != nil {
+		parent, err := s.taskRepo.GetByID(ctx, *input.ParentID, input.WorkspaceID)
+		if err != nil {
+			return nil, err
+		}
+		if err := t.SetParent(input.ParentID); err != nil {
+			return nil, err
+		}
+		if t.ProjectID == nil && parent.ProjectID != nil {
+			t.ProjectID = parent.ProjectID
+		}
+		if t.ColumnID == nil && parent.ColumnID != nil {
+			t.ColumnID = parent.ColumnID
+		}
+	}
 
 	if err := s.taskRepo.Update(ctx, t); err != nil {
 		return nil, err
@@ -256,6 +280,7 @@ func (s *Service) UpdateTask(ctx context.Context, input UpdateTaskInput) (*domai
 		_ = s.eventBus.Publish(ctx, events.TaskUpdatedEvent{
 			TaskID:            t.ID,
 			WorkspaceIDVal:    t.WorkspaceID,
+			ParentID:          t.ParentID,
 			ProjectID:         t.ProjectID,
 			ColumnID:          t.ColumnID,
 			Title:             t.Title,
@@ -292,6 +317,7 @@ func (s *Service) SetTaskFocus(ctx context.Context, input SetFocusInput) (*domai
 		_ = s.eventBus.Publish(ctx, events.TaskUpdatedEvent{
 			TaskID:         updated.ID,
 			WorkspaceIDVal: updated.WorkspaceID,
+			ParentID:       updated.ParentID,
 			ProjectID:      updated.ProjectID,
 			ColumnID:       updated.ColumnID,
 			Title:          updated.Title,
@@ -303,46 +329,4 @@ func (s *Service) SetTaskFocus(ctx context.Context, input SetFocusInput) (*domai
 	}
 
 	return updated, nil
-}
-
-func (s *Service) CreateTag(ctx context.Context, input CreateTagInput) (*domainTask.Tag, error) {
-	tag, err := domainTask.NewTag(input.WorkspaceID, input.Name, input.ColorHex)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.tagRepo.CreateTag(ctx, tag); err != nil {
-		return nil, err
-	}
-	return tag, nil
-}
-
-func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error) {
-	return s.tagRepo.ListWorkspaceTags(ctx, workspaceID)
-}
-
-func (s *Service) DeleteTag(ctx context.Context, tagID, workspaceID uuid.UUID) error {
-	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
-		return err
-	}
-	return s.tagRepo.DeleteTag(ctx, tagID, workspaceID)
-}
-
-func (s *Service) AddTagToTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error {
-	if _, err := s.taskRepo.GetByID(ctx, taskID, workspaceID); err != nil {
-		return err
-	}
-	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
-		return err
-	}
-	return s.tagRepo.AddTagToTask(ctx, taskID, tagID)
-}
-
-func (s *Service) RemoveTagFromTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error {
-	if _, err := s.taskRepo.GetByID(ctx, taskID, workspaceID); err != nil {
-		return err
-	}
-	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
-		return err
-	}
-	return s.tagRepo.RemoveTagFromTask(ctx, taskID, tagID)
 }

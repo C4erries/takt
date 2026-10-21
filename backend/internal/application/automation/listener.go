@@ -2,9 +2,7 @@ package automation
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/google/uuid"
 	domainAutomation "takt/internal/domain/automation"
 	"takt/internal/domain/events"
 )
@@ -14,6 +12,7 @@ type EventListener struct {
 	repo          AutomationRepository
 	taskModifier  TaskModifier
 	projectReader ProjectReader
+	taskReader    TaskReader
 	evaluator     *domainAutomation.RuleEvaluator
 	dslEvaluator  *Evaluator
 }
@@ -24,17 +23,30 @@ func NewEventListener(
 	taskModifier TaskModifier,
 	projectReader ProjectReader,
 	evaluator *domainAutomation.RuleEvaluator,
+	taskReader ...TaskReader,
 ) *EventListener {
 	if evaluator == nil {
 		evaluator = domainAutomation.NewRuleEvaluator()
+	}
+	var tr TaskReader
+	if len(taskReader) > 0 {
+		tr = taskReader[0]
+	} else if r, ok := taskModifier.(TaskReader); ok {
+		tr = r
 	}
 	return &EventListener{
 		repo:          repo,
 		taskModifier:  taskModifier,
 		projectReader: projectReader,
+		taskReader:    tr,
 		evaluator:     evaluator,
 		dslEvaluator:  NewEvaluator(taskModifier, projectReader),
 	}
+}
+
+// SetTaskReader assigns the task reader used for subtasks and task inspection.
+func (l *EventListener) SetTaskReader(tr TaskReader) {
+	l.taskReader = tr
 }
 
 // Register subscribes the listener to domain events on the provided EventBus.
@@ -103,6 +115,17 @@ func (l *EventListener) HandleTaskCompleted(ctx context.Context, event events.Ev
 				l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 			}
 		}
+	}
+
+	// 3. Subtask auto-completion of parent task
+	parentID := taskEvt.ParentID
+	if parentID == nil && l.taskReader != nil {
+		if ti, err := l.taskReader.GetTaskByID(autoCtx, taskEvt.TaskID, event.WorkspaceID()); err == nil && ti != nil {
+			parentID = ti.ParentID
+		}
+	}
+	if parentID != nil {
+		l.handleParentAutoComplete(autoCtx, event.WorkspaceID(), *parentID)
 	}
 
 	return nil
@@ -283,57 +306,3 @@ func (l *EventListener) evaluateAndExecute(
 	l.executeAction(ctx, rule.ActionsJSON, taskInfo.ID, taskInfo.WorkspaceID, taskInfo.ProjectID)
 }
 
-type actionPayload struct {
-	Action         string  `json:"action"`
-	Priority       string  `json:"priority"`
-	TargetColumnID *string `json:"target_column_id"`
-	TargetColumnId *string `json:"targetColumnId"`
-}
-
-func (l *EventListener) executeAction(ctx context.Context, actionsJSON json.RawMessage, taskID, workspaceID uuid.UUID, projectID *uuid.UUID) {
-	if l.taskModifier == nil {
-		return
-	}
-
-	var payload actionPayload
-	if err := json.Unmarshal(actionsJSON, &payload); err != nil {
-		return
-	}
-
-	switch payload.Action {
-	case "move_to_done":
-		if projectID != nil && l.projectReader != nil {
-			doneCol, err := l.projectReader.GetDoneColumn(ctx, *projectID, workspaceID)
-			if err == nil && doneCol != nil {
-				_ = l.taskModifier.MoveTaskToColumn(ctx, taskID, workspaceID, doneCol, projectID, 1000.0)
-			}
-		}
-	case "set_focus":
-		focusOrder := 1
-		_ = l.taskModifier.SetTaskFocus(ctx, taskID, workspaceID, &focusOrder)
-	case "move_to_first_column":
-		if projectID != nil && l.projectReader != nil {
-			todoCol, err := l.projectReader.GetFirstTodoColumn(ctx, *projectID, workspaceID)
-			if err == nil && todoCol != nil {
-				_ = l.taskModifier.MoveTaskToColumn(ctx, taskID, workspaceID, todoCol, projectID, 1000.0)
-			}
-		}
-	case "set_priority":
-		if payload.Priority != "" {
-			_ = l.taskModifier.SetTaskPriority(ctx, taskID, workspaceID, payload.Priority)
-		}
-	case "move_to_column":
-		targetStr := ""
-		if payload.TargetColumnID != nil && *payload.TargetColumnID != "" {
-			targetStr = *payload.TargetColumnID
-		} else if payload.TargetColumnId != nil && *payload.TargetColumnId != "" {
-			targetStr = *payload.TargetColumnId
-		}
-		if targetStr != "" {
-			targetColUUID, err := uuid.Parse(targetStr)
-			if err == nil && targetColUUID != uuid.Nil {
-				_ = l.taskModifier.MoveTaskToColumn(ctx, taskID, workspaceID, &targetColUUID, projectID, 1000.0)
-			}
-		}
-	}
-}

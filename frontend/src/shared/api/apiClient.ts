@@ -134,6 +134,12 @@ export const tasksApi = {
       method: 'DELETE',
     });
   },
+
+  async listSubtasks(workspaceId: string, taskId: string): Promise<Task[]> {
+    return request<Task[]>(`/workspaces/${workspaceId}/tasks/${taskId}/subtasks`, {
+      method: 'GET',
+    });
+  },
 };
 
 export const attachmentsApi = {

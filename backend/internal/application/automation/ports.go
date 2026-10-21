@@ -12,6 +12,7 @@ import (
 type TaskInfo struct {
 	ID                uuid.UUID
 	WorkspaceID       uuid.UUID
+	ParentID          *uuid.UUID
 	ProjectID         *uuid.UUID
 	ColumnID          *uuid.UUID
 	PreviousColumnID  *uuid.UUID
@@ -57,6 +58,7 @@ type TaskModifier interface {
 type TaskReader interface {
 	ListTasksByColumn(ctx context.Context, workspaceID, columnID uuid.UUID) ([]*TaskInfo, error)
 	GetTaskByID(ctx context.Context, taskID, workspaceID uuid.UUID) (*TaskInfo, error)
+	ListSubtasks(ctx context.Context, parentID uuid.UUID) ([]*TaskInfo, error)
 }
 
 // ProjectReader inspects board and column structure to determine target columns.

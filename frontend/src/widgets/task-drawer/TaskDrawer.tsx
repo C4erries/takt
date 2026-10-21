@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Star, CheckCircle2, Circle, Trash2, FolderClosed } from 'lucide-react';
-import type { Priority, Task } from '@/shared/api';
-import { useUpdateTaskMutation, useSetTaskFocusMutation } from '@/entities/task';
+import { X, Star, CheckCircle2, Circle, Trash2, FolderClosed, Clock, CornerUpLeft } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import type { Task } from '@/shared/api';
+import {
+  useUpdateTaskMutation,
+  useSetTaskFocusMutation,
+  useSubtasksQuery,
+  formatTaskNumber,
+} from '@/entities/task';
 import {
   useProjectsQuery,
   useProjectBoardsQuery,
@@ -16,23 +22,9 @@ import { cn } from '@/shared/lib/cn';
 import { motion, AnimatePresence, drawerVariants, backdropVariants } from '@/shared/lib/motion';
 import { QuickActionBar } from './QuickActionBar';
 import { TaskTagSection } from './TaskTagSection';
+import { TaskSubtasksSection } from './TaskSubtasksSection';
 import { TaskAutomationsSection } from './TaskAutomationsSection';
-import type { TaskDrawerProps } from './types';
-
-const PRIORITIES: { value: Priority; label: string }[] = [
-  { value: 'none', label: 'Обычный' }, { value: 'low', label: 'Низкий' },
-  { value: 'medium', label: 'Средний' }, { value: 'high', label: 'Высокий' },
-  { value: 'pending', label: 'В ожидании' },
-];
-
-const PRIORITY_ACTIVE_STYLES: Record<string, string> = {
-  pending: 'bg-accent-denim/15 text-accent-denim border-accent-denim/40',
-  urgent: 'bg-accent-denim/15 text-accent-denim border-accent-denim/40',
-  high: 'bg-accent-persimmon/15 text-accent-persimmon border-accent-persimmon/40',
-  medium: 'bg-accent-straw/15 text-accent-straw border-accent-straw/40',
-  low: 'bg-accent-solid/15 text-accent-solid border-accent-solid/40',
-  none: 'bg-surface text-primary border-subtle',
-};
+import { type TaskDrawerProps, PRIORITIES, PRIORITY_ACTIVE_STYLES } from './types';
 
 export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   task,
@@ -40,15 +32,31 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   onClose,
   onToggleTask,
   onDeleteTask,
+  onSelectTask,
 }) => {
   const isOpen = Boolean(task);
   const lastTaskRef = useRef<Task | null>(task);
   if (task) lastTaskRef.current = task;
   const currentTask = task || lastTaskRef.current;
 
+  const queryClient = useQueryClient();
   const updateTaskMutation = useUpdateTaskMutation(workspaceId);
   const setFocusMutation = useSetTaskFocusMutation(workspaceId);
   const { data: projects = [] } = useProjectsQuery(workspaceId);
+
+  const { data: subtasks = [] } = useSubtasksQuery(workspaceId, currentTask?.id);
+
+  const parentTask = useMemo(() => {
+    if (!currentTask?.parentId) return null;
+    const allQueries = queryClient.getQueriesData<Task[]>({ queryKey: [] });
+    for (const [, tasksList] of allQueries) {
+      if (Array.isArray(tasksList)) {
+        const found = tasksList.find((t) => t && t.id === currentTask.parentId);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, [currentTask?.parentId, queryClient]);
 
   const boardsQuery = useProjectBoardsQuery(workspaceId, currentTask?.projectId ?? undefined);
   const boards = boardsQuery.data ?? [];
@@ -85,14 +93,10 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isEditingTitle, isAddingTag, onClose]);
 
-  // Outside click to close TaskDrawer softly without breaking board interactions
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (drawerRef.current && drawerRef.current.contains(e.target as Node)) {
-        return;
-      }
-      onClose();
+      if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) onClose();
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -165,18 +169,40 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
             <div className="flex-1 flex flex-col overflow-y-auto p-6 space-y-5">
               {/* Header top bar */}
               <div className="flex items-center justify-between border-b border-subtle/50 pb-3">
-                <button
-                  type="button"
-                  onClick={() => setFocusMutation.mutate({ taskId: currentTask.id, focusOrder: isFocused ? null : 1 })}
-                  className={cn(
-                    'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
-                    isFocused ? 'bg-accent-solid text-surface' : 'bg-canvas text-muted hover:text-primary hover:bg-canvas/80'
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setFocusMutation.mutate({ taskId: currentTask.id, focusOrder: isFocused ? null : 1 })}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
+                      isFocused ? 'bg-accent-solid text-surface' : 'bg-canvas text-muted hover:text-primary hover:bg-canvas/80'
+                    )}
+                    title={isFocused ? 'Снять из фокуса дня' : 'Добавить в фокус дня'}
+                  >
+                    <Star className="w-3.5 h-3.5 fill-current" />
+                    <span>{isFocused ? 'В фокусе дня' : '⭐ Сегодня'}</span>
+                  </button>
+
+                  {/* WEEEK-style breadcrumbs #parent > #child or task number badge */}
+                  {currentTask.parentId ? (
+                    <div className="flex items-center gap-1 font-mono text-xs text-muted bg-canvas/60 px-2 py-0.5 rounded border border-subtle/60">
+                      <button
+                        type="button"
+                        onClick={() => onSelectTask?.(currentTask.parentId!)}
+                        className="hover:text-accent-solid transition-colors"
+                        title={parentTask?.title ? `Перейти к: ${parentTask.title}` : 'Родительская задача'}
+                      >
+                        {formatTaskNumber(currentTask.parentId)}
+                      </button>
+                      <span className="text-muted/50">&gt;</span>
+                      <span className="text-primary font-medium">{formatTaskNumber(currentTask.id)}</span>
+                    </div>
+                  ) : (
+                    <span className="font-mono text-xs text-muted bg-canvas/40 px-2 py-0.5 rounded border border-subtle/40">
+                      {formatTaskNumber(currentTask.id)}
+                    </span>
                   )}
-                  title={isFocused ? 'Снять из фокуса дня' : 'Добавить в фокус дня'}
-                >
-                  <Star className="w-3.5 h-3.5 fill-current" />
-                  <span>{isFocused ? 'В фокусе дня' : '⭐ Сегодня'}</span>
-                </button>
+                </div>
 
                 <button
                   type="button"
@@ -188,42 +214,56 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 </button>
               </div>
 
-              {/* Task Title & Checkbox */}
-              <div className="flex items-start gap-3">
-                <button
-                  type="button"
-                  onClick={() => onToggleTask?.(currentTask.id)}
-                  className="mt-1 text-muted hover:text-accent-solid transition-colors shrink-0"
-                >
-                  {currentTask.isCompleted ? <CheckCircle2 className="w-5 h-5 text-accent-solid" /> : <Circle className="w-5 h-5" />}
-                </button>
+              {/* Task Title, Checkbox & Quick Indicator */}
+              <div className="space-y-1.5">
+                <div className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    onClick={() => onToggleTask?.(currentTask.id)}
+                    className="mt-1 text-muted hover:text-accent-solid transition-colors shrink-0"
+                  >
+                    {currentTask.isCompleted ? <CheckCircle2 className="w-5 h-5 text-accent-solid" /> : <Circle className="w-5 h-5" />}
+                  </button>
 
-                <div className="flex-1 min-w-0">
-                  {isEditingTitle ? (
-                    <Input
-                      autoFocus
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      onBlur={handleTitleBlur}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleTitleBlur();
-                        if (e.key === 'Escape') { setTitle(currentTask.title); setIsEditingTitle(false); }
-                      }}
-                      className="text-lg font-serif bg-surface border-subtle"
-                    />
-                  ) : (
-                    <h2
-                      onClick={() => setIsEditingTitle(true)}
-                      className={cn(
-                        'font-serif text-xl font-normal leading-snug cursor-text hover:bg-canvas/30 rounded p-1 -m-1 transition-colors',
-                        currentTask.isCompleted ? 'line-through text-muted' : 'text-primary'
-                      )}
-                      title="Нажмите для редактирования"
-                    >
-                      {currentTask.title}
-                    </h2>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    {isEditingTitle ? (
+                      <Input
+                        autoFocus
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        onBlur={handleTitleBlur}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleTitleBlur();
+                          if (e.key === 'Escape') { setTitle(currentTask.title); setIsEditingTitle(false); }
+                        }}
+                        className="text-lg font-serif bg-surface border-subtle"
+                      />
+                    ) : (
+                      <h2
+                        onClick={() => setIsEditingTitle(true)}
+                        className={cn(
+                          'font-serif text-xl font-normal leading-snug cursor-text hover:bg-canvas/30 rounded p-1 -m-1 transition-colors',
+                          currentTask.isCompleted ? 'line-through text-muted' : 'text-primary'
+                        )}
+                        title="Нажмите для редактирования"
+                      >
+                        {currentTask.title}
+                      </h2>
+                    )}
+                  </div>
                 </div>
+
+                {/* Quick subtasks indicator ⏱ X/Y */}
+                {(subtasks.length > 0 || (currentTask.subtasksCount ?? 0) > 0) && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted font-mono pl-8">
+                    <Clock className="w-3.5 h-3.5 text-muted shrink-0" />
+                    <span>
+                      {subtasks.length > 0
+                        ? `${subtasks.filter((s) => s.isCompleted).length}/${subtasks.length}`
+                        : `${currentTask.subtasksCompletedCount ?? 0}/${currentTask.subtasksCount ?? 0}`}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Quick Action Bar */}
@@ -236,6 +276,29 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 boardGroups={boardGroups}
                 selectedColumnId={currentTask.columnId}
                 onColumnChange={handleColumnChange}
+              />
+
+              {/* Back button to parent task if subtask */}
+              {currentTask.parentId && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => onSelectTask?.(currentTask.parentId!)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-solid hover:text-accent-solid-hover bg-accent-surface/30 hover:bg-accent-surface/50 border border-accent-solid/30 rounded-lg px-2.5 py-1.5 transition-colors max-w-full truncate"
+                    title={parentTask?.title ? `Вернуться к: ${parentTask.title}` : 'Родительская задача'}
+                  >
+                    <CornerUpLeft className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{parentTask?.title || 'Родительская задача'}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Subtasks Section */}
+              <TaskSubtasksSection
+                workspaceId={workspaceId}
+                parentTaskId={currentTask.id}
+                onOpenTask={onSelectTask}
+                onToggleTask={onToggleTask}
               />
 
               {/* Tags section with autocomplete and color palette */}
@@ -258,10 +321,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                         key={p.value}
                         type="button"
                         onClick={() => updateTaskMutation.mutate({ taskId: currentTask.id, data: { priority: p.value } })}
-                        className={cn(
-                          'text-xs px-2.5 py-1 rounded-full border transition-all',
-                          active ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle/60 text-muted hover:text-primary hover:bg-canvas/50'
-                        )}
+                        className={cn('text-xs px-2.5 py-1 rounded-full border transition-all', active ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle/60 text-muted hover:text-primary hover:bg-canvas/50')}
                       >
                         {p.label}
                       </button>
@@ -281,9 +341,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                   className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
                 >
                   <option value="">(Входящие)</option>
-                  {projects.map((proj) => (
-                    <option key={proj.id} value={proj.id}>{proj.name}</option>
-                  ))}
+                  {projects.map((proj) => <option key={proj.id} value={proj.id}>{proj.name}</option>)}
                 </select>
               </div>
 

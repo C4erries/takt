@@ -733,7 +733,8 @@ type CreateInboxTaskRequest struct {
 	DescriptionMarkdown *string `json:"descriptionMarkdown,omitempty"`
 
 	// DueDate Example: 2026-10-15
-	DueDate *openapi_types.Date `json:"dueDate,omitempty"`
+	DueDate  *openapi_types.Date `json:"dueDate,omitempty"`
+	ParentId *openapi_types.UUID `json:"parentId,omitempty"`
 
 	// Priority Example: none
 	Priority *CreateInboxTaskRequestPriority `json:"priority,omitempty"`
@@ -910,7 +911,8 @@ type Task struct {
 	Id openapi_types.UUID `json:"id"`
 
 	// IsCompleted Example: false
-	IsCompleted bool `json:"isCompleted"`
+	IsCompleted bool                `json:"isCompleted"`
+	ParentId    *openapi_types.UUID `json:"parentId,omitempty"`
 
 	// Position Example: 1000
 	Position float64 `json:"position"`
@@ -918,7 +920,13 @@ type Task struct {
 	// Priority Example: none
 	Priority  TaskPriority        `json:"priority"`
 	ProjectId *openapi_types.UUID `json:"projectId,omitempty"`
-	Tags      *[]Tag              `json:"tags,omitempty"`
+
+	// SubtasksCompletedCount Example: 0
+	SubtasksCompletedCount *int `json:"subtasksCompletedCount,omitempty"`
+
+	// SubtasksCount Example: 2
+	SubtasksCount *int   `json:"subtasksCount,omitempty"`
+	Tags          *[]Tag `json:"tags,omitempty"`
 
 	// Title Example: Нажми J и K для клавиатурного перемещения по строкам
 	Title string `json:"title"`
@@ -1016,7 +1024,8 @@ type UpdateTaskRequest struct {
 	DueDate *openapi_types.Date `json:"dueDate,omitempty"`
 
 	// FocusOrder Example: 1
-	FocusOrder *int `json:"focusOrder,omitempty"`
+	FocusOrder *int                `json:"focusOrder,omitempty"`
+	ParentId   *openapi_types.UUID `json:"parentId,omitempty"`
 
 	// Priority Example: high
 	Priority *UpdateTaskRequestPriority `json:"priority,omitempty"`
@@ -1402,6 +1411,9 @@ type ServerInterface interface {
 	// MoveTaskToColumn Move task to column and position
 	// (POST /workspaces/{workspace_id}/tasks/{task_id}/move)
 	MoveTaskToColumn(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
+	// ListSubtasks List subtasks of a task
+	// (GET /workspaces/{workspace_id}/tasks/{task_id}/subtasks)
+	ListSubtasks(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
 	// RemoveTagFromTask Remove a tag from a task
 	// (DELETE /workspaces/{workspace_id}/tasks/{task_id}/tags/{tag_id})
 	RemoveTagFromTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID, tagId openapi_types.UUID) error
@@ -2378,6 +2390,30 @@ func (w *ServerInterfaceWrapper) MoveTaskToColumn(ctx echo.Context) error {
 	return err
 }
 
+// ListSubtasks converts echo context to params.
+func (w *ServerInterfaceWrapper) ListSubtasks(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListSubtasks(ctx, workspaceId, taskId)
+	return err
+}
+
 // RemoveTagFromTask converts echo context to params.
 func (w *ServerInterfaceWrapper) RemoveTagFromTask(ctx echo.Context) error {
 	var err error
@@ -2538,6 +2574,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.UploadTaskAttachment, options.OperationMiddlewares["uploadTaskAttachment"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/focus", wrapper.SetTaskFocus, options.OperationMiddlewares["setTaskFocus"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/move", wrapper.MoveTaskToColumn, options.OperationMiddlewares["moveTaskToColumn"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/subtasks", wrapper.ListSubtasks, options.OperationMiddlewares["listSubtasks"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/tags/:tag_id", wrapper.RemoveTagFromTask, options.OperationMiddlewares["removeTagFromTask"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/tags/:tag_id", wrapper.AddTagToTask, options.OperationMiddlewares["addTagToTask"]...)
 

@@ -167,10 +167,7 @@ func (r *AutomationRepository) ListAllEnabledTimerAutomations(ctx context.Contex
 }
 
 func (r *AutomationRepository) CreateColumnAutomation(ctx context.Context, a *domainAutomation.Automation) error {
-	var colPg pgtype.UUID
-	if a.ColumnID != nil {
-		colPg = uuidToPg(*a.ColumnID)
-	}
+	colPg := uuidPtrToPg(a.ColumnID)
 	row, err := getQuerier(ctx, r.queries).CreateColumnAutomation(ctx, sqlc.CreateColumnAutomationParams{
 		WorkspaceID: uuidToPg(a.WorkspaceID), BoardID: uuidPtrToPg(a.BoardID), ColumnID: colPg,
 		TaskID: uuidPtrToPg(a.TaskID), Name: a.Name, TriggerType: a.TriggerType,
@@ -193,11 +190,7 @@ func (r *AutomationRepository) MoveTaskToColumn(ctx context.Context, taskID, wsI
 }
 
 func (r *AutomationRepository) SetTaskFocus(ctx context.Context, taskID, wsID uuid.UUID, focusOrder *int) error {
-	var fo pgtype.Int4
-	if focusOrder != nil {
-		fo = pgtype.Int4{Int32: int32(*focusOrder), Valid: true}
-	}
-	_, err := getQuerier(ctx, r.queries).SetTaskFocus(ctx, sqlc.SetTaskFocusParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), FocusOrder: fo})
+	_, err := getQuerier(ctx, r.queries).SetTaskFocus(ctx, sqlc.SetTaskFocusParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), FocusOrder: intPtrToPg(focusOrder)})
 	return err
 }
 
@@ -245,11 +238,7 @@ func (r *AutomationRepository) RemoveTagFromTask(ctx context.Context, taskID, ws
 }
 
 func (r *AutomationRepository) SetTaskDueDate(ctx context.Context, taskID, wsID uuid.UUID, dueDate *time.Time) error {
-	var duePg pgtype.Date
-	if dueDate != nil {
-		duePg = pgtype.Date{Time: *dueDate, Valid: true}
-	}
-	_, err := getQuerier(ctx, r.queries).SetTaskDueDate(ctx, sqlc.SetTaskDueDateParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), DueDate: duePg})
+	_, err := getQuerier(ctx, r.queries).SetTaskDueDate(ctx, sqlc.SetTaskDueDateParams{ID: uuidToPg(taskID), WorkspaceID: uuidToPg(wsID), DueDate: dateToPg(dueDate)})
 	return err
 }
 
@@ -264,7 +253,7 @@ func (r *AutomationRepository) ArchiveTask(ctx context.Context, taskID, wsID uui
 
 // TaskReader implementation
 
-func mapTaskInfo(id, wsID, prjID, colID pgtype.UUID, title, priority string, isCompleted bool, dueDate pgtype.Date, created, updated pgtype.Timestamptz) *appAutomation.TaskInfo {
+func mapTaskInfo(id, wsID, prjID, colID, parentID pgtype.UUID, title, priority string, isCompleted bool, dueDate pgtype.Date, created, updated pgtype.Timestamptz) *appAutomation.TaskInfo {
 	var due *time.Time
 	if dueDate.Valid {
 		due = &dueDate.Time
@@ -272,6 +261,7 @@ func mapTaskInfo(id, wsID, prjID, colID pgtype.UUID, title, priority string, isC
 	return &appAutomation.TaskInfo{
 		ID:          pgToUUID(id),
 		WorkspaceID: pgToUUID(wsID),
+		ParentID:    pgToUUIDPtr(parentID),
 		ProjectID:   pgToUUIDPtr(prjID),
 		ColumnID:    pgToUUIDPtr(colID),
 		Title:       title,
@@ -290,7 +280,7 @@ func (r *AutomationRepository) ListTasksByColumn(ctx context.Context, wsID, colI
 	}
 	res := make([]*appAutomation.TaskInfo, len(rows))
 	for i, row := range rows {
-		res[i] = mapTaskInfo(row.ID, row.WorkspaceID, row.ProjectID, row.ColumnID, row.Title, row.Priority, row.IsCompleted, row.DueDate, row.CreatedAt, row.UpdatedAt)
+		res[i] = mapTaskInfo(row.ID, row.WorkspaceID, row.ProjectID, row.ColumnID, row.ParentID, row.Title, row.Priority, row.IsCompleted, row.DueDate, row.CreatedAt, row.UpdatedAt)
 	}
 	return res, nil
 }
@@ -303,7 +293,19 @@ func (r *AutomationRepository) GetTaskByID(ctx context.Context, taskID, wsID uui
 		}
 		return nil, err
 	}
-	return mapTaskInfo(row.ID, row.WorkspaceID, row.ProjectID, row.ColumnID, row.Title, row.Priority, row.IsCompleted, row.DueDate, row.CreatedAt, row.UpdatedAt), nil
+	return mapTaskInfo(row.ID, row.WorkspaceID, row.ProjectID, row.ColumnID, row.ParentID, row.Title, row.Priority, row.IsCompleted, row.DueDate, row.CreatedAt, row.UpdatedAt), nil
+}
+
+func (r *AutomationRepository) ListSubtasks(ctx context.Context, parentID uuid.UUID) ([]*appAutomation.TaskInfo, error) {
+	rows, err := getQuerier(ctx, r.queries).ListSubtasksByParent(ctx, uuidToPg(parentID))
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*appAutomation.TaskInfo, len(rows))
+	for i, row := range rows {
+		res[i] = mapTaskInfo(row.ID, row.WorkspaceID, row.ProjectID, row.ColumnID, row.ParentID, row.Title, row.Priority, row.IsCompleted, row.DueDate, row.CreatedAt, row.UpdatedAt)
+	}
+	return res, nil
 }
 
 // ProjectReader implementation

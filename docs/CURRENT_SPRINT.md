@@ -4,49 +4,51 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.7.7 (Переименование колонок, персистентный порядок досок и живой стохастический ветер) 🟢 ФАЗА Б (Конвейер разработки)
+## Текущий спринт: Спринт 0.8.0 (Механизм подзадач WEEEK-style: иерархия, прогресс, чеклист на карточке, хлебные крошки и автоматизация) 🟢 ФАЗА Б (Завершено & Верифицировано)
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Штаб)
 
-* **Бизнес-цель**: Реализовать полный контроль над канбан-структурой (инлайн переименование колонок, изменение порядка досок через Drag & Drop со сквозной синхронизацией в БД) и обогатить атмосферность хвойной темы реалистичным стохастическим ветром.
+* **Бизнес-цель**: Реализовать первоклассную систему подзадач в стиле WEEEK — дочерние задачи не засоряют колонки доски отдельными карточками, а группируются внутри родительской карточки с прогресс-баром, чеклистом прямо на карточке, навигацией хлебных крошек и опциональной автоматизацией авто-завершения родительской задачи.
 * **Принятые микро-решения**:
-  1. **Переименование колонок (Column Renaming)**:
-     - Бэкенд: эндпоинт `PATCH /api/columns/{columnId}` уже принимает `name` и обновляет `columns.name`.
-     - UI: пункт «Переименовать» в контекстном меню 3 точек колонки + двойной клик на заголовок колонки.
-     - Инлайн `<input>` со стилем `bg-surface border border-subtle text-primary`.
-     - Сохранение по `Enter` или `blur`, отмена по `Escape`. При пустом вводе — возврат прежнего имени.
-  2. **Персистентный порядок досок (Board Reordering via DND & DB)**:
-     - Миграция `000012_board_positions.up.sql`: добавление `position DOUBLE PRECISION NOT NULL DEFAULT 1000.0` в таблицу `boards`.
-     - Обновление `backend/queries/projects.sql` (`ORDER BY position ASC, created_at ASC`), генерация `sqlc`.
-     - OpenAPI контракт: расширение схемы `boardItem` (PATCH) полем `position?: number (double)`.
-     - Реализация в `project.Service.UpdateBoard`, обновление репозитория.
-     - UI: DND сортировка карточек в `BoardsRail.tsx` через `@dnd-kit/core` и `@dnd-kit/sortable` с пересчетом дробных позиций (Fractional Indexing).
-  3. **Живой стохастический ветер в хвойной теме (`frost-pine` / `snowPreset.ts`)**:
-     - Замена детерминированной периодической гармоники `sin * cos` на живую многослойную модель:
-       - Медленно дрейфующий вектор базового ветра (базовый поток).
-       - Спорадические случайные порывы (gusts) с паузами затишья.
-       - Микро-турбулентность для естественного вращения и хаотичного разлета хвоинок и снежинок.
+  1. **Модель данных и миграция `000013_subtasks.up.sql`**:
+     - В таблице `tasks` добавляется поле `parent_id UUID NULL REFERENCES tasks(id) ON DELETE CASCADE`.
+     - Индекс `CREATE INDEX IF NOT EXISTS idx_tasks_parent_id ON tasks(parent_id) WHERE parent_id IS NOT NULL;`.
+     - Фильтрация доски: `ListTasksByBoard`, `ListTasksByColumn`, `ListInboxTasks` выбирают только задачи верхнего уровня (`WHERE parent_id IS NULL`), чтобы доска оставалась чистой.
+     - Эндпоинт/запрос получения подзадач: `GET /workspaces/{workspace_id}/tasks/{task_id}/subtasks` (или `subtasks` в теле задачи).
+     - Счетчики прогресса: вычисление `subtasks_count` и `subtasks_completed_count` для задач.
+  2. **Автоматизация завершения родительской задачи**:
+     - Добавлено правило/настройка автоматизации `auto_complete_parent_on_subtasks_done`.
+     - По умолчанию **выключено**. Можно включить в настройках автоматизаций колонки или проекта.
+     - При завершении последней подзадачи (когда `completed == count`), если автоматизация активна, EventBus генерирует действие завершения родительской задачи.
+  3. **UI/UX Канбан-карточки (`KanbanCard.tsx`, скриншот 1)**:
+     - Если у задачи есть подзадачи: отображается иконка дерева подзадач, прогресс-бар и счетчик `X/Y`.
+     - Раскрываемый список чеклиста подзадач с чекбоксами для быстрого закрытия подзадачи прямо с карточки без открытия шторки.
+  4. **UI/UX Шторки задачи (`TaskDrawer.tsx` / `TaskInspector.tsx`, скриншоты 2 и 3)**:
+     - Секция `⌄ Подзадачи X/Y` с чеклистом и инлайн-полем создания `+ Новая задача...` (Enter).
+     - Для подзадач: хлебные крошки в хедере `#86 > #88` и кликабельный переход к родителю `⮤ Родительская задача`.
 
 ---
 
-## 📋 Таблица задач спринта 0.7.7
+## 📋 Таблица задач спринта 0.8.0
 
 | # | Задача | Статус | Приоритет | Ответственный | Заметки и контракты |
 |---|--------|--------|-----------|---------------|---------------------|
-| 1 | **[Board Position Migration & Backend API]**: Миграция `000012_board_positions.up.sql`, `queries/projects.sql`, `openapi/paths/projects.yaml`, `UpdateBoard` с поддержкой `position` | 🔄 В работе | Критический | `backend_developer` (Шаг 1 и 2) | Contract-First |
-| 2 | **[Column Renaming UI]**: Инлайн-редактирование заголовка колонки в `KanbanColumn.tsx` (меню 3 точек + double click) | ⏳ Ожидает | Высокий | `frontend_developer` | `KanbanColumn.tsx` |
-| 3 | **[Board Reordering UI]**: DND перетаскивание карточек досок в `BoardsRail.tsx` с обновлением `position` | ⏳ Ожидает | Высокий | `frontend_developer` | `@dnd-kit`, `BoardsRail.tsx` |
-| 4 | **[Stochastic Wind Formula]**: Обновление формулы ветра в `snowPreset.ts` (стохастический шум, нерегулярные порывы) | ⏳ Ожидает | Средний | `frontend_developer` | `snowPreset.ts` |
-| 5 | **[Verification & Auto-Commit]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, авто-коммит и переход к Спринту 0.8.0 | ⏳ В очереди | Критический | Lead Orchestrator | Gatekeeper Pipeline |
+| 1 | **[Backend Staged Step 1: Subtasks DB & OpenAPI Contracts]**: Миграция `000013_subtasks.up.sql`, `queries/tasks.sql`, OpenAPI схемы (`parentId`, `subtasksCount`, `subtasksCompletedCount`, эндпоинт `/subtasks`), `make generate`, чистый домен `internal/domain/task/` | 🔄 В работе | Критический | `backend_developer` | Contract-First Step 1 |
+| 2 | **[Backend Staged Step 2: Subtasks Use Cases, Handlers & Automation]**: Реализация сценариев создания/получения подзадач, EventBus обработчик для правила `auto_complete_parent`, тесты | ⏳ Ожидает | Критический | `backend_developer` | Step 2 |
+| 3 | **[Frontend: Subtasks Drawer & Breadcrumbs]**: Секция `Подзадачи` в `TaskDrawer`, инлайн-создание, хлебные крошки `#parent > #child`, возврат к родителю | ⏳ Ожидает | Высокий | `frontend_developer` | `TaskDrawer.tsx`, `subtasksApi` |
+| 4 | **[Frontend: Kanban Card Subtasks Progress & Checklist]**: Прогресс-бар `X/Y` и раскрываемый чеклист прямо на карточке `KanbanCard.tsx` | ⏳ Ожидает | Высокий | `frontend_developer` | `KanbanCard.tsx` |
+| 5 | **[Verification Pipeline & Auto-Commit]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, авто-коммит | ⏳ В очереди | Критический | Lead Orchestrator | Gatekeeper Pipeline |
 
 ---
 
 ## 🎯 Definition of Done (DoD)
 
-- [ ] Колонку можно переименовать через меню 3 точек или double click; имя сразу сохраняется в БД.
-- [ ] Таблица `boards` имеет колонку `position DOUBLE PRECISION`, доски упорядочены по `position ASC, created_at ASC`.
-- [ ] В `BoardsRail` можно перетаскивать доски между собой, новый порядок персистится в БД.
-- [ ] Ветер в теме `frost-pine` имеет органичный стохастический характер со случайными порывами.
+- [ ] В БД таблица `tasks` поддерживает `parent_id` с каскадным удалением дочерних подзадач при удалении родителя.
+- [ ] Канбан-колонки отображают только задачи верхнего уровня (`parent_id IS NULL`).
+- [ ] В `TaskDrawer` можно добавлять подзадачи через инлайн-поле `+ Новая задача...`.
+- [ ] При клике на подзадачу она открывается в Drawer с хлебными крошками `#86 > #88` и ссылкой на родителя.
+- [ ] На канбан-карточке отображается прогресс-бар подзадач `X/Y` и быстрый чеклист.
+- [ ] Доступно правило автоматизации завершения родителя при выполнении всех подзадач (выключено по умолчанию).
 - [ ] Все тесты `make check-arch`, `npm run build`, `npm run lint`, `make test` проходят с 0 ошибок.

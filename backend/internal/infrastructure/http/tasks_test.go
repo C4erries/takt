@@ -30,96 +30,63 @@ type mockTaskService struct {
 	listSubtasksFn      func(ctx context.Context, wsID, parentID uuid.UUID) ([]*domainTask.Task, error)
 	createTagFn         func(ctx context.Context, input taskApp.CreateTagInput) (*domainTask.Tag, error)
 	listTagsFn          func(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Tag, error)
+	updateTagFn         func(ctx context.Context, input taskApp.UpdateTagInput) (*domainTask.Tag, error)
 	deleteTagFn         func(ctx context.Context, tagID, wsID uuid.UUID) error
 	addTagToTaskFn      func(ctx context.Context, taskID, tagID, wsID uuid.UUID) error
 	removeTagFromTaskFn func(ctx context.Context, taskID, tagID, wsID uuid.UUID) error
 }
 
 func (m *mockTaskService) GetInboxTasks(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Task, error) {
-	if m.getInboxFn != nil {
-		return m.getInboxFn(ctx, wsID)
-	}
+	if m.getInboxFn != nil { return m.getInboxFn(ctx, wsID) }
 	return nil, nil
 }
-
 func (m *mockTaskService) CreateInboxTask(ctx context.Context, input taskApp.CreateInboxTaskInput) (*domainTask.Task, error) {
-	if m.createInboxFn != nil {
-		return m.createInboxFn(ctx, input)
-	}
+	if m.createInboxFn != nil { return m.createInboxFn(ctx, input) }
 	return nil, nil
 }
-
 func (m *mockTaskService) ToggleTask(ctx context.Context, id, wsID uuid.UUID) (*domainTask.Task, error) {
-	if m.toggleFn != nil {
-		return m.toggleFn(ctx, id, wsID)
-	}
+	if m.toggleFn != nil { return m.toggleFn(ctx, id, wsID) }
 	return nil, nil
 }
-
 func (m *mockTaskService) DeleteTask(ctx context.Context, id, wsID uuid.UUID) error {
-	if m.deleteFn != nil {
-		return m.deleteFn(ctx, id, wsID)
-	}
+	if m.deleteFn != nil { return m.deleteFn(ctx, id, wsID) }
 	return nil
 }
-
-func (m *mockTaskService) CreateInitialInboxTasks(ctx context.Context, wsID uuid.UUID) error {
-	return nil
-}
-
+func (m *mockTaskService) CreateInitialInboxTasks(ctx context.Context, wsID uuid.UUID) error { return nil }
 func (m *mockTaskService) GetTodayTasks(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Task, error) {
-	if m.getTodayFn != nil {
-		return m.getTodayFn(ctx, wsID)
-	}
+	if m.getTodayFn != nil { return m.getTodayFn(ctx, wsID) }
 	return nil, nil
 }
-
 func (m *mockTaskService) UpdateTask(ctx context.Context, input taskApp.UpdateTaskInput) (*domainTask.Task, error) {
-	if m.updateFn != nil {
-		return m.updateFn(ctx, input)
-	}
+	if m.updateFn != nil { return m.updateFn(ctx, input) }
 	return nil, nil
 }
-
 func (m *mockTaskService) SetTaskFocus(ctx context.Context, input taskApp.SetFocusInput) (*domainTask.Task, error) {
-	if m.setFocusFn != nil {
-		return m.setFocusFn(ctx, input)
-	}
+	if m.setFocusFn != nil { return m.setFocusFn(ctx, input) }
 	return nil, nil
 }
-
 func (m *mockTaskService) ListSubtasks(ctx context.Context, wsID, parentID uuid.UUID) ([]*domainTask.Task, error) {
-	if m.listSubtasksFn != nil {
-		return m.listSubtasksFn(ctx, wsID, parentID)
-	}
+	if m.listSubtasksFn != nil { return m.listSubtasksFn(ctx, wsID, parentID) }
 	return nil, nil
 }
-
 func (m *mockTaskService) CreateTag(ctx context.Context, input taskApp.CreateTagInput) (*domainTask.Tag, error) {
-	if m.createTagFn != nil {
-		return m.createTagFn(ctx, input)
-	}
+	if m.createTagFn != nil { return m.createTagFn(ctx, input) }
 	return nil, nil
 }
-
 func (m *mockTaskService) ListWorkspaceTags(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Tag, error) {
-	if m.listTagsFn != nil {
-		return m.listTagsFn(ctx, wsID)
-	}
+	if m.listTagsFn != nil { return m.listTagsFn(ctx, wsID) }
 	return nil, nil
 }
-
+func (m *mockTaskService) UpdateTag(ctx context.Context, input taskApp.UpdateTagInput) (*domainTask.Tag, error) {
+	if m.updateTagFn != nil { return m.updateTagFn(ctx, input) }
+	return nil, nil
+}
 func (m *mockTaskService) DeleteTag(ctx context.Context, tagID, wsID uuid.UUID) error {
-	if m.deleteTagFn != nil {
-		return m.deleteTagFn(ctx, tagID, wsID)
-	}
+	if m.deleteTagFn != nil { return m.deleteTagFn(ctx, tagID, wsID) }
 	return nil
 }
-
 func (m *mockTaskService) AddTagToTask(ctx context.Context, taskID, tagID, wsID uuid.UUID) error {
-	if m.addTagToTaskFn != nil {
-		return m.addTagToTaskFn(ctx, taskID, tagID, wsID)
-	}
+	if m.addTagToTaskFn != nil { return m.addTagToTaskFn(ctx, taskID, tagID, wsID) }
 	return nil
 }
 

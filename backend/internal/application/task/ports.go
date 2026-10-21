@@ -16,6 +16,7 @@ type TagRepository interface {
 	CreateTag(ctx context.Context, tag *domainTask.Tag) error
 	GetTagByID(ctx context.Context, id, workspaceID uuid.UUID) (*domainTask.Tag, error)
 	ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error)
+	UpdateTag(ctx context.Context, tag *domainTask.Tag) error
 	DeleteTag(ctx context.Context, id, workspaceID uuid.UUID) error
 	AddTagToTask(ctx context.Context, taskID, tagID uuid.UUID) error
 	RemoveTagFromTask(ctx context.Context, taskID, tagID uuid.UUID) error

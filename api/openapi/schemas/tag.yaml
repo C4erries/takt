@@ -47,3 +47,18 @@ CreateTagRequest:
       default: "matcha"
       example: "matcha"
 
+UpdateTagRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 64
+      example: "focus"
+    colorHex:
+      type: string
+      minLength: 1
+      maxLength: 32
+      example: "#6366f1"
+
+

@@ -255,3 +255,36 @@ func (q *Queries) RemoveTagFromTask(ctx context.Context, arg RemoveTagFromTaskPa
 	_, err := q.db.Exec(ctx, removeTagFromTask, arg.TaskID, arg.TagID)
 	return err
 }
+
+const updateTag = `-- name: UpdateTag :one
+UPDATE tags
+SET name = COALESCE($3, name),
+    color_hex = COALESCE($4, color_hex)
+WHERE id = $1 AND workspace_id = $2
+RETURNING id, workspace_id, name, color_hex, created_at
+`
+
+type UpdateTagParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	Name        string      `json:"name"`
+	ColorHex    string      `json:"color_hex"`
+}
+
+func (q *Queries) UpdateTag(ctx context.Context, arg UpdateTagParams) (Tag, error) {
+	row := q.db.QueryRow(ctx, updateTag,
+		arg.ID,
+		arg.WorkspaceID,
+		arg.Name,
+		arg.ColorHex,
+	)
+	var i Tag
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.Name,
+		&i.ColorHex,
+		&i.CreatedAt,
+	)
+	return i, err
+}

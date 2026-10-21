@@ -18,7 +18,7 @@ import type { Task } from '@/shared/api';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanCard } from './KanbanCard';
 import { useKanbanDnd } from './useKanbanDnd';
-import { getStoredColumnAutomationConfig } from './ColumnAutomationsModal';
+import { getStoredColumnAutomationConfig } from './automations/ColumnAutomationsModal';
 
 export interface KanbanBoardProps {
   projectId: string;

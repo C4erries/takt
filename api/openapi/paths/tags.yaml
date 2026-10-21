@@ -41,6 +41,30 @@ tags:
       '409': { description: Tag with this name already exists in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
 tagItem:
+  patch:
+    tags: [Tags]
+    summary: Update a tag
+    operationId: updateTag
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: tag_id, in: path, required: true, schema: { type: string, format: uuid } }
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '../schemas/tag.yaml#/UpdateTagRequest' }
+    responses:
+      '200':
+        description: Tag updated successfully
+        content:
+          application/json:
+            schema: { $ref: '../schemas/tag.yaml#/Tag' }
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Tag not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
   delete:
     tags: [Tags]
     summary: Delete a tag

@@ -48,6 +48,27 @@ func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) 
 	return s.tagRepo.ListWorkspaceTags(ctx, workspaceID)
 }
 
+func (s *Service) UpdateTag(ctx context.Context, input UpdateTagInput) (*domainTask.Tag, error) {
+	tag, err := s.tagRepo.GetTagByID(ctx, input.TagID, input.WorkspaceID)
+	if err != nil {
+		return nil, err
+	}
+	if input.Name != nil {
+		if err := tag.SetName(*input.Name); err != nil {
+			return nil, err
+		}
+	}
+	if input.ColorHex != nil {
+		if err := tag.SetColorHex(*input.ColorHex); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.tagRepo.UpdateTag(ctx, tag); err != nil {
+		return nil, err
+	}
+	return tag, nil
+}
+
 func (s *Service) DeleteTag(ctx context.Context, tagID, workspaceID uuid.UUID) error {
 	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
 		return err

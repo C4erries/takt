@@ -11,7 +11,8 @@ import {
   useProjectAllColumnsQuery,
   useMoveTaskMutation,
 } from '@/entities/project';
-import { useSubtasksQuery, formatTaskNumber } from '@/entities/task';
+import { useSubtasksQuery, formatTaskNumber, useShowTaskNumbers } from '@/entities/task';
+import { MoveTaskModal } from './MoveTaskModal';
 
 export interface KanbanCardProps {
   task: Task;
@@ -21,6 +22,7 @@ export interface KanbanCardProps {
   isOverlay?: boolean;
   workspaceId?: string;
   projectId?: string;
+  showTaskNumber?: boolean;
 }
 
 const PRIORITY_BADGES: Record<Priority, { label: string; variant: 'persimmon' | 'denim' | 'straw' | 'matcha' | 'subtle' } | null> = {
@@ -68,12 +70,15 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   isOverlay = false,
   workspaceId,
   projectId,
+  showTaskNumber,
 }) => {
   const effectiveProjectId = projectId || (task.projectId ?? undefined);
   const boardsQuery = useProjectBoardsQuery(workspaceId, effectiveProjectId);
   const boards = boardsQuery.data ?? [];
   const { data: boardGroups = [] } = useProjectAllColumnsQuery(workspaceId, boards);
   const moveTaskMutation = useMoveTaskMutation(workspaceId, effectiveProjectId);
+
+  const currentBoard = boardGroups.find((bg) => bg.columns.some((c) => c.id === task.columnId));
 
   const subtasksQuery = useSubtasksQuery(
     (task.subtasksCount ?? 0) > 0 ? workspaceId : undefined,
@@ -84,9 +89,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const subtasksCompletedCount = task.subtasksCompletedCount ?? subtaskList.filter((s) => s.isCompleted).length;
   const hasSubtasks = subtasksCount > 0;
 
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [storedShowTaskNumbers] = useShowTaskNumbers();
+  const effectiveShowTaskNumber = showTaskNumber ?? storedShowTaskNumbers;
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
   const [isMarkingCompleted, setIsMarkingCompleted] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -110,15 +116,6 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       completionTimerRef.current = setTimeout(() => onToggle?.(task.id), 350);
     }
   };
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMenuOpen]);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -192,10 +189,12 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
           {/* Badges / Metadata */}
           <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
-            {/* WEEEK-style task ID badge */}
-            <span className="font-mono text-[10px] text-muted font-medium bg-canvas/60 px-1.5 py-0.5 rounded border border-subtle/50">
-              {taskShortNumber}
-            </span>
+            {/* WEEEK-style task ID badge (hidden by default) */}
+            {effectiveShowTaskNumber && (
+              <span className="font-mono text-[10px] text-muted font-medium bg-canvas/60 px-1.5 py-0.5 rounded border border-subtle/50">
+                {taskShortNumber}
+              </span>
+            )}
 
             {priorityBadge && (
               <Badge variant={priorityBadge.variant} size="sm">
@@ -303,71 +302,43 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
           onPointerDown={(e) => e.stopPropagation()}
         >
           {!isOverlay && (
-            <div className="relative" ref={menuRef}>
+            <>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsMenuOpen((prev) => !prev);
+                  setIsMoveModalOpen(true);
                 }}
                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-canvas text-muted hover:text-primary transition-opacity"
-                title="Переместить на доску..."
+                title="Переместить задачу..."
               >
                 <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
 
-              {isMenuOpen && (
-                <div
-                  className="absolute right-0 top-full mt-1 w-52 max-h-64 overflow-y-auto bg-surface border border-subtle rounded-xl shadow-washi-modal z-50 p-1.5 text-xs space-y-1.5"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-muted px-2 py-0.5">
-                    Переместить на доску
-                  </div>
-                  {boardGroups.length === 0 ? (
-                    <div className="px-2 py-1 text-[11px] text-muted italic">Загрузка досок...</div>
-                  ) : (
-                    boardGroups.map((bg) => (
-                      <div key={bg.boardName} className="space-y-0.5">
-                        <div className="text-[10px] font-semibold text-muted px-2 py-0.5 bg-canvas/40 rounded">
-                          {bg.boardName}
-                        </div>
-                        {bg.columns.map((c) => {
-                          const isCurrent = c.id === task.columnId;
-                          return (
-                            <button
-                              key={c.id}
-                              type="button"
-                              disabled={isCurrent}
-                              onClick={() => {
-                                moveTaskMutation.mutate({
-                                  taskId: task.id,
-                                  data: {
-                                    columnId: c.id,
-                                    position: task.position,
-                                    projectId: effectiveProjectId,
-                                  },
-                                });
-                                setIsMenuOpen(false);
-                              }}
-                              className={cn(
-                                'w-full text-left px-2.5 py-1 rounded-md text-xs transition-colors flex items-center justify-between',
-                                isCurrent
-                                  ? 'text-muted/60 bg-canvas/20 cursor-default'
-                                  : 'text-primary hover:bg-canvas hover:text-accent-solid'
-                              )}
-                            >
-                              <span>{c.name}</span>
-                              {isCurrent && <span className="text-[9px] text-muted font-mono">(здесь)</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
+              <MoveTaskModal
+                isOpen={isMoveModalOpen}
+                onClose={() => setIsMoveModalOpen(false)}
+                taskTitle={task.title}
+                currentBoardId={currentBoard?.board.id}
+                currentColumnId={task.columnId}
+                boardGroups={boardGroups.map((bg) => ({
+                  boardId: bg.board.id,
+                  boardName: bg.boardName,
+                  columns: bg.columns.map((c) => ({ id: c.id, name: c.name })),
+                }))}
+                onMove={(_targetBoardId, targetColumnId) => {
+                  moveTaskMutation.mutate({
+                    taskId: task.id,
+                    data: {
+                      columnId: targetColumnId,
+                      position: task.position,
+                      projectId: effectiveProjectId,
+                    },
+                  });
+                }}
+                isLoading={boardsQuery.isLoading}
+              />
+            </>
           )}
 
           <Checkbox

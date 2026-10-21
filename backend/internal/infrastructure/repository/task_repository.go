@@ -22,19 +22,6 @@ func NewTaskRepository(queries *sqlc.Queries) *TaskRepository {
 func (r *TaskRepository) Create(ctx context.Context, t *domainTask.Task) error {
 	q := getQuerier(ctx, r.queries)
 
-	var projectID, columnID pgtype.UUID
-	if t.ProjectID != nil {
-		projectID = uuidToPg(*t.ProjectID)
-	}
-	if t.ColumnID != nil {
-		columnID = uuidToPg(*t.ColumnID)
-	}
-
-	var completedAt pgtype.Timestamptz
-	if t.CompletedAt != nil {
-		completedAt = timeToPg(*t.CompletedAt)
-	}
-
 	var focusOrder pgtype.Int4
 	if t.FocusOrder != nil {
 		focusOrder = pgtype.Int4{Int32: int32(*t.FocusOrder), Valid: true}
@@ -42,12 +29,12 @@ func (r *TaskRepository) Create(ctx context.Context, t *domainTask.Task) error {
 
 	row, err := q.CreateTask(ctx, sqlc.CreateTaskParams{
 		WorkspaceID:         uuidToPg(t.WorkspaceID),
-		ProjectID:           projectID,
-		ColumnID:            columnID,
+		ProjectID:           uuidPtrToPg(t.ProjectID),
+		ColumnID:            uuidPtrToPg(t.ColumnID),
 		Title:               t.Title,
 		DescriptionMarkdown: t.DescriptionMarkdown,
 		IsCompleted:         t.IsCompleted,
-		CompletedAt:         completedAt,
+		CompletedAt:         timePtrToPg(t.CompletedAt),
 		DueDate:             dateToPg(t.DueDate),
 		Priority:            string(t.Priority),
 		FocusOrder:          focusOrder,
@@ -174,14 +161,6 @@ func (r *TaskRepository) GetTodayTasks(ctx context.Context, workspaceID uuid.UUI
 func (r *TaskRepository) Update(ctx context.Context, t *domainTask.Task) error {
 	q := getQuerier(ctx, r.queries)
 
-	var projectID, columnID pgtype.UUID
-	if t.ProjectID != nil {
-		projectID = uuidToPg(*t.ProjectID)
-	}
-	if t.ColumnID != nil {
-		columnID = uuidToPg(*t.ColumnID)
-	}
-
 	var focusOrder pgtype.Int4
 	if t.FocusOrder != nil {
 		focusOrder = pgtype.Int4{Int32: int32(*t.FocusOrder), Valid: true}
@@ -195,8 +174,8 @@ func (r *TaskRepository) Update(ctx context.Context, t *domainTask.Task) error {
 		DueDate:             dateToPg(t.DueDate),
 		Priority:            string(t.Priority),
 		FocusOrder:          focusOrder,
-		ProjectID:           projectID,
-		ColumnID:            columnID,
+		ProjectID:           uuidPtrToPg(t.ProjectID),
+		ColumnID:            uuidPtrToPg(t.ColumnID),
 		ParentID:            uuidPtrToPg(t.ParentID),
 	})
 	if err != nil {
@@ -277,6 +256,25 @@ func (r *TaskRepository) ListWorkspaceTags(ctx context.Context, workspaceID uuid
 		tags = append(tags, mapTagRowToDomain(row))
 	}
 	return tags, nil
+}
+
+func (r *TaskRepository) UpdateTag(ctx context.Context, tag *domainTask.Tag) error {
+	q := getQuerier(ctx, r.queries)
+	row, err := q.UpdateTag(ctx, sqlc.UpdateTagParams{
+		ID:          uuidToPg(tag.ID),
+		WorkspaceID: uuidToPg(tag.WorkspaceID),
+		Name:        tag.Name,
+		ColorHex:    tag.ColorHex,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domainTask.ErrTagNotFound
+		}
+		return err
+	}
+	tag.Name = row.Name
+	tag.ColorHex = row.ColorHex
+	return nil
 }
 
 func (r *TaskRepository) DeleteTag(ctx context.Context, id, workspaceID uuid.UUID) error {

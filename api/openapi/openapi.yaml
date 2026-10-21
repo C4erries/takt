@@ -144,6 +144,8 @@ components:
       $ref: './schemas/tag.yaml#/Tag'
     CreateTagRequest:
       $ref: './schemas/tag.yaml#/CreateTagRequest'
+    UpdateTagRequest:
+      $ref: './schemas/tag.yaml#/UpdateTagRequest'
     UpdateTaskRequest:
       $ref: './schemas/task.yaml#/UpdateTaskRequest'
     SetFocusRequest:

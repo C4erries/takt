@@ -22,6 +22,7 @@ type UseCases interface {
 	ListSubtasks(ctx context.Context, workspaceID, parentID uuid.UUID) ([]*domainTask.Task, error)
 	CreateTag(ctx context.Context, input CreateTagInput) (*domainTask.Tag, error)
 	ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error)
+	UpdateTag(ctx context.Context, input UpdateTagInput) (*domainTask.Tag, error)
 	DeleteTag(ctx context.Context, tagID, workspaceID uuid.UUID) error
 	AddTagToTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error
 	RemoveTagFromTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error

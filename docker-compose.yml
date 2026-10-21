@@ -54,8 +54,24 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       minio:
         condition: service_started
+
+  migrator:
+    image: migrate/migrate:v4.17.0
+    container_name: takt_migrator
+    restart: "no"
+    volumes:
+      - ./backend/migrations:/migrations:ro
+    command:
+      - -path=/migrations
+      - -database=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-takt_db}?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   frontend:
     build:

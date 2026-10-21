@@ -4,20 +4,14 @@ import { Input, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Tag } from '@/shared/api';
 import {
+  TAG_PALETTE,
+  DEFAULT_TAG_COLOR,
   useWorkspaceTagsQuery,
   useCreateTagMutation,
+  useUpdateTagMutation,
   useAddTagToTaskMutation,
   useRemoveTagFromTaskMutation,
 } from '@/entities/task';
-
-export const TAG_PALETTE = [
-  { name: 'Деним', hex: '#4A6B82' },
-  { name: 'Хурма', hex: '#D97746' },
-  { name: 'Матча', hex: '#566B44' },
-  { name: 'Солома', hex: '#B8943F' },
-  { name: 'Слива', hex: '#8A4F7D' },
-  { name: 'Суми', hex: '#5C5C5C' },
-];
 
 export interface TaskTagSectionProps {
   taskId: string;
@@ -44,12 +38,15 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
   };
 
   const [query, setQuery] = useState('');
-  const [selectedColor, setSelectedColor] = useState(TAG_PALETTE[2].hex); // Default: Matcha
+  const [selectedColor, setSelectedColor] = useState(DEFAULT_TAG_COLOR);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [activeColorPopoverTagId, setActiveColorPopoverTagId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const colorPopoverRef = useRef<HTMLDivElement | null>(null);
 
   const { data: allTags = [] } = useWorkspaceTagsQuery(workspaceId);
   const createTagMutation = useCreateTagMutation(workspaceId);
+  const updateTagMutation = useUpdateTagMutation(workspaceId);
   const addTagMutation = useAddTagToTaskMutation(workspaceId);
   const removeTagMutation = useRemoveTagFromTaskMutation(workspaceId);
 
@@ -97,11 +94,15 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
     setIsAdding(false);
   };
 
-  // Close dropdown on outside click
+  // Close dropdown and color popovers on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsDropdownOpen(false);
+      }
+      if (colorPopoverRef.current && !colorPopoverRef.current.contains(target)) {
+        setActiveColorPopoverTagId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -113,28 +114,85 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
       {/* Existing Tags Capsules (NO # symbol) */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {tags && tags.length > 0 ? (
-          tags.map((tag) => (
-            <span
-              key={tag.id}
-              className="inline-flex items-center gap-1.5 bg-accent-surface/80 text-primary text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-subtle transition-colors shadow-washi-sm"
-            >
-              {tag.colorHex && (
-                <span
-                  className="w-2 h-2 rounded-full shrink-0 shadow-xs"
-                  style={{ backgroundColor: tag.colorHex }}
-                />
-              )}
-              <span>{tag.name}</span>
-              <button
-                type="button"
-                onClick={() => removeTagMutation.mutate({ taskId, tag })}
-                className="text-muted hover:text-primary transition-colors ml-0.5 rounded-full p-0.5 hover:bg-canvas/50"
-                title="Удалить тег"
-              >
-                <X className="w-2.5 h-2.5" />
-              </button>
-            </span>
-          ))
+          tags.map((tag) => {
+            const isPopoverOpen = activeColorPopoverTagId === tag.id;
+            return (
+              <div key={tag.id} className="relative inline-block">
+                <span className="inline-flex items-center gap-1.5 bg-accent-surface/80 text-primary text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-subtle transition-colors shadow-washi-sm">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveColorPopoverTagId(isPopoverOpen ? null : tag.id);
+                    }}
+                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs cursor-pointer hover:scale-125 transition-transform"
+                    style={{ backgroundColor: tag.colorHex || DEFAULT_TAG_COLOR }}
+                    title="Изменить цвет метки"
+                    aria-label={`Изменить цвет метки ${tag.name}`}
+                  />
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveColorPopoverTagId(isPopoverOpen ? null : tag.id);
+                    }}
+                    className="cursor-pointer hover:text-accent-solid transition-colors"
+                    title="Изменить цвет метки"
+                  >
+                    {tag.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeTagMutation.mutate({ taskId, tag });
+                    }}
+                    className="text-muted hover:text-primary transition-colors ml-0.5 rounded-full p-0.5 hover:bg-canvas/50"
+                    title="Удалить тег"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+
+                {/* Color Palette Popover (12 Colors) */}
+                {isPopoverOpen && (
+                  <div
+                    ref={colorPopoverRef}
+                    className="absolute left-0 top-full mt-1.5 z-50 bg-surface border border-subtle rounded-xl shadow-washi-modal p-2 w-48 text-xs space-y-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-muted px-1">
+                      Цвет «{tag.name}»
+                    </div>
+                    <div className="grid grid-cols-6 gap-1.5 p-1">
+                      {TAG_PALETTE.map((c) => {
+                        const isSelected = (tag.colorHex || '').toLowerCase() === c.hex.toLowerCase();
+                        return (
+                          <button
+                            key={c.hex}
+                            type="button"
+                            title={c.name}
+                            onClick={() => {
+                              updateTagMutation.mutate({ tagId: tag.id, colorHex: c.hex });
+                              setActiveColorPopoverTagId(null);
+                            }}
+                            style={{ backgroundColor: c.hex }}
+                            className={cn(
+                              'w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-115 cursor-pointer',
+                              isSelected
+                                ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface scale-105'
+                                : 'opacity-85 hover:opacity-100'
+                            )}
+                          >
+                            {isSelected && <Check className="w-3 h-3 text-white drop-shadow-xs" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
         ) : (
           !isAdding && <span className="text-[11px] text-muted italic">Нет тегов</span>
         )}
@@ -207,7 +265,7 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                 </div>
               )}
 
-              {/* Create New Tag with Pastel Color Palette */}
+              {/* Create New Tag with 12 Shades Palette */}
               {cleanQuery && !exactMatch && (
                 <div className="pt-1 border-t border-subtle/60 space-y-2">
                   <div className="flex items-center justify-between px-1">
@@ -216,12 +274,12 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                     </span>
                   </div>
 
-                  {/* 6 Pastel Colors Palette (D-071-2) */}
+                  {/* 12 Color Palette */}
                   <div className="space-y-1 px-1">
                     <span className="text-[10px] font-mono uppercase tracking-wider text-muted">
                       Цвет метки
                     </span>
-                    <div className="flex items-center gap-2 pt-0.5">
+                    <div className="grid grid-cols-6 gap-1.5 pt-0.5">
                       {TAG_PALETTE.map((c) => {
                         const isSelected = selectedColor === c.hex;
                         return (
@@ -232,7 +290,7 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                             onClick={() => setSelectedColor(c.hex)}
                             style={{ backgroundColor: c.hex }}
                             className={cn(
-                              'w-5 h-5 rounded-full flex items-center justify-center transition-transform hover:scale-110',
+                              'w-5 h-5 rounded-full flex items-center justify-center transition-transform hover:scale-110 cursor-pointer',
                               isSelected
                                 ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface scale-105'
                                 : 'opacity-80 hover:opacity-100'

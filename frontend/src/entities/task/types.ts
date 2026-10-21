@@ -18,6 +18,11 @@ export type {
   CreateInboxTaskRequest,
 };
 
+export interface UpdateTagRequest {
+  colorHex?: string;
+  name?: string;
+}
+
 export interface CreateTaskData {
   title: string;
   descriptionMarkdown?: string;

@@ -157,3 +157,70 @@ func TestTask_SetFocusOrder(t *testing.T) {
 	require.ErrorIs(t, err, ErrInvalidFocusOrder)
 }
 
+func TestTag_SetName(t *testing.T) {
+	tag, err := NewTag(uuid.New(), "initial", "#ffffff")
+	require.NoError(t, err)
+
+	t.Run("valid name", func(t *testing.T) {
+		err := tag.SetName("updated-name")
+		require.NoError(t, err)
+		assert.Equal(t, "updated-name", tag.Name)
+	})
+
+	t.Run("invalid empty name", func(t *testing.T) {
+		err := tag.SetName("   ")
+		require.ErrorIs(t, err, ErrInvalidTagName)
+	})
+
+	t.Run("invalid character in name", func(t *testing.T) {
+		err := tag.SetName("invalid/name")
+		require.ErrorIs(t, err, ErrInvalidTagName)
+	})
+}
+
+func TestTag_SetColorHex(t *testing.T) {
+	tag, err := NewTag(uuid.New(), "tag", "#ffffff")
+	require.NoError(t, err)
+
+	validCases := []string{
+		"#123",
+		"#abc",
+		"#ABC",
+		"#123456",
+		"#abcdef",
+		"#ABCDEF",
+		"#1a2B3c",
+		"  #6366f1  ",
+	}
+
+	for _, color := range validCases {
+		t.Run("valid_"+color, func(t *testing.T) {
+			err := tag.SetColorHex(color)
+			require.NoError(t, err)
+			assert.Equal(t, strings.TrimSpace(color), tag.ColorHex)
+		})
+	}
+
+	invalidCases := []string{
+		"",
+		"   ",
+		"123456",
+		"#12",
+		"#1234",
+		"#12345",
+		"#1234567",
+		"#ggg",
+		"#12345z",
+		"red",
+		"#",
+	}
+
+	for _, color := range invalidCases {
+		t.Run("invalid_"+color, func(t *testing.T) {
+			err := tag.SetColorHex(color)
+			require.ErrorIs(t, err, ErrInvalidTagColor)
+		})
+	}
+}
+
+

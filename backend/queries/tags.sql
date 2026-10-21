@@ -17,6 +17,13 @@ SELECT * FROM tags
 WHERE workspace_id = $1
 ORDER BY name ASC;
 
+-- name: UpdateTag :one
+UPDATE tags
+SET name = COALESCE($3, name),
+    color_hex = COALESCE($4, color_hex)
+WHERE id = $1 AND workspace_id = $2
+RETURNING *;
+
 -- name: DeleteTag :exec
 DELETE FROM tags
 WHERE id = $1 AND workspace_id = $2;

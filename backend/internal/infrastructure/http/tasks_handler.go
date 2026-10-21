@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
@@ -23,18 +23,16 @@ func respondTaskDomainError(c echo.Context, err error) error {
 	switch {
 	case errors.Is(err, domainTask.ErrTaskNotFound), errors.Is(err, domainTask.ErrTagNotFound):
 		status, code = http.StatusNotFound, "NOT_FOUND"
-	case errors.Is(err, domainTask.ErrInvalidTaskTitle),
-		errors.Is(err, domainTask.ErrInvalidPriority),
-		errors.Is(err, domainTask.ErrInvalidTagName),
-		errors.Is(err, domainTask.ErrInvalidTagColor),
-		errors.Is(err, domainTask.ErrInvalidFocusOrder),
-		errors.Is(err, domainTask.ErrSelfParenting):
+	case errors.Is(err, domainTask.ErrInvalidTaskTitle), errors.Is(err, domainTask.ErrInvalidPriority),
+		errors.Is(err, domainTask.ErrInvalidTagName), errors.Is(err, domainTask.ErrInvalidTagColor),
+		errors.Is(err, domainTask.ErrInvalidFocusOrder), errors.Is(err, domainTask.ErrSelfParenting):
 		status, code = http.StatusBadRequest, "BAD_REQUEST"
 	case errors.Is(err, domainTask.ErrTagAlreadyAttached):
 		status, code = http.StatusConflict, "TAG_ALREADY_ATTACHED"
 	}
 	msg := err.Error()
 	if status == http.StatusInternalServerError {
+		log.Printf("[ERROR 500] %s %s: %+v", c.Request().Method, c.Request().RequestURI, err)
 		msg = "Internal server error"
 	}
 	return c.JSON(status, generated.Error{Code: code, Message: msg})
@@ -67,12 +65,10 @@ func mapDomainTaskToGenerated(t *domainTask.Task) generated.Task {
 
 	var subCount, subDoneCount *int
 	if t.SubtasksCount > 0 {
-		c := t.SubtasksCount
-		subCount = &c
+		subCount = &t.SubtasksCount
 	}
 	if t.SubtasksCompletedCount > 0 || t.SubtasksCount > 0 {
-		c := t.SubtasksCompletedCount
-		subDoneCount = &c
+		subDoneCount = &t.SubtasksCompletedCount
 	}
 
 	return generated.Task{
@@ -102,15 +98,13 @@ func (h *Handler) GetInboxTasks(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, generated.Error{Code: "UNAUTHORIZED", Message: err.Error()})
 	}
-
 	tasks, err := h.taskService.GetInboxTasks(c.Request().Context(), workspaceID)
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-
-	resp := make([]generated.Task, 0, len(tasks))
-	for _, t := range tasks {
-		resp = append(resp, mapDomainTaskToGenerated(t))
+	resp := make([]generated.Task, len(tasks))
+	for i, t := range tasks {
+		resp[i] = mapDomainTaskToGenerated(t)
 	}
 	return c.JSON(http.StatusOK, resp)
 }
@@ -133,15 +127,12 @@ func (h *Handler) CreateInboxTask(c echo.Context) error {
 
 	var dueDate *time.Time
 	if req.DueDate != nil {
-		d := req.DueDate.Time
-		dueDate = &d
+		dueDate = &req.DueDate.Time
 	}
-
 	priority := domainTask.PriorityNone
 	if req.Priority != nil && *req.Priority != "" {
 		priority = domainTask.Priority(*req.Priority)
 	}
-
 	desc := ""
 	if req.DescriptionMarkdown != nil {
 		desc = *req.DescriptionMarkdown
@@ -175,14 +166,6 @@ func (h *Handler) ToggleTaskCompletion(c echo.Context, id openapi_types.UUID) er
 	return c.JSON(http.StatusOK, mapDomainTaskToGenerated(t))
 }
 
-func (h *Handler) ToggleTask(c echo.Context) error {
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid task ID format"})
-	}
-	return h.ToggleTaskCompletion(c, id)
-}
-
 func (h *Handler) DeleteTask(c echo.Context, id openapi_types.UUID) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
@@ -200,10 +183,9 @@ func (h *Handler) GetTodayTasks(c echo.Context, workspaceId openapi_types.UUID) 
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-
-	resp := make([]generated.Task, 0, len(tasks))
-	for _, t := range tasks {
-		resp = append(resp, mapDomainTaskToGenerated(t))
+	resp := make([]generated.Task, len(tasks))
+	for i, t := range tasks {
+		resp[i] = mapDomainTaskToGenerated(t)
 	}
 	return c.JSON(http.StatusOK, resp)
 }
@@ -213,10 +195,9 @@ func (h *Handler) ListSubtasks(c echo.Context, workspaceId openapi_types.UUID, t
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-
-	resp := make([]generated.Task, 0, len(tasks))
-	for _, t := range tasks {
-		resp = append(resp, mapDomainTaskToGenerated(t))
+	resp := make([]generated.Task, len(tasks))
+	for i, t := range tasks {
+		resp[i] = mapDomainTaskToGenerated(t)
 	}
 	return c.JSON(http.StatusOK, resp)
 }
@@ -293,10 +274,9 @@ func (h *Handler) ListWorkspaceTags(c echo.Context, workspaceId openapi_types.UU
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-
-	resp := make([]generated.Tag, 0, len(tags))
-	for _, tag := range tags {
-		resp = append(resp, mapDomainTagToGenerated(tag))
+	resp := make([]generated.Tag, len(tags))
+	for i, tag := range tags {
+		resp[i] = mapDomainTagToGenerated(tag)
 	}
 	return c.JSON(http.StatusOK, resp)
 }
@@ -311,7 +291,6 @@ func (h *Handler) CreateWorkspaceTag(c echo.Context, workspaceId openapi_types.U
 	if req.ColorHex != nil {
 		color = *req.ColorHex
 	}
-
 	tag, err := h.taskService.CreateTag(c.Request().Context(), taskApp.CreateTagInput{
 		WorkspaceID: workspaceId,
 		Name:        req.Name,
@@ -320,8 +299,25 @@ func (h *Handler) CreateWorkspaceTag(c echo.Context, workspaceId openapi_types.U
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-
 	return c.JSON(http.StatusCreated, mapDomainTagToGenerated(tag))
+}
+
+func (h *Handler) UpdateTag(c echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error {
+	var req generated.UpdateTagJSONRequestBody
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
+	}
+
+	tag, err := h.taskService.UpdateTag(c.Request().Context(), taskApp.UpdateTagInput{
+		TagID:       tagId,
+		WorkspaceID: workspaceId,
+		Name:        req.Name,
+		ColorHex:    req.ColorHex,
+	})
+	if err != nil {
+		return respondTaskDomainError(c, err)
+	}
+	return c.JSON(http.StatusOK, mapDomainTagToGenerated(tag))
 }
 
 func (h *Handler) DeleteWorkspaceTag(c echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error {

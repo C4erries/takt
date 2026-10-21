@@ -1012,6 +1012,15 @@ type UpdateProjectRequest struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// UpdateTagRequest defines model for UpdateTagRequest.
+type UpdateTagRequest struct {
+	// ColorHex Example: #6366f1
+	ColorHex *string `json:"colorHex,omitempty"`
+
+	// Name Example: focus
+	Name *string `json:"name,omitempty"`
+}
+
 // UpdateTaskRequest defines model for UpdateTaskRequest.
 type UpdateTaskRequest struct {
 	// ColumnId Example: c0000000-0000-0000-0000-000000000001
@@ -1250,6 +1259,9 @@ type UpdateProjectBoardJSONRequestBody UpdateProjectBoardJSONBody
 // CreateWorkspaceTagJSONRequestBody defines body for CreateWorkspaceTag for application/json ContentType.
 type CreateWorkspaceTagJSONRequestBody = CreateTagRequest
 
+// UpdateTagJSONRequestBody defines body for UpdateTag for application/json ContentType.
+type UpdateTagJSONRequestBody = UpdateTagRequest
+
 // UpdateTaskJSONRequestBody defines body for UpdateTask for application/json ContentType.
 type UpdateTaskJSONRequestBody = UpdateTaskRequest
 
@@ -1393,6 +1405,9 @@ type ServerInterface interface {
 	// DeleteWorkspaceTag Delete a tag
 	// (DELETE /workspaces/{workspace_id}/tags/{tag_id})
 	DeleteWorkspaceTag(ctx echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error
+	// UpdateTag Update a tag
+	// (PATCH /workspaces/{workspace_id}/tags/{tag_id})
+	UpdateTag(ctx echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error
 	// GetTodayTasks Get today's focused and due tasks
 	// (GET /workspaces/{workspace_id}/tasks/today)
 	GetTodayTasks(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -2254,6 +2269,30 @@ func (w *ServerInterfaceWrapper) DeleteWorkspaceTag(ctx echo.Context) error {
 	return err
 }
 
+// UpdateTag converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateTag(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "tag_id" -------------
+	var tagId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tag_id", ctx.Param("tag_id"), &tagId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter tag_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateTag(ctx, workspaceId, tagId)
+	return err
+}
+
 // GetTodayTasks converts echo context to params.
 func (w *ServerInterfaceWrapper) GetTodayTasks(ctx echo.Context) error {
 	var err error
@@ -2568,6 +2607,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.ListWorkspaceTags, options.OperationMiddlewares["listWorkspaceTags"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.CreateWorkspaceTag, options.OperationMiddlewares["createWorkspaceTag"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.DeleteWorkspaceTag, options.OperationMiddlewares["deleteWorkspaceTag"]...)
+	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.UpdateTag, options.OperationMiddlewares["updateTag"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/today", wrapper.GetTodayTasks, options.OperationMiddlewares["getTodayTasks"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id", wrapper.UpdateTask, options.OperationMiddlewares["updateTask"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.ListTaskAttachments, options.OperationMiddlewares["listTaskAttachments"]...)

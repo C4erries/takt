@@ -48,3 +48,10 @@ type CreateTagInput struct {
 	Name        string
 	ColorHex    string
 }
+
+type UpdateTagInput struct {
+	TagID       uuid.UUID
+	WorkspaceID uuid.UUID
+	Name        *string
+	ColorHex    *string
+}

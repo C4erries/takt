@@ -3,6 +3,7 @@ import type {
   Task,
   Tag,
   CreateTagRequest,
+  UpdateTagRequest,
   UpdateTaskRequest,
   SetFocusRequest,
   CreateInboxTaskRequest,
@@ -56,6 +57,17 @@ export const taskDetailApi = {
   ): Promise<Tag> {
     return request<Tag>(`/workspaces/${workspaceId}/tags`, {
       method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateWorkspaceTag(
+    workspaceId: string,
+    tagId: string,
+    data: UpdateTagRequest
+  ): Promise<Tag> {
+    return request<Tag>(`/workspaces/${workspaceId}/tags/${tagId}`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
   },

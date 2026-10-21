@@ -3,4 +3,5 @@ export * from './KanbanCard';
 export * from './KanbanColumn';
 export * from './KanbanBoard';
 export * from './useKanbanDnd';
-export * from './ColumnAutomationsModal';
+export * from './automations/ColumnAutomationsModal';
+export * from './MoveTaskModal';

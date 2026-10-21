@@ -15,7 +15,7 @@ import {
   type ColumnStatusCategory,
 } from '@/entities/project';
 import { KanbanCard } from './KanbanCard';
-import { ColumnAutomationsModal } from './ColumnAutomationsModal';
+import { ColumnAutomationsModal } from './automations/ColumnAutomationsModal';
 
 export interface KanbanColumnProps {
   column: Column;

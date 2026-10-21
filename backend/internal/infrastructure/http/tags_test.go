@@ -198,3 +198,88 @@ func TestHandler_RemoveTagFromTask_Success(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, rec.Code)
 }
 
+func TestHandler_UpdateTag(t *testing.T) {
+	wsID := uuid.New()
+	tagID := uuid.New()
+	now := time.Now().UTC()
+
+	t.Run("success update tag", func(t *testing.T) {
+		mockSvc := &mockTaskService{
+			updateTagFn: func(ctx context.Context, input taskApp.UpdateTagInput) (*domainTask.Tag, error) {
+				return &domainTask.Tag{
+					ID:          tagID,
+					WorkspaceID: wsID,
+					Name:        *input.Name,
+					ColorHex:    *input.ColorHex,
+					CreatedAt:   now,
+				}, nil
+			},
+		}
+
+		handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
+		payload := `{"name":"Backend","colorHex":"#10B981"}`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPatch, "/api/v1/workspaces/"+wsID.String()+"/tags/"+tagID.String(), bytes.NewReader([]byte(payload)))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		require.NoError(t, handler.UpdateTag(c, wsID, tagID))
+		assert.Equal(t, http.StatusOK, rec.Code)
+
+		var tag generated.Tag
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &tag))
+		assert.Equal(t, "Backend", tag.Name)
+		assert.Equal(t, "#10B981", tag.ColorHex)
+	})
+
+	t.Run("invalid payload", func(t *testing.T) {
+		handler := NewHandler(nil, "0.2.1", false, nil, &mockTaskService{}, nil, nil)
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPatch, "/api/v1/workspaces/"+wsID.String()+"/tags/"+tagID.String(), bytes.NewReader([]byte("invalid json")))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		require.NoError(t, handler.UpdateTag(c, wsID, tagID))
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		mockSvc := &mockTaskService{
+			updateTagFn: func(ctx context.Context, input taskApp.UpdateTagInput) (*domainTask.Tag, error) {
+				return nil, domainTask.ErrInvalidTagColor
+			},
+		}
+		handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
+		payload := `{"colorHex":"invalid"}`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPatch, "/api/v1/workspaces/"+wsID.String()+"/tags/"+tagID.String(), bytes.NewReader([]byte(payload)))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		require.NoError(t, handler.UpdateTag(c, wsID, tagID))
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("tag not found", func(t *testing.T) {
+		mockSvc := &mockTaskService{
+			updateTagFn: func(ctx context.Context, input taskApp.UpdateTagInput) (*domainTask.Tag, error) {
+				return nil, domainTask.ErrTagNotFound
+			},
+		}
+		handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
+		payload := `{"name":"NewName"}`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPatch, "/api/v1/workspaces/"+wsID.String()+"/tags/"+tagID.String(), bytes.NewReader([]byte(payload)))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		require.NoError(t, handler.UpdateTag(c, wsID, tagID))
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+	})
+}
+
+

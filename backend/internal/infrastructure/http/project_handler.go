@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -41,6 +42,7 @@ func (h *Handler) respondDomainError(c echo.Context, err error) error {
 	}
 	msg := err.Error()
 	if status == http.StatusInternalServerError {
+		log.Printf("[ERROR 500] %s %s: %+v", c.Request().Method, c.Request().RequestURI, err)
 		msg = "Internal server error"
 	}
 	return c.JSON(status, generated.Error{Code: code, Message: msg})

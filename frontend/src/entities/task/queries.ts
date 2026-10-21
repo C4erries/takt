@@ -30,37 +30,14 @@ export const useCreateTaskMutation = () => {
   return useMutation({
     mutationFn: async (req: CreateInboxTaskRequest) => {
       if (!getAuthToken()) {
-        const demoTask: Task = {
-          id: `task-${Date.now()}`,
-          workspaceId: 'demo-workspace',
-          parentId: req.parentId,
-          title: req.title,
-          descriptionMarkdown: req.descriptionMarkdown ?? '',
-          isCompleted: false,
-          priority: req.priority ?? 'none',
-          position: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        return demoTask;
+        return { id: `task-${Date.now()}`, workspaceId: 'demo-workspace', parentId: req.parentId, title: req.title, descriptionMarkdown: req.descriptionMarkdown ?? '', isCompleted: false, priority: req.priority ?? 'none', position: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       }
       return tasksApi.createInbox(req);
     },
     onMutate: async (newTask) => {
       await queryClient.cancelQueries({ queryKey: TASKS_QUERY_KEY });
       const previousTasks = queryClient.getQueryData<Task[]>(TASKS_QUERY_KEY);
-      const optimisticTask: Task = {
-        id: `temp-${Date.now()}`,
-        workspaceId: '',
-        parentId: newTask.parentId,
-        title: newTask.title,
-        descriptionMarkdown: newTask.descriptionMarkdown ?? '',
-        isCompleted: false,
-        priority: newTask.priority ?? 'none',
-        position: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      const optimisticTask: Task = { id: `temp-${Date.now()}`, workspaceId: '', parentId: newTask.parentId, title: newTask.title, descriptionMarkdown: newTask.descriptionMarkdown ?? '', isCompleted: false, priority: newTask.priority ?? 'none', position: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       queryClient.setQueryData<Task[]>(TASKS_QUERY_KEY, (old = []) => [optimisticTask, ...old]);
       return { previousTasks };
     },
@@ -69,12 +46,8 @@ export const useCreateTaskMutation = () => {
     },
     onSettled: (_data, _err, variables) => {
       if (getAuthToken()) {
-        queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-        if (variables?.parentId) {
-          queryClient.invalidateQueries({ queryKey: ['subtasks'] });
-        }
+        [TASKS_QUERY_KEY, ['tasks'], ['project-tasks']].forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
+        if (variables?.parentId) queryClient.invalidateQueries({ queryKey: ['subtasks'] });
       }
     },
   });
@@ -107,30 +80,12 @@ export const useCreateSubtaskMutation = (workspaceId?: string) => {
   return useMutation({
     mutationFn: async ({ title, parentId }: CreateSubtaskVariables) => {
       if (!getAuthToken()) {
-        const demoSubtask: Task = {
-          id: `subtask-${Date.now()}`,
-          workspaceId: workspaceId || 'demo-workspace',
-          parentId,
-          title,
-          descriptionMarkdown: '',
-          isCompleted: false,
-          priority: 'none',
-          position: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        return demoSubtask;
+        return { id: `subtask-${Date.now()}`, workspaceId: workspaceId || 'demo-workspace', parentId, title, descriptionMarkdown: '', isCompleted: false, priority: 'none', position: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
       }
       return tasksApi.createInbox({ title, parentId });
     },
     onSuccess: (_newTask, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['subtasks', workspaceId, variables.parentId] });
-      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'today', workspaceId] });
+      [TASKS_QUERY_KEY, ['subtasks', workspaceId, variables.parentId], ['subtasks'], ['tasks', workspaceId], ['tasks'], ['project-tasks'], ['tasks', 'today', workspaceId]].forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
     },
   });
 };
@@ -159,11 +114,7 @@ export const useToggleTaskMutation = () => {
     },
     onSettled: () => {
       if (getAuthToken()) {
-        queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
-        queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['tasks', 'today'] });
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+        [TASKS_QUERY_KEY, ['project-tasks'], ['tasks', 'today'], ['tasks'], ['subtasks']].forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
       }
     },
   });
@@ -192,11 +143,7 @@ export const useDeleteTaskMutation = () => {
     },
     onSettled: () => {
       if (getAuthToken()) {
-        queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
-        queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['tasks', 'today'] });
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+        [TASKS_QUERY_KEY, ['project-tasks'], ['tasks', 'today'], ['tasks'], ['subtasks']].forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
       }
     },
   });
@@ -252,11 +199,7 @@ export const useUpdateTaskMutation = (workspaceId?: string) => {
       queryClient.setQueriesData<Task[]>({ queryKey: ['subtasks'] }, updateInList);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'today', workspaceId] });
-      queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+      [TASKS_QUERY_KEY, ['tasks', 'today', workspaceId], ['project-tasks'], ['tasks'], ['subtasks']].forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
     },
   });
 };
@@ -309,14 +252,7 @@ export const useCreateTagMutation = (workspaceId?: string) => {
   return useMutation({
     mutationFn: async (req: CreateTagRequest) => {
       if (!workspaceId || !getAuthToken()) {
-        const demo: Tag = {
-          id: `tag-${Date.now()}`,
-          workspaceId: workspaceId || 'demo-workspace',
-          name: req.name,
-          colorHex: req.colorHex || 'matcha',
-          createdAt: new Date().toISOString(),
-        };
-        return demo;
+        return { id: `tag-${Date.now()}`, workspaceId: workspaceId || 'demo-workspace', name: req.name, colorHex: req.colorHex || 'matcha', createdAt: new Date().toISOString() };
       }
       return taskDetailApi.createWorkspaceTag(workspaceId, req);
     },
@@ -373,8 +309,45 @@ export const useRemoveTagFromTaskMutation = (workspaceId?: string) => {
       queryClient.setQueriesData<Task[]>({ queryKey: ['project-tasks'] }, removeTag);
     },
     onSettled: () => {
+      [TASKS_QUERY_KEY, ['tasks', 'today', workspaceId], ['project-tasks']].forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
+    },
+  });
+};
+
+export interface UpdateTagVariables {
+  tagId: string;
+  colorHex: string;
+}
+
+export const useUpdateTagMutation = (workspaceId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ tagId, colorHex }: UpdateTagVariables) => {
+      if (!workspaceId || !getAuthToken()) {
+        const demo: Tag = { id: tagId, workspaceId: workspaceId || 'demo-workspace', name: '', colorHex, createdAt: new Date().toISOString() };
+        return demo;
+      }
+      try {
+        return await taskDetailApi.updateWorkspaceTag(workspaceId, tagId, { colorHex });
+      } catch {
+        return { id: tagId, workspaceId, name: '', colorHex, createdAt: new Date().toISOString() };
+      }
+    },
+    onMutate: async ({ tagId, colorHex }) => {
+      const updateTagColor = (tag: Tag) => (tag.id === tagId ? { ...tag, colorHex } : tag);
+      const updateTasksTags = (old: Task[] | undefined) =>
+        old ? old.map((t) => ({ ...t, tags: t.tags?.map(updateTagColor) })) : [];
+
+      queryClient.setQueryData<Tag[]>(['tags', workspaceId], (old = []) => old.map(updateTagColor));
+      queryClient.setQueriesData<Task[]>({ queryKey: ['tasks'] }, updateTasksTags);
+      queryClient.setQueriesData<Task[]>({ queryKey: ['project-tasks'] }, updateTasksTags);
+      queryClient.setQueriesData<Task[]>({ queryKey: TASKS_QUERY_KEY }, updateTasksTags);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags', workspaceId] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', workspaceId] });
       queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'today', workspaceId] });
       queryClient.invalidateQueries({ queryKey: ['project-tasks'] });
     },
   });

@@ -94,6 +94,7 @@ type Querier interface {
 	UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error)
 	UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Column, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error)
+	UpdateTag(ctx context.Context, arg UpdateTagParams) (Tag, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, error)
 	UpdateWorkspaceName(ctx context.Context, arg UpdateWorkspaceNameParams) (Workspace, error)
 }

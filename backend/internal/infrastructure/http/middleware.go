@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -226,6 +227,10 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 		if m, ok := he.Message.(string); ok {
 			message = m
 		}
+	}
+
+	if code >= http.StatusInternalServerError {
+		log.Printf("[ERROR 500] %s %s: %+v", c.Request().Method, c.Request().RequestURI, err)
 	}
 
 	_ = c.JSON(code, map[string]interface{}{

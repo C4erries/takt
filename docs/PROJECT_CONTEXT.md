@@ -325,6 +325,7 @@ takt/
 │   │   └── frontend.md                # Feature-Sliced, Дизайн-паспорт «Soft Editorial GTD», UI-Kit
 │   ├── ROADMAP.md
 │   ├── CURRENT_SPRINT.md
+│   ├── BACKLOG.md                     # Бэклог задач и будущих спринтов
 │   ├── decisions/                     # Реестр ADR
 │   └── sprints/                       # Архив спринтов
 │

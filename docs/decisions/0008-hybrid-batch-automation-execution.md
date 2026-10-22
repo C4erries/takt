@@ -194,3 +194,4 @@ type BatchSweepCompletedEvent struct {
 4. Добавить `BatchSweepCompletedEvent` в `backend/internal/domain/events/`.
 5. Обновить строку ADR-0008 в индексной таблице `docs/decisions/README.md`.
 6. Покрыть unit-тестами: `canUseBatchPath` (table-driven), mock `BatchTaskExecutor`.
+

@@ -4,63 +4,73 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.8.0b (Мигратор в Docker Compose, умный перенос задач Linear-style, богатая палитра тегов, скрытие номеров задач и Error Observability) 🟢 ФАЗА Б (Завершено & Верифицировано)
+## Текущий спринт: Спринт 0.9.0 — «UX Quick Wins» 🟡 ФАЗА А (Готово к запуску)
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Штаб)
 
-* **Бизнес-цель**: Полностью автоматизировать накат миграций через отдельный сервис `migrator` в Docker Compose, внедрить прозрачное логирование ошибок в бэкенде, предоставить мощный диалог перемещения задачи между любыми досками и колонками с поиском, расширить палитру тегов до 12 цветов с возможностью редактирования и убрать визуальный шум от номеров задач по умолчанию.
+* **Бизнес-цель**: Убрать четыре мелких UX-раздражителя за один быстрый спринт. Все задачи — S-размер, без миграций БД, без новых OpenAPI эндпоинтов. Деплоится одним коммитом.
+
+* **Связь с бэклогом**: Подробные спецификации каждой задачи — в [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B10, TASK-B07, TASK-B11, TASK-B04).
+
 * **Принятые микро-решения**:
-  1. **Сервис `migrator` в `docker-compose.yml`**:
-     - Добавляем сервис `migrator` на базе официального образа `migrate/migrate:v4.17.0`.
-     - Монтируем папку `backend/migrations` в `/migrations`.
-     - Команда: `-path=/migrations -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable" up`.
-     - Сервис `backend` настраивается с зависимостью:
-       ```yaml
-       depends_on:
-         postgres: { condition: service_healthy }
-         migrator: { condition: service_completed_successfully }
-       ```
-     - Гарантирует автоматический накат всех миграций ДО старта бэкенда при каждом запуске!
-  2. **Error Observability в бэкенде**:
-     - В `tasks_handler.go`, `project_handler.go` и `middleware.go`: при `status >= 500` выводить подробный `log.Printf("[ERROR 500] %s %s: %+v", c.Request().Method, c.Request().RequestURI, err)` в консоль контейнера.
-     - Для клиента сохраняем чистый безопасный ответ `"Internal server error"`, но в `docker compose logs backend` видна полная причина сбойного запроса.
-  3. **Масштабируемый диалог перемещения задачи (Linear/WEEEK-style Move Modal)**:
-     - Создание компонента `MoveTaskModal.tsx`:
-       - Строка быстрого поиска по названию досок и колонок проекта.
-       - Двухуровневый аккордеон/дерево: раскрывающиеся доски с колонками.
-       - Ограничение по высоте `max-h-80 overflow-y-auto` — окно никогда не вылезает за пределы экрана даже при 50+ досках.
-       - Клик по колонке целевой доски мгновенно вызывает `moveTaskMutation` (или `updateTaskMutation`) с обновлением `board_id` и `column_id`.
-  4. **Расширенная палитра тегов (12 цветов) и редактирование цвета тега**:
-     - В `TagSection.tsx` и `TagCapsule.tsx`:
-       - Добавление всплывающего поповера смены цвета тега при клике на тег в шторке.
-       - Палитра из 12 оттенков: Persimmon, Terracotta, Amber, Bamboo, Emerald, Ocean, Denim, Indigo, Lavender, Plum, Cocoa, Sand.
-       - Мутация обновления цвета тега `updateTagColor` (или `PATCH /tags/{id}`).
-  5. **Скрытие номеров задач по умолчанию**:
-     - В `KanbanCard.tsx` показ бейджа `#86` зависит от флага `showTaskNumbers`.
-     - По умолчанию `showTaskNumbers = false` (номер скрыт).
-     - В панель вида/фильтрации (`ViewToggle.tsx` или настройки доски) добавляется аккуратный тумблер `Номера задач`.
+
+  1. **TASK-B10 — Ребрендинг «SLA»**:
+     - Менять только UI-лейбл в `TRIGGER_OPTIONS`. API-код `column_sla_timer` сохраняется.
+     - `column_sla_timer` → **«Задержка в колонке»**
+     - Параметр «Порог нахождения:» → **«Задача в колонке дольше чем:»**
+     - Единственный файл: `frontend/src/features/automations/useRuleBuilder.ts`
+
+  2. **TASK-B07 — Авто-названия автоматизаций**:
+     - Убрать имя колонки из авто-формулы: было `` `${triggerLabel} [${col}] → ${actionLabel}` ``, стало `` `${triggerLabel} → ${actionLabel}` ``
+     - Бейдж `#A-01` в `AutomationCard.tsx` — индекс по `created_at ASC` внутри воркспейса: `#A-${(index+1).toString().padStart(2, '0')}`
+     - Существующие правила с именами не переименовываем автоматически
+
+  3. **TASK-B11 — Клавиатурная навигация в тегах**:
+     - `focusedIndex` state, `ArrowDown`/`ArrowUp` с wrap-around, `Enter` = выбрать, `Escape` = закрыть
+     - При вводе в input — сбрасывать `focusedIndex` в `-1`
+     - `scrollIntoView({ block: 'nearest' })` на активном `li`
+
+  4. **TASK-B04 — Счётчик активных задач**:
+     - SQL: `COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL) AS active_tasks_count`
+     - Текст в UI: `X колонок · Y в работе`
+     - Нужны: изменение SQL-запроса в `backend/queries/projects.sql` + обновление `BoardCard.tsx`
 
 ---
 
-## 📋 Таблица задач спринта 0.8.0b
+## 📋 2. Таблица задач спринта 0.9.0
 
-| # | Задача | Статус | Приоритет | Ответственный | Заметки и контракты |
-|---|--------|--------|-----------|---------------|---------------------|
-| 1 | **[Docker Compose Migrator & Error Logging]**: Добавление сервиса `migrator` в `docker-compose.yml`, `depends_on: service_completed_successfully`, dev-логирование 500 в бэкенде | 🔄 В работе | Критический | `backend_developer` | `docker-compose.yml`, `tasks_handler.go`, `middleware.go` |
-| 2 | **[Tag Color Editing & 12-Color Palette]**: Расширенная палитра из 12 токенов, редактирование цвета тега в шторке с сохранением в API | ⏳ Ожидает | Высокий | `frontend_developer` | `TaskTagSection.tsx`, `tags.ts` |
-| 3 | **[Move Task Modal with Search]**: Диалог перемещения задачи между любыми досками и колонками с поиском и скроллом `max-h-80` | ⏳ Ожидает | Высокий | `frontend_developer` | `MoveTaskModal.tsx`, `KanbanCard.tsx` |
-| 4 | **[Task ID Visibility Toggle]**: Скрытие `#ID` по умолчанию, тумблер в настройках вида доски | ⏳ Ожидает | Средний | `frontend_developer` | `KanbanCard.tsx`, `ViewToggle.tsx` |
-| 5 | **[Verification Pipeline & Auto-Commit]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, авто-коммит | ⏳ В очереди | Критический | Lead Orchestrator | Gatekeeper Pipeline |
+| # | Задача | Статус | Приоритет | Ответственный | Файлы |
+|---|--------|--------|-----------|---------------|-------|
+| 1 | **[B10] SLA Rebrand**: переименовать `column_sla_timer` → «Задержка в колонке», параметр «Порог нахождения» → «Задача в колонке дольше чем» | ⏳ Ожидает | Средний | `frontend_developer` | `useRuleBuilder.ts`, `RuleBuilderSections.tsx` |
+| 2 | **[B07] Auto-Names**: убрать имя колонки из авто-названия, добавить бейдж `#A-NN` в `AutomationCard` | ⏳ Ожидает | Средний | `frontend_developer` | `useRuleBuilder.ts`, `AutomationCard.tsx` |
+| 3 | **[B11] Tag Keyboard Nav**: `focusedIndex` + `ArrowDown/Up/Enter/Escape` + `scrollIntoView` в компоненте автокомплита тегов | ⏳ Ожидает | Средний | `frontend_developer` | `TaskTagSection.tsx` или `TagInput.tsx` |
+| 4 | **[B04] Active Tasks Counter**: обновить SQL-запрос и подпись на карточке доски | ⏳ Ожидает | Средний | `backend_developer` + `frontend_developer` | `projects.sql`, `BoardCard.tsx` |
+| 5 | **[Verification]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, коммит | ⏳ В очереди | Критический | Lead Orchestrator | — |
 
 ---
 
-## 🎯 Definition of Done (DoD)
+## 🎯 3. Definition of Done (DoD)
 
-- [ ] В `docker-compose.yml` есть отдельный сервис `migrator`, миграции накатываются автоматически перед запуском бэкенда.
-- [ ] Ошибки 500 подробно логируются в консоль бэкенда с указанием метода, URL и первопричины.
-- [ ] Пользователь может легко перенести задачу на любую доску и в любую колонку через модалку с поиском.
-- [ ] Цвет любого тега можно изменить в шторке задачи, выбрав из 12 стильных оттенков.
-- [ ] Номера задач `#ID` скрыты по умолчанию на карточках канбана и включаются только при активации тумблера.
-- [ ] Все тесты `make check-arch`, `npm run build`, `npm run lint`, `make test` проходят с 0 ошибок.
+- [ ] Триггер «SLA таймер в колонке» отображается как «Задержка в колонке» в конструкторе автоматизаций.
+- [ ] Авто-название правила не содержит имя колонки: «Задержка в колонке → Архивировать задачу».
+- [ ] Каждое правило в списке имеет компактный бейдж `#A-01`, `#A-02` и т.д.
+- [ ] Нажатие `ArrowDown`/`ArrowUp` при открытом выпадающем списке тегов перемещает выделение; `Enter` — добавляет тег; `Escape` — закрывает список.
+- [ ] Карточка доски в боковой панели показывает `X колонок · Y в работе` (только незакрытые корневые задачи).
+- [ ] `make check-arch` — 0 ошибок.
+- [ ] `npm run build && npm run lint` — 0 ошибок.
+- [ ] `make test` — все тесты зелёные.
+
+---
+
+## 🗓️ 4. Очередь следующих спринтов
+
+| Спринт | Задачи | Суть |
+|--------|--------|------|
+| **0.9.1** | B12, B02, B13 | Хоткей заметок при создании · Привязка подзадачи · Менеджер тегов |
+| **0.9.2** | B03, B08 | Дублирование задачи · Скоуп автоматизаций по доске |
+| **0.9.3** | B05 | Архив задач (миграция + Batch SQL ADR-0008) |
+| **0.9.4** | B06 | История изменений задачи (новая таблица + EventBus listener) |
+| **0.9.5** | B09 | Профиль пользователя: имя + аватар |
+| **Future** | B01 | Subtasks Automation Suite (L-задача) |

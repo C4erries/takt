@@ -1,196 +1,601 @@
 # Бэклог задач и будущих спринтов Takt (`BACKLOG.md`)
 
-> В этом документе фиксируются идеи, архитектурные предложения и проработанные задачи для будущих спринтов проекта Takt.
-> Формат задач оптимизирован для прямого взятия в разработку: четкая продуктовая цель, технический скоуп и ключевые архитектурные инварианты.
+> В этом документе фиксируются проработанные задачи для будущих спринтов проекта Takt.
+> Все решения по каждой задаче зафиксированы в сессии от 2026-10-22.
+> Формат: чёткая продуктовая цель, принятые технические решения, конкретные файлы для изменения.
 >
-> **Легенда статусов**: 🔲 В бэклоге (Ready for Sprint) · 🟡 На проектировании (In Design) · 🔵 В спринте (Active) · ✅ Реализовано (Done)
+> **Легенда статусов**: 🔲 В бэклоге (Ready) · 🔵 В спринте (Active) · ✅ Реализовано (Done)
 
 ---
 
-## 📑 Индекс задач бэклога
+## 📑 Индекс задач по спринтам
 
-| ID | Категория | Название задачи | Приоритет | Сложность |
+| Спринт | ID | Категория | Название задачи | Сложность |
 |---|---|---|---|---|
-| **TASK-B01** | Автоматизации | [Автоматизация подзадач (Subtasks Automation Suite)](#task-b01-автоматизация-подзадач-subtasks-automation-suite) | Высокий | L |
-| **TASK-B02** | Задачи / UI | [Эргономика поля ввода подзадач и привязка существующей задачи](#task-b02-эргономика-поля-ввода-подзадач-и-привязка-существующей-задачи) | Высокий | M |
-| **TASK-B03** | Задачи / Core | [Глубокое копирование задачи с подзадачами (Deep Task Duplicate)](#task-b03-глубокое-копирование-задачи-с-подзадачами-deep-task-duplicate) | Средний | M |
-| **TASK-B04** | Канбан / UX | [Счетчик активных задач на карточке доски (Active Tasks Only)](#task-b04-счетчик-активных-задач-на-карточке-доски-active-tasks-only) | Средний | S |
-| **TASK-B05** | Задачи / Архив | [Корзина-архив задач, сброс выполненных из колонки и авто-архивация](#task-b05-корзина-архив-задач-сброс-выполненных-из-колонки-и-авто-архивация) | Высокий | L |
-| **TASK-B06** | Аудит / UX | [История изменений задачи в шторке (Task Activity Audit Log)](#task-b06-история-изменений-задачи-в-шторке-task-activity-audit-log) | Средний | L |
-| **TASK-B07** | Автоматизации | [Человекопонятные авто-названия автоматизаций и уникальные ID](#task-b07-человекопонятные-авто-названия-автоматизаций-и-уникальные-id) | Средний | S |
-| **TASK-B08** | Автоматизации | [Уровни скоупа автоматизаций: Проект, Доска, Колонка, Задача](#task-b08-уровни-скоупа-автоматизаций-проект-доска-колонка-задача) | Высокий | L |
-| **TASK-B09** | Профиль / Настройки | [Профиль пользователя и кастомные шаблоны досок по умолчанию](#task-b09-профиль-пользователя-и-кастомные-шаблоны-досок-по-умолчанию) | Средний | M |
-| **TASK-B10** | Автоматизации / UX | [Ребрендинг триггера «SLA» в понятные термины (Дедлайн / Тайм-аут)](#task-b10-ребрендинг-триггера-sla-в-понятные-термины-дедлайн--тайм-аут) | Низкий | S |
-| **TASK-B11** | Теги / UX | [Клавиатурная навигация стрелками в выпадающем списке тегов](#task-b11-клавиатурная-навигация-стрелками-в-выпадающем-списке-тегов) | Средний | S |
-| **TASK-B12** | Создание задач / UX | [Хоткей раскрытия поля заметок (Markdown) при быстром создании задачи](#task-b12-хоткей-раскрытия-поля-заметок-markdown-при-быстром-создании-задачи) | Средний | S |
-| **TASK-B13** | Теги / Управление | [Централизованный менеджер тегов воркспейса (CRUD и аудит тегов)](#task-b13-централизованный-менеджер-тегов-воркспейса-crud-и-аудит-тегов) | Высокий | M |
+| **0.9.0** | **TASK-B10** | Автоматизации / UX | [Ребрендинг «SLA» в понятные термины](#task-b10) | S |
+| **0.9.0** | **TASK-B07** | Автоматизации | [Авто-названия без имени колонки + бейдж #A-01](#task-b07) | S |
+| **0.9.0** | **TASK-B11** | Теги / UX | [Клавиатурная навигация в выпадающем списке тегов](#task-b11) | S |
+| **0.9.0** | **TASK-B04** | Канбан / UX | [Счётчик только активных задач на карточке доски](#task-b04) | S |
+| **0.9.1** | **TASK-B12** | Создание задач / UX | [Хоткей раскрытия заметок при быстром создании](#task-b12) | S |
+| **0.9.1** | **TASK-B02** | Задачи / UI | [Эргономика подзадач + привязка существующей задачи](#task-b02) | M |
+| **0.9.1** | **TASK-B13** | Теги / Управление | [Централизованный менеджер тегов воркспейса](#task-b13) | M |
+| **0.9.2** | **TASK-B03** | Задачи / Core | [Глубокое копирование задачи (Deep Duplicate)](#task-b03) | M |
+| **0.9.2** | **TASK-B08** | Автоматизации | [Скоуп автоматизаций: фильтрация по доске в Listener](#task-b08) | S |
+| **0.9.3** | **TASK-B05** | Задачи / Архив | [Архив задач: секция, батч-сброс, авто-архивация](#task-b05) | L |
+| **0.9.4** | **TASK-B06** | Аудит / UX | [История изменений задачи в шторке](#task-b06) | L |
+| **0.9.5** | **TASK-B09** | Профиль | [Профиль пользователя: имя и аватар](#task-b09) | M |
+| **Future** | **TASK-B01** | Автоматизации | [Subtasks Automation Suite](#task-b01) | L |
 
 ---
 
-## 🎯 Спецификации задач бэклога
+## 🏃 Спринт 0.9.0 — «UX Quick Wins» (только фронтенд, без миграций)
 
-### TASK-B01: Автоматизация подзадач (Subtasks Automation Suite)
-* **Категория**: `internal/domain/automation`, `frontend/src/features/automations`
-* **Продуктовая цель**: Позволить правилам автоматизаций реагировать на жизненный цикл подзадач и манипулировать ими, автоматизируя типовые GTD-процессы.
-* **Техническое описание**:
-  - **Новые триггеры**:
-    - `all_subtasks_completed`: все подзадачи родителя перешли в статус `is_completed = true`.
-    - `subtask_created`: к задаче добавлена новая подзадача.
-    - `any_subtask_completed`: выполнена очередная подзадача.
-    - `subtask_reopened`: подзадача возвращена в работу из выполненных.
-  - **Новые условия (DSL Conditions)**:
-    - `subtasks_all_completed` (булево: все закрыты).
-    - `subtasks_count` (число подзадач с операторами `>`, `>=`, `==`, `<`, `0`).
-    - `subtasks_completed_count` (число выполненных подзадач).
-  - **Новые действия (DSL Actions)**:
-    - `create_subtask`: авто-создание новой подзадачи по шаблону (заголовок, приоритет).
-    - `complete_all_subtasks`: каскадное завершение всех подзадач.
-    - `reopen_all_subtasks`: каскадный сброс статуса подзадач.
-    - `update_subtasks_priority`: синхронизация приоритета подзадач.
-  - **Архитектурный инвариант (Recursion Guard)**: автоматизациям строго запрещено создавать подзадачи у подзадач (глубина иерархии ограничена 1 уровнем), чтобы исключить бесконечные циклы создания сущностей.
+> **Цель**: Убрать мелкие UX-раздражители за один спринт. Все задачи — S-размер, только фронтенд, деплоится одним коммитом.
 
 ---
 
-### TASK-B02: Эргономика поля ввода подзадач и привязка существующей задачи
-* **Категория**: `frontend/src/widgets/task-drawer`, `backend/internal/application/task`
-* **Продуктовая цель**: Улучшить тактильный комфорт при вводе названия подзадачи и дать возможность трансформировать уже существующую задачу в подзадачу текущей.
-* **Техническое описание**:
-  - **Верстка инпута**: увеличить высоту поля ввода названия подзадачи в `TaskSubtasksSection.tsx` на `4–6px` (`py-1.5`, `min-h-[34px]`), чтобы буквы не упирались в границы и визуально соответствовали стандарту Дизайн-паспорта.
-  - **Привязка существующей задачи (Attach Existing Task)**:
-    - Рядом с кнопкой создания подзадачи добавить действие «Привязать существующую задачу».
-    - Модальный поповер со строкой поиска по задачам текущего воркспейса (с фильтрацией `parent_id IS NULL` и исключением самой себя).
-    - Выбор задачи отправляет `PATCH /tasks/{id}` с параметром `{ parentId: currentTask.id }`.
-    - Задача мгновенно исчезает из верхнего уровня колонок канбана и начинает отображаться в блоке подзадач родителя.
+### TASK-B10: Ребрендинг «SLA» в понятные термины {#task-b10}
+
+🔲 **Статус**: В бэклоге · **Сложность**: S · **Только фронтенд**
+
+**Продуктовая цель**: Убрать техническую аббревиатуру SLA из UI конструктора автоматизаций, заменив на термины которые понимает любой пользователь.
+
+**Принятые решения**:
+- Бэкенд **не трогаем** — API-код `column_sla_timer` остаётся, меняем только UI-лейбл.
+- `column_sla_timer` → «**Задержка в колонке**» (задача в колонке дольше N часов)
+- `task_timer` → «**Таймер задачи**» (без изменений, уже нормально)
+- Параметр «Порог нахождения:» → «**Задача в колонке дольше чем:**»
+
+**Файлы**:
+- `frontend/src/features/automations/useRuleBuilder.ts` — строка с `column_sla_timer` в `TRIGGER_OPTIONS`
 
 ---
 
-### TASK-B03: Глубокое копирование задачи с подзадачами (Deep Task Duplicate)
-* **Категория**: `backend/internal/application/task`, `frontend/src/features/kanban-board`
-* **Продуктовая цель**: Позволить дублировать комплексную задачу вместе со всеми ее чек-пунктами и подзадачами без риска связать копию с оригинальными подзадачами.
-* **Техническое описание**:
-  - Новый эндпоинт `POST /workspaces/{wid}/tasks/{task_id}/duplicate`.
-  - Транзакционный Use Case:
-    - Создается новая родительская задача с префиксом «[Копия] » или аналогичным названием, копируются описание, проект, колонка, приоритет и теги.
-    - Выбираются все активные подзадачи исходной задачи.
-    - Для каждой подзадачи вставляется **новая физическая запись в таблицу `tasks`** с генерацией нового UUID и указанием `parent_id = newParentTask.id`.
-    - Полная изоляция: изменения в копиях подзадач не аффектят оригинал.
+### TASK-B07: Авто-названия автоматизаций без имени колонки + бейдж #A-NN {#task-b07}
+
+🔲 **Статус**: В бэклоге · **Сложность**: S · **Только фронтенд**
+
+**Продуктовая цель**: Убрать иллюзию привязки правила к конкретной колонке по имени — правило применяется по ID, а не по названию.
+
+**Принятые решения**:
+- Формат авто-названия: `«[Триггер] → [Действие]»` — **без** имени колонки
+- Текущий код: `` `${triggerLabel} [${col}] → ${actionLabel}` ``
+- Новый код: `` `${triggerLabel} → ${actionLabel}` ``
+- Бейдж `#A-01` — порядковый номер по индексу в отсортированном по `created_at` списке воркспейса: `#A-${(index+1).toString().padStart(2, '0')}`
+- Существующие правила со старыми именами **не переименовываем** автоматически
+
+**Файлы**:
+- `frontend/src/features/automations/useRuleBuilder.ts` — логика формирования `name` (убрать блок с `col`)
+- `frontend/src/features/automations/AutomationCard.tsx` — добавить бейдж `#A-NN`
 
 ---
 
-### TASK-B04: Счетчик активных задач на карточке доски (Active Tasks Only)
-* **Категория**: `backend/queries/projects.sql`, `frontend/src/widgets/boards-panel`
-* **Продуктовая цель**: Отображать в карточках досок в боковом рейле реальный объем работы, исключив выполненные задачи из счетчика.
-* **Техническое описание**:
-  - В SQL-запросе подсчета задач по доскам обновить условие:
-    `COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL) AS active_tasks_count`.
-  - В `BoardCard.tsx` отображать подпись: `X колонок · Y в работе` (вместо общего числа созданных когда-либо карточек).
+### TASK-B11: Клавиатурная навигация стрелками в списке тегов {#task-b11}
+
+🔲 **Статус**: В бэклоге · **Сложность**: S · **Только фронтенд**
+
+**Продуктовая цель**: Выбирать тег из выпадающего списка без отрыва рук от клавиатуры.
+
+**Принятые решения**:
+- `focusedIndex` state: `-1` = ничего не выделено, обновляется при `ArrowDown`/`ArrowUp`
+- При вводе в input — сбросить `focusedIndex` в `-1`
+- `Enter` при `focusedIndex >= 0` → выбрать `filteredTags[focusedIndex]`
+- `Escape` → закрыть dropdown, вернуть фокус на input
+- Автоскролл: `useRef` на активный `li` → `scrollIntoView({ block: 'nearest' })`
+- Wrap-around: стрелка вниз с последнего → первый, вверх с первого → последний
+
+**Файлы**:
+- Найти компонент автокомплита тегов (вероятно `TaskTagSection.tsx` или отдельный `TagInput.tsx` в `task-drawer`)
+- Добавить `onKeyDown` обработчик и `focusedIndex` state
 
 ---
 
-### TASK-B05: Корзина-архив задач, сброс выполненных из колонки и авто-архивация
-* **Категория**: `backend/internal/domain/task`, `internal/application/task`, `frontend/src/features/kanban-board`
-* **Продуктовая цель**: Разгрузка досок от накопившихся завершенных задач без потери доступа к их истории.
-* **Техническое описание**:
-  - **Схема БД**: колонка `is_archived BOOLEAN NOT NULL DEFAULT FALSE`, `archived_at TIMESTAMPTZ NULL`, индекс `idx_tasks_workspace_archived`.
-  - **Действие колонки (Column Flush)**: в контекстном меню колонки (3 точки) пункт «Сгрузить выполненные в архив». Вызывает пакетный `POST /columns/{id}/archive-completed` (помечает `is_archived = true` для всех `is_completed = true` в этой колонке).
-  - **Автоматизация по расписанию/таймеру**:
-    - Действие правила `archive_task`.
-    - Настройка на колонке: «Если задача выполнена и находится в колонке > N часов/дней $\rightarrow$ автоперемещение в архив».
-  - **Раздел «Архив»**: модальное окно или панель просмотра архивированных задач с возможностью разархивировать задачу обратно на доску.
+### TASK-B04: Счётчик только активных задач на карточке доски {#task-b04}
+
+🔲 **Статус**: В бэклоге · **Сложность**: S · **Бэкенд + фронтенд**
+
+**Продуктовая цель**: Показывать реальный объём работы на доске — только незакрытые корневые задачи.
+
+**Принятые решения**:
+- SQL: `COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL) AS active_tasks_count`
+- Подпись в UI: `X колонок · Y в работе` (если Y = 0 → `нет задач`)
+- Миграция БД **не нужна** — только изменение SQL-запроса и DTO
+
+**Файлы**:
+- `backend/queries/projects.sql` — обновить запрос подсчёта задач по доскам
+- `frontend/src/widgets/boards-panel/BoardCard.tsx` — обновить подпись
 
 ---
 
-### TASK-B06: История изменений задачи в шторке (Task Activity Audit Log)
-* **Категория**: `backend/migrations`, `internal/domain/task`, `frontend/src/widgets/task-drawer`
-* **Продуктовая цель**: Обеспечить прозрачность изменений задачи (когда создан дедлайн, кто перенес задачу, смена приоритетов).
-* **Техническое описание**:
-  - Новая таблица `task_activities`:
-    - `id UUID PRIMARY KEY`, `task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE`.
-    - `user_id UUID NOT NULL REFERENCES users(id)`.
-    - `activity_type VARCHAR(64)` (`status_changed`, `column_moved`, `due_date_set`, `priority_changed`, `tag_added`, `subtask_added`).
-    - `payload JSONB NOT NULL DEFAULT '{}'`.
-    - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`.
-  - Запись событий через доменную шину `EventBus`.
-  - UI: вкладка/секция «История» в шторке задачи (`TaskDrawer.tsx`) с хронологической лентой событий и временными метками.
+## 🏃 Спринт 0.9.1 — «UX Polish: Создание задач, Подзадачи, Теги»
+
+> **Цель**: Три связанных UX-улучшения вокруг создания задач и управления тегами.
 
 ---
 
-### TASK-B07: Человекопонятные авто-названия автоматизаций и уникальные ID
-* **Категория**: `frontend/src/features/automations`, `backend/internal/application/automation`
-* **Продуктовая цель**: Избавить список правил от путаницы при наличии колонок с одинаковыми именами на разных досках и сформировать читаемые заголовки.
-* **Техническое описание**:
-  - Генерация читаемого функционального имени правила на основе связки `[Триггер] -> [Действие]`:
-    - Например: *«Автозавершение при закрытии всех подзадач»*, *«Назначение приоритета при перемещении в колонку»*, *«Авто-архивация через 3 дня после выполнения»*.
-    - Исключить жесткое зашивание локальных имен колонок в авто-заголовок, чтобы не создавать иллюзию привязки к названию вместо ID.
-  - Добавить компактный визуальный идентификатор правила (например, `#A-01`, `#A-02`) для быстрого различения однотипных правил.
+### TASK-B12: Хоткей раскрытия заметок при быстром создании задачи {#task-b12}
+
+🔲 **Статус**: В бэклоге · **Сложность**: S · **Только фронтенд**
+
+**Продуктовая цель**: Форма быстрого создания задачи остаётся однострочной, но даёт мгновенный доступ к описанию без открытия модалки.
+
+**Принятые решения**:
+- По умолчанию: только однострочный input заголовка
+- `Shift+Enter` в input заголовка → плавно раскрывает textarea описания (motion/react `AnimatePresence`)
+- После раскрытия: фокус автоматически переходит в textarea
+- `Ctrl+Enter` → создать задачу с заголовком И описанием
+- Обычный `Enter` → создать задачу только с заголовком (textarea сворачивается)
+- Анимация: `initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}`
+
+**Файлы**:
+- `frontend/src/features/kanban-board/KanbanColumn.tsx` — форма инлайн-создания
 
 ---
 
-### TASK-B08: Уровни скоупа автоматизаций: Проект, Доска, Колонка, Задача
-* **Категория**: `backend/internal/domain/automation`, `frontend/src/features/automations`
-* **Продуктовая цель**: Гибкое масштабирование автоматизаций без необходимости настраивать одинаковые правила на каждой доске или колонке по отдельности.
-* **Техническое описание**:
-  - В сущность `AutomationRule` добавляется поле скоупа: `scope_type ENUM ('workspace', 'project', 'board', 'column', 'task')` и `scope_id UUID NULL`.
-  - **Проектные правила**: действуют сквозным образом на все доски выбранного проекта (напр. единое правило дедлайнов).
-  - **Досочные правила**: применяются ко всем колонкам конкретной доски.
-  - **Колоночные правила**: триггеры входа/выхода конкретной стадии.
-  - **Оптимизация EventBus**: диспетчеризация событий только тем подписчикам, чей скоуп совпадает с контекстом события, без лишнего прогона по всей базе задач.
+### TASK-B02: Эргономика подзадач + привязка существующей задачи {#task-b02}
+
+🔲 **Статус**: В бэклоге · **Сложность**: M · **Фронтенд + минимальный бэкенд**
+
+**Продуктовая цель**: Комфортный ввод подзадач и возможность превратить уже существующую задачу в подзадачу.
+
+**Принятые решения**:
+- **Эргономика**: `min-h-[34px] py-1.5` в поле ввода названия подзадачи
+- **Привязка задачи**: кнопка-иконка `Link` рядом с `+` добавить подзадачу → поповер с поиском
+- **Поиск**: использовать существующий `GET /workspaces/{id}/search?q=...`
+- **Фильтрация в поиске**: исключить задачи, у которых уже есть `parent_id` (нельзя привязать подзадачу как подзадачу) и задачи у которых есть свои подзадачи (нельзя создать 2-й уровень вложенности), и саму текущую задачу
+- **Endpoint**: существующий `PATCH /workspaces/{wid}/tasks/{id}` с `{ parentId: currentTask.id }` — уже реализован
+- **После привязки**: инвалидируем query `tasks` — задача исчезает с канбана, появляется в подзадачах родителя
+
+**Файлы**:
+- `frontend/src/widgets/task-drawer/TaskSubtasksSection.tsx` — высота инпута + кнопка Link
+- `frontend/src/widgets/task-drawer/AttachTaskPopover.tsx` — **новый** компонент (поиск + список)
 
 ---
 
-### TASK-B09: Профиль пользователя и кастомные шаблоны досок по умолчанию
-* **Категория**: `backend/internal/domain/user`, `frontend/src/features/user-profile`
-* **Продуктовая цель**: Персонализация рабочего процесса и быстрая инициализация новых досок по индивидуальному стандарту пользователя.
-* **Техническое описание**:
-  - Настройки профиля: сохранение дефолтной конфигурации колонок пользователя (`default_board_template` в формате JSONB или таблице шаблонов).
-  - Конструктор шаблона: пользователь может настроить, какие колонки создаются по умолчанию при нажатии «+ Новая доска» (названия, цвета, категории статусов `todo/in_progress/done`).
-  - Опция прикрепления базовых автоматизаций к шаблону доски (например, автоматический Done & Archive для последней колонки).
+### TASK-B13: Централизованный менеджер тегов воркспейса {#task-b13}
+
+🔲 **Статус**: В бэклоге · **Сложность**: M · **Бэкенд + фронтенд**
+
+**Продуктовая цель**: Управлять всем каталогом тегов воркспейса в одном окне — переименовать, сменить цвет, удалить неиспользуемые.
+
+**Принятые решения**:
+- Доступ: иконка или пункт «Теги» в сайдбаре (точка входа — нижняя часть сайдбара или настройки воркспейса)
+- **Список**: все теги с счётчиком задач (`task_count`) — показывает сколько задач используют тег
+- **Действия**: inline-переименование, смена цвета из 12-цветной палитры, удаление с подтверждением
+- **Удаление**: диалог «Тег будет отвязан от X задач. Продолжить?»
+- **Пакетная очистка**: кнопка «Удалить неиспользуемые» — удаляет все теги с `task_count = 0`
+- **Поиск**: строка фильтрации по имени тега внутри модалки
+
+**Новые API**:
+- `GET /workspaces/{wid}/tags` — уже есть (проверить)
+- `GET /workspaces/{wid}/tags/metrics` — **новый** (теги + `task_count`)
+- `PATCH /workspaces/{wid}/tags/{id}` — **новый** (имя, цвет)
+- `DELETE /workspaces/{wid}/tags/{id}` — **новый**
+- `DELETE /workspaces/{wid}/tags/unused` — **новый** (пакетное удаление)
+
+**Файлы**:
+- `backend/internal/application/task/usecases.go` — методы управления тегами
+- `backend/internal/infrastructure/http/tasks_handler.go` — новые handlers
+- `api/openapi/paths/tags.yaml` — новые endpoints
+- `frontend/src/features/tag-manager/TagManagerModal.tsx` — **новый** компонент
 
 ---
 
-### TASK-B10: Ребрендинг триггера «SLA» в понятные термины (Дедлайн / Тайм-аут)
-* **Категория**: `frontend/src/features/automations`, `api/openapi/schemas/automation.yaml`
-* **Продуктовая цель**: Убрать узкоспециализированную техническую аббревиатуру SLA, заменив её на интуитивно понятные термины тайм-менеджмента.
-* **Техническое описание**:
-  - В UI конструктора автоматизаций заменить метку триггера `SLA` на:
-    - *«Время в колонке / Тайм-аут стадии»* (для условий нахождения задачи без движения).
-    - *«Приближение дедлайна»* (для триггеров сроков).
-  - Сохранить обратную совместимость в DSL и API, обеспечив прозрачный маппинг старых кодов триггеров на новые читаемые метки.
+## 🏃 Спринт 0.9.2 — «Core Features: Дублирование и Скоупы»
+
+> **Цель**: Добавить дублирование задач и починить фильтрацию скоупов автоматизаций.
 
 ---
 
-### TASK-B11: Клавиатурная навигация стрелками в выпадающем списке тегов
-* **Категория**: `frontend/src/features/task-tag-autocomplete`, `frontend/src/widgets/task-drawer`
-* **Продуктовая цель**: Обеспечить быстрый клавиатурный выбор тегов без отрыва рук от клавиатуры в процессе печати.
-* **Техническое описание**:
-  - В `TagAutocomplete` / `MultiTagAutocomplete`:
-    - Обработка `onKeyDown`: перехват клавиш `ArrowDown` и `ArrowUp` для перемещения индекса активного элемента (`focusedIndex`).
-    - Автоскролл выпадающего меню к активному элементу (`scrollIntoView({ block: 'nearest' })`).
-    - Выбор подсвеченного тега по нажатию клавиши `Enter`.
-    - Закрытие выпадающего списка и возврат фокуса по `Escape`.
+### TASK-B03: Глубокое копирование задачи с подзадачами {#task-b03}
+
+🔲 **Статус**: В бэклоге · **Сложность**: M · **Бэкенд + фронтенд**
+
+**Продуктовая цель**: Дублировать задачу вместе со всеми подзадачами — каждая копия это независимая новая запись в БД.
+
+**Принятые решения**:
+- **Что копируется**: title (с префиксом «Копия — »), description/notes, priority, tags, подзадачи (новые UUID), вложения (shallow copy — одна S3-ссылка, новые записи в `attachments`)
+- **Что НЕ копируется**: due_date, история изменений
+- **Вложения**: `INSERT INTO attachments (..., storage_key) VALUES (..., original.storage_key)` — S3 не трогаем
+- **Позиция**: `original.position + 0.5` (в той же колонке)
+- **UI**: контекстное меню карточки (3 точки) → «Дублировать задачу»
+
+**Новый API**: `POST /workspaces/{wid}/tasks/{task_id}/duplicate`
+
+**Файлы**:
+- `backend/internal/application/task/usecases.go` — новый Use Case `DuplicateTask` (транзакция)
+- `backend/internal/infrastructure/http/tasks_handler.go` — handler `DuplicateTask`
+- `api/openapi/paths/tasks.yaml` — новый endpoint
+- `backend/queries/tasks.sql` — запрос дублирования (INSERT ... SELECT)
+- `frontend/src/features/kanban-board/KanbanCard.tsx` — пункт «Дублировать» в меню
 
 ---
 
-### TASK-B12: Хоткей раскрытия поля заметок (Markdown) при быстром создании задачи
-* **Категория**: `frontend/src/features/kanban-board/KanbanColumn.tsx`, `frontend/src/widgets/boards-panel`
-* **Продуктовая цель**: Сохранить форму быстрого создания задачи ультра-компактной (в одну строку), но дать возможность мгновенно добавить описание без открытия модалки.
-* **Техническое описание**:
-  - В форме инлайн-создания задачи (`+ Добавить задачу` в колонке):
-    - По умолчанию отображается только компактный однострочный инпут заголовка.
-    - При нажатии хоткея `Shift+Enter` (или `Ctrl+M` / клике на иконку заметки) форма плавно анимированно раскрывает дополнительное поле для Markdown-описания (`textarea` с `bg-surface`).
-    - Фокус автоматически переходит в поле описания.
-    - Сохранение по `Ctrl+Enter` создает задачу сразу с заголовком и телом заметки.
+### TASK-B08: Фильтрация скоупа автоматизаций по доске в EventListener {#task-b08}
+
+🔲 **Статус**: В бэклоге · **Сложность**: S · **Только бэкенд**
+
+**Продуктовая цель**: Правила с `board_id` применяются только к задачам нужной доски (сейчас фильтрация по `board_id` в listener отсутствует).
+
+**Принятые решения**:
+- Схема БД **не трогаем** — `board_id` уже есть в `automations`
+- Добавить проверку в `listener.go` для всех handler-ов:
+  ```go
+  if rule.BoardID != nil && (taskInfo.ProjectID == nil || *rule.BoardID != *taskInfo.ProjectID) {
+      continue
+  }
+  ```
+- В `AutomationsHub.tsx` заменить фильтры `'all' / 'column' / 'global'` на `'all' / 'board' / 'column'` с понятными лейблами «Все», «На доску», «На колонку»
+- В `RuleBuilderModal` добавить поле «Область применения» → влияет на заполнение `board_id` при сохранении
+
+**Файлы**:
+- `backend/internal/application/automation/listener.go` — добавить board_id фильтр в `HandleTask*`
+- `frontend/src/features/automations/AutomationsHub.tsx` — обновить категории фильтров
+- `frontend/src/features/automations/RuleBuilderModal.tsx` — поле «Область применения»
 
 ---
 
-### TASK-B13: Централизованный менеджер тегов воркспейса (CRUD и аудит тегов)
-* **Категория**: `backend/internal/application/task`, `frontend/src/features/tag-manager`
-* **Продуктовая цель**: Управление всем каталогом тегов воркспейса в едином окне (удаление устаревших тегов, переименование, глобальная смена цветов).
-* **Техническое описание**:
-  - Новый эндпоинт `GET /workspaces/{id}/tags/metrics` (возвращает теги с количеством привязанных задач `task_count`).
-  - Модальное окно «Управление тегами воркспейса» (доступно из сайдбара / настроек):
-    - Таблица/список всех тегов с поиском по имени.
-    - Индикатор популярности тега (`X задач`).
-    - Быстрое переименование и выбор цвета из 12-цветовой палитры.
-    - Кнопка удаления тега (с подтверждением отвязки от всех задач).
-    - Пакетная очистка тегов с 0 задач («Очистить неиспользуемые»).
+## 🏃 Спринт 0.9.3 — «Архив задач» (Batch SQL ADR-0008)
+
+> **Цель**: Разгрузка досок от выполненных задач без потери истории. Реализует ADR-0008 (Batch SQL Fast Path).
+
+---
+
+### TASK-B05: Архив задач — секция, батч-сброс, авто-архивация {#task-b05}
+
+🔲 **Статус**: В бэклоге · **Сложность**: L · **Бэкенд (миграция) + фронтенд**
+
+**Продуктовая цель**: Быстро убрать выполненные задачи с доски — вручную или автоматически — с возможностью восстановить.
+
+**Принятые решения**:
+
+*Схема БД (новая миграция 000014):*
+```sql
+ALTER TABLE tasks ADD COLUMN is_archived BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE tasks ADD COLUMN archived_at TIMESTAMPTZ NULL;
+CREATE INDEX idx_tasks_workspace_archived ON tasks(workspace_id, is_archived) WHERE is_archived = true;
+```
+
+*UI — доступ к архиву:*
+- Отдельная секция «**Архив**» в боковом сайдбаре (как Inbox) — иконка `Archive` после `Inbox`
+- Показывает счётчик архивных задач
+- Внутри: список/канбан архивных задач с фильтром по проекту/доске
+
+*Пакетный сброс (Column Flush):*
+- Кнопка в меню колонки (3 точки) → «Сгрузить выполненные в архив»
+- `POST /workspaces/{wid}/columns/{id}/archive-completed`
+- **Реализация**: одним SQL (`UPDATE tasks SET is_archived = true WHERE column_id = $1 AND is_completed = true`)
+
+*Разархивирование:*
+- Кнопка «Восстановить» на карточке в архиве → поповер выбора доски + колонки
+- `PATCH /workspaces/{wid}/tasks/{id}/unarchive` с `{ columnId: ..., boardId: ... }`
+
+*Авто-архивация (ADR-0008 Batch Fast Path):*
+- Добавить `BatchTaskExecutor` интерфейс в `ports.go`
+- Реализовать `ArchiveCompletedTasksInColumn(columnID, olderThanHours)` в репозитории
+- В `Worker.processSLATimerRule/processScheduledSweepRule` добавить `canUseBatchPath()` проверку
+
+*Фильтрация на канбан-доске:*
+- Все существующие запросы задач добавляют `AND is_archived = false`
+
+**Новые API**:
+- `GET /workspaces/{wid}/tasks/archived?project_id=...`
+- `POST /workspaces/{wid}/columns/{id}/archive-completed`
+- `PATCH /workspaces/{wid}/tasks/{id}/unarchive`
+
+**Файлы**:
+- `backend/migrations/000014_archive.up.sql` — новая миграция
+- `backend/internal/application/automation/ports.go` — `BatchTaskExecutor`
+- `backend/internal/infrastructure/repository/task_repo.go` — реализация batch методов
+- `backend/internal/application/automation/worker.go` — `canUseBatchPath()` + fast path
+- `backend/internal/domain/events/` — `BatchSweepCompletedEvent`
+- `frontend/src/widgets/sidebar/` — секция «Архив»
+- `frontend/src/features/archive/ArchiveView.tsx` — **новый** компонент
+
+---
+
+## 🏃 Спринт 0.9.4 — «История изменений задачи»
+
+> **Цель**: Прозрачность: когда и кем изменялась задача. Новая таблица + EventBus listener.
+
+---
+
+### TASK-B06: История изменений задачи в шторке (Activity Log) {#task-b06}
+
+🔲 **Статус**: В бэклоге · **Сложность**: L · **Бэкенд (миграция + EventBus) + фронтенд**
+
+**Продуктовая цель**: В шторке задачи видеть хронологию — кто и когда перенёс задачу, сменил приоритет, добавил тег.
+
+**Принятые решения**:
+
+*Схема БД (новая миграция 000015):*
+```sql
+CREATE TABLE task_activities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id),
+    activity_type VARCHAR(64) NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_task_activities_task_id ON task_activities(task_id, created_at DESC);
+```
+
+*Типы событий (`activity_type`):*
+- `column_moved` — payload: `{ from: "Название", to: "Название" }`
+- `status_changed` — payload: `{ completed: true/false }`
+- `priority_changed` — payload: `{ from: "high", to: "medium" }`
+- `due_date_set` / `due_date_cleared`
+- `tag_added` / `tag_removed` — payload: `{ tag: "название" }`
+- `title_changed` — payload: `{ from: "...", to: "..." }`
+- `subtask_added` — payload: `{ title: "..." }`
+
+*Запись через EventBus:*
+- Новый listener `ActivityLogger` подписывается на `EventTaskUpdated`, `EventTaskMoved`, `EventTaskCompleted`
+- `ActivityLogger` живёт в `backend/internal/application/task/` или отдельном `activity/` подпакете
+
+*UI — вкладка «История»:*
+- Дополнительная вкладка «История» рядом с «Подзадачи» в шторке (`TaskDrawer.tsx`)
+- Хронологическая лента событий с относительным временем («2 минуты назад», «вчера в 14:30»)
+- Неактивна по умолчанию (не грузит данные пока не открыта)
+
+**Новый API**: `GET /workspaces/{wid}/tasks/{id}/activities`
+
+**Файлы**:
+- `backend/migrations/000015_task_activities.up.sql`
+- `backend/internal/application/task/activity_logger.go` — **новый** listener
+- `backend/internal/infrastructure/http/tasks_handler.go` — handler GetActivities
+- `frontend/src/widgets/task-drawer/TaskActivityTab.tsx` — **новый** компонент
+
+---
+
+## 🏃 Спринт 0.9.5 — «Профиль пользователя»
+
+> **Цель**: Имя и аватар пользователя. Минимальный профиль без лишней сложности.
+
+---
+
+### TASK-B09: Профиль пользователя — имя и аватар {#task-b09}
+
+🔲 **Статус**: В бэклоге · **Сложность**: M · **Бэкенд (миграция) + фронтенд**
+
+**Продуктовая цель**: Персонализация — пользователь видит своё имя и аватар в интерфейсе.
+
+**Принятые решения**:
+- **Скоуп**: только `display_name` и `avatar_url`. Шаблоны досок, 2FA, часовой пояс — это Фаза 8 Roadmap
+- **Доступ**: кнопка/аватар в нижней части сайдбара → модалка профиля
+- **Аватар**: загрузка через существующую S3-инфраструктуру (MinIO), кроп перед загрузкой
+
+*Схема БД (новая миграция 000016):*
+```sql
+ALTER TABLE users ADD COLUMN display_name VARCHAR(100) NULL;
+ALTER TABLE users ADD COLUMN avatar_url TEXT NULL;
+```
+
+**Новые API**:
+- `PATCH /users/me` — обновить `display_name`
+- `POST /users/me/avatar` — загрузить аватар (multipart, через S3)
+
+**Файлы**:
+- `backend/migrations/000016_user_profile.up.sql`
+- `backend/internal/application/workspace/` или `user/` — Use Case обновления профиля
+- `frontend/src/widgets/sidebar/UserProfileButton.tsx` — обновить отображение имени/аватара
+- `frontend/src/features/user-profile/UserProfileModal.tsx` — **новый** компонент
+
+---
+
+## ⏳ Future — Subtasks Automation Suite (после стабилизации)
+
+---
+
+### TASK-B01: Автоматизация подзадач (Subtasks Automation Suite) {#task-b01}
+
+🔲 **Статус**: В бэклоге (будущее) · **Сложность**: L
+
+**Продуктовая цель**: Правила автоматизаций реагируют на жизненный цикл подзадач.
+
+**Принятые решения**:
+
+*Новые триггеры в `rule.go`:*
+- `all_subtasks_completed` — все подзадачи завершены
+- `subtask_created` — добавлена новая подзадача
+- `any_subtask_completed` — выполнена очередная подзадача
+
+*Новые условия:*
+- `subtasks_all_completed` (bool)
+- `subtasks_count` (число с операторами `>`, `==`, `0`)
+
+*Новые действия:*
+- `complete_all_subtasks` — `UPDATE tasks SET is_completed = true WHERE parent_id = $1`
+- `reopen_all_subtasks` — `UPDATE tasks SET is_completed = false WHERE parent_id = $1`
+- `create_subtask` — создать новую подзадачу по шаблону (только title)
+
+*Recursion Guard:*
+- `create_subtask` **запрещён** если `taskInfo.ParentID != nil` — нет подзадач у подзадач
+
+**Файлы**:
+- `backend/internal/domain/automation/rule.go` — новые триггеры, условия, действия
+- `backend/internal/application/automation/subtask_automation.go` — логика (файл уже существует)
+- `frontend/src/features/automations/useRuleBuilder.ts` — TRIGGER_OPTIONS, ACTION_TYPES
+- `frontend/src/features/automations/RuleBuilderSections.tsx` — UI новых действий
+
+---
+
+### TASK-B05: Архив задач — секция, батч-сброс, авто-архивация {#task-b05}
+
+🔲 **Статус**: В бэклоге · **Сложность**: L · **Бэкенд (миграция) + фронтенд**
+
+**Продуктовая цель**: Быстро убрать выполненные задачи с доски — вручную или автоматически — с возможностью восстановить.
+
+**Принятые решения**:
+
+*Схема БД (новая миграция 000014):*
+```sql
+ALTER TABLE tasks ADD COLUMN is_archived BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE tasks ADD COLUMN archived_at TIMESTAMPTZ NULL;
+CREATE INDEX idx_tasks_workspace_archived ON tasks(workspace_id, is_archived) WHERE is_archived = true;
+```
+
+*UI — доступ к архиву:*
+- Отдельная секция «**Архив**» в боковом сайдбаре (как Inbox) — иконка `Archive` после `Inbox`
+- Показывает счётчик архивных задач
+- Внутри: список/канбан архивных задач с фильтром по проекту/доске
+
+*Пакетный сброс (Column Flush):*
+- Кнопка в меню колонки (3 точки) → «Сгрузить выполненные в архив»
+- `POST /workspaces/{wid}/columns/{id}/archive-completed`
+- **Реализация**: одним SQL (`UPDATE tasks SET is_archived = true WHERE column_id = $1 AND is_completed = true`)
+
+*Разархивирование:*
+- Кнопка «Восстановить» на карточке в архиве → поповер выбора доски + колонки
+- `PATCH /workspaces/{wid}/tasks/{id}/unarchive` с `{ columnId: ..., boardId: ... }`
+
+*Авто-архивация (ADR-0008 Batch Fast Path):*
+- Добавить `BatchTaskExecutor` интерфейс в `ports.go`
+- Реализовать `ArchiveCompletedTasksInColumn(columnID, olderThanHours)` в репозитории
+- В `Worker.processSLATimerRule/processScheduledSweepRule` добавить `canUseBatchPath()` проверку
+
+*Фильтрация на канбан-доске:*
+- Все существующие запросы задач добавляют `AND is_archived = false`
+
+**Новые API**:
+- `GET /workspaces/{wid}/tasks/archived?project_id=...`
+- `POST /workspaces/{wid}/columns/{id}/archive-completed`
+- `PATCH /workspaces/{wid}/tasks/{id}/unarchive`
+
+**Файлы**:
+- `backend/migrations/000014_archive.up.sql` — новая миграция
+- `backend/internal/application/automation/ports.go` — `BatchTaskExecutor`
+- `backend/internal/infrastructure/repository/task_repo.go` — реализация batch методов
+- `backend/internal/application/automation/worker.go` — `canUseBatchPath()` + fast path
+- `backend/internal/domain/events/` — `BatchSweepCompletedEvent`
+- `frontend/src/widgets/sidebar/` — секция «Архив»
+- `frontend/src/features/archive/ArchiveView.tsx` — **новый** компонент
+
+---
+
+## 🏃 Спринт 0.9.4 — «История изменений задачи»
+
+> **Цель**: Прозрачность: когда и кем изменялась задача. Новая таблица + EventBus listener.
+
+---
+
+### TASK-B06: История изменений задачи в шторке (Activity Log) {#task-b06}
+
+🔲 **Статус**: В бэклоге · **Сложность**: L · **Бэкенд (миграция + EventBus) + фронтенд**
+
+**Продуктовая цель**: В шторке задачи видеть хронологию — кто и когда перенёс задачу, сменил приоритет, добавил тег.
+
+**Принятые решения**:
+
+*Схема БД (новая миграция 000015):*
+```sql
+CREATE TABLE task_activities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id),
+    activity_type VARCHAR(64) NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_task_activities_task_id ON task_activities(task_id, created_at DESC);
+```
+
+*Типы событий (`activity_type`):*
+- `column_moved` — payload: `{ from: "Название", to: "Название" }`
+- `status_changed` — payload: `{ completed: true/false }`
+- `priority_changed` — payload: `{ from: "high", to: "medium" }`
+- `due_date_set` / `due_date_cleared`
+- `tag_added` / `tag_removed` — payload: `{ tag: "название" }`
+- `title_changed` — payload: `{ from: "...", to: "..." }`
+- `subtask_added` — payload: `{ title: "..." }`
+
+*Запись через EventBus:*
+- Новый listener `ActivityLogger` подписывается на `EventTaskUpdated`, `EventTaskMoved`, `EventTaskCompleted`
+- `ActivityLogger` живёт в `backend/internal/application/task/` или отдельном `activity/` подпакете
+
+*UI — вкладка «История»:*
+- Дополнительная вкладка «История» рядом с «Подзадачи» в шторке (`TaskDrawer.tsx`)
+- Хронологическая лента событий с относительным временем («2 минуты назад», «вчера в 14:30»)
+- Неактивна по умолчанию (не грузит данные пока не открыта)
+
+**Новый API**: `GET /workspaces/{wid}/tasks/{id}/activities`
+
+**Файлы**:
+- `backend/migrations/000015_task_activities.up.sql`
+- `backend/internal/application/task/activity_logger.go` — **новый** listener
+- `backend/internal/infrastructure/http/tasks_handler.go` — handler GetActivities
+- `frontend/src/widgets/task-drawer/TaskActivityTab.tsx` — **новый** компонент
+
+---
+
+## 🏃 Спринт 0.9.5 — «Профиль пользователя»
+
+> **Цель**: Имя и аватар пользователя. Минимальный профиль без лишней сложности.
+
+---
+
+### TASK-B09: Профиль пользователя — имя и аватар {#task-b09}
+
+🔲 **Статус**: В бэклоге · **Сложность**: M · **Бэкенд (миграция) + фронтенд**
+
+**Продуктовая цель**: Персонализация — пользователь видит своё имя и аватар в интерфейсе.
+
+**Принятые решения**:
+- **Скоуп**: только `display_name` и `avatar_url`. Шаблоны досок, 2FA, часовой пояс — это Фаза 8 Roadmap
+- **Доступ**: кнопка/аватар в нижней части сайдбара → модалка профиля
+- **Аватар**: загрузка через существующую S3-инфраструктуру (MinIO), кроп перед загрузкой
+
+*Схема БД (новая миграция 000016):*
+```sql
+ALTER TABLE users ADD COLUMN display_name VARCHAR(100) NULL;
+ALTER TABLE users ADD COLUMN avatar_url TEXT NULL;
+```
+
+**Новые API**:
+- `PATCH /users/me` — обновить `display_name`
+- `POST /users/me/avatar` — загрузить аватар (multipart, через S3)
+
+**Файлы**:
+- `backend/migrations/000016_user_profile.up.sql`
+- `backend/internal/application/workspace/` или `user/` — Use Case обновления профиля
+- `frontend/src/widgets/sidebar/UserProfileButton.tsx` — обновить отображение имени/аватара
+- `frontend/src/features/user-profile/UserProfileModal.tsx` — **новый** компонент
+
+---
+
+## ⏳ Future — Subtasks Automation Suite (после стабилизации)
+
+---
+
+### TASK-B01: Автоматизация подзадач (Subtasks Automation Suite) {#task-b01}
+
+🔲 **Статус**: В бэклоге (будущее) · **Сложность**: L
+
+**Продуктовая цель**: Правила автоматизаций реагируют на жизненный цикл подзадач.
+
+**Принятые решения**:
+
+*Новые триггеры в `rule.go`:*
+- `all_subtasks_completed` — все подзадачи завершены
+- `subtask_created` — добавлена новая подзадача
+- `any_subtask_completed` — выполнена очередная подзадача
+
+*Новые условия:*
+- `subtasks_all_completed` (bool)
+- `subtasks_count` (число с операторами `>`, `==`, `0`)
+
+*Новые действия:*
+- `complete_all_subtasks` — `UPDATE tasks SET is_completed = true WHERE parent_id = $1`
+- `reopen_all_subtasks` — `UPDATE tasks SET is_completed = false WHERE parent_id = $1`
+- `create_subtask` — создать новую подзадачу по шаблону (только title)
+
+*Recursion Guard:*
+- `create_subtask` **запрещён** если `taskInfo.ParentID != nil` — нет подзадач у подзадач
+
+**Файлы**:
+- `backend/internal/domain/automation/rule.go` — новые триггеры, условия, действия
+- `backend/internal/application/automation/subtask_automation.go` — логика (файл уже существует)
+- `frontend/src/features/automations/useRuleBuilder.ts` — TRIGGER_OPTIONS, ACTION_TYPES
+- `frontend/src/features/automations/RuleBuilderSections.tsx` — UI новых действий
+

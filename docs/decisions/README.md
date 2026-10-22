@@ -18,6 +18,7 @@
 | **ADR-0005** | [0005-frontend-motion-and-kinetics-engine.md](0005-frontend-motion-and-kinetics-engine.md) | 2026-10-19 | `Accepted` | Движок кинетики на motion/react 12+, пружинная физика, пресеты, хореография чекбокса и A11y Dampening |
 | **ADR-0006** | [0006-editorial-tech-themes-system.md](0006-editorial-tech-themes-system.md) | 2026-10-19 | `Accepted` | Система 12 тем Editorial Tech, переключатель палитр, двухуровневый фон и FSD-рефакторинг |
 | **ADR-0007** | [0007-animated-themes-and-interactive-ambient-engine.md](0007-animated-themes-and-interactive-ambient-engine.md) | 2026-10-20 | `Accepted` | Анимированные и интерактивные темы (Snow, Tsukimi, Celestial), Canvas 2D Engine и контроль интенсивности |
+| **ADR-0008** | [0008-hybrid-batch-automation-execution.md](0008-hybrid-batch-automation-execution.md) | 2026-10-22 | `Accepted` | Гибридное исполнение sweep-автоматизаций: Batch SQL Fast Path (1 запрос) для простых действий + General Loop fallback для сложных DSL-условий |
 
 ---
 

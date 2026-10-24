@@ -18,6 +18,8 @@ export function useDynamicTitle(workspaceId?: string): void {
       document.title = 'Автоматизации | Takt';
     } else if (activeNav === 'archive') {
       document.title = 'Архив | Takt';
+    } else if (activeNav === 'tags') {
+      document.title = 'Теги | Takt';
     } else if (activeNav === 'projects') {
       const activeBoard = boards.find((b) => b.id === activeBoardId);
       document.title = activeBoard ? `${activeBoard.name} | Takt` : 'Takt';

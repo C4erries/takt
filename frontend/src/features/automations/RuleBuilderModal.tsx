@@ -23,8 +23,8 @@ export interface RuleBuilderModalProps {
   prefilledColumnId?: string | null;
   prefilledColumnName?: string | null;
   allColumns?: { id: string; name: string }[];
-  allBoards?: { id: string; name: string }[];
-  boardColumnGroups?: { boardName: string; columns: { id: string; name: string }[] }[];
+  allBoards?: { id: string; name: string; projectName?: string }[];
+  boardColumnGroups?: { boardName: string; projectName?: string; columns: { id: string; name: string }[] }[];
   mode?: 'create' | 'edit';
   initialRule?: Automation | null;
   taskId?: string | null;
@@ -60,6 +60,16 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
     workspaceId, prefilledBoardId, prefilledColumnId, prefilledColumnName,
     allColumns, allBoards, mode, initialRule, taskId, onSuccess, onClose,
   });
+
+  const groupedBoards = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string }[]>();
+    for (const b of allBoards) {
+      const pName = b.projectName || 'Без проекта';
+      if (!map.has(pName)) map.set(pName, []);
+      map.get(pName)!.push(b);
+    }
+    return Array.from(map.entries()).map(([projectName, boards]) => ({ projectName, boards }));
+  }, [allBoards]);
 
   return (
     <Modal
@@ -127,9 +137,17 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
                 onChange={(e) => setSelectedBoardId(e.target.value)}
                 className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
               >
-                {allBoards.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
+                {groupedBoards.length > 1 || (groupedBoards.length === 1 && groupedBoards[0].projectName !== 'Без проекта')
+                  ? groupedBoards.map((g) => (
+                      <optgroup key={g.projectName} label={`Проект: ${g.projectName}`}>
+                        {g.boards.map((b) => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </optgroup>
+                    ))
+                  : allBoards.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
               </select>
             </div>
           )}
@@ -160,6 +178,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
           triggerField={triggerField}
           setTriggerField={setTriggerField}
           allColumns={allColumns}
+          scope={scope}
         />
 
         {/* STEP 2: IF */}

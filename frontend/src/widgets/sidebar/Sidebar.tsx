@@ -9,7 +9,6 @@ import { WorkspaceSwitcher } from '@/features/workspace-switcher';
 import { MiniCalendar } from '@/widgets/mini-calendar';
 import { useTaskStore } from '@/features/task-navigation';
 import { useThemeStore, getTheme } from '@/features/theme-switcher';
-import { TagManagerModal } from '@/features/tag-manager';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
 import { useTodayTasksQuery, useInboxTasks } from '@/entities/task';
 import { useAutomationsQuery } from '@/entities/automation';
@@ -53,7 +52,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
-  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
 
   const todayCount = todayTasks.filter((t) => !t.isCompleted).length;
   const activeAutomationsCount = automations.filter((a) => a.isEnabled).length;
@@ -286,8 +284,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             type="button"
-            onClick={() => setIsTagManagerOpen(true)}
-            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-muted hover:text-primary hover:bg-surface/60 transition-all duration-150"
+            onClick={() => handleNavChange('tags')}
+            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 ${
+              currentNav === 'tags' && !showUiCatalog
+                ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
+                : 'text-muted hover:text-primary hover:bg-surface/60'
+            }`}
             title="Менеджер тегов"
           >
             <span className="flex items-center gap-2">
@@ -350,12 +352,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </Button>
         )}
       </div>
-
-      <TagManagerModal
-        isOpen={isTagManagerOpen}
-        onClose={() => setIsTagManagerOpen(false)}
-        workspaceId={workspace?.id}
-      />
     </aside>
   );
 };

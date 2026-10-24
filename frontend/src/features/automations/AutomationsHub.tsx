@@ -15,7 +15,7 @@ import {
   useCreateAutomationMutation,
   type Automation,
 } from '@/entities/automation';
-import { DEMO_COLUMNS, DEMO_BOARDS, type Column, type Board } from '@/entities/project';
+import { DEMO_COLUMNS, DEMO_BOARDS, type Column, type Board, useProjectsQuery } from '@/entities/project';
 import { AutomationCard } from './AutomationCard';
 import { RuleBuilderModal, RuleDetailModal } from './RuleBuilderModal';
 
@@ -28,6 +28,7 @@ type FilterCategory = 'all' | 'board' | 'column';
 export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) => {
   const queryClient = useQueryClient();
   const { data: automations = [], isLoading, isError, error, refetch } = useAutomationsQuery(workspaceId);
+  const { data: projects = [] } = useProjectsQuery(workspaceId);
   const toggleMutation = useToggleAutomationMutation(workspaceId);
   const deleteMutation = useDeleteAutomationMutation(workspaceId);
   const createMutation = useCreateAutomationMutation(workspaceId);
@@ -41,12 +42,24 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
   const cachedBoards = queryClient
     .getQueriesData<Board[]>({ queryKey: ['boards'] })
     .flatMap(([, b]) => b ?? []);
-  const allBoards = cachedBoards.length > 0 ? cachedBoards : DEMO_BOARDS;
+  const rawBoards = cachedBoards.length > 0 ? cachedBoards : DEMO_BOARDS;
+  const allBoards = rawBoards.map((b) => {
+    const proj = projects.find((p) => p.id === (b as { projectId?: string }).projectId);
+    return { ...b, projectName: proj?.name };
+  });
 
   const cachedCols = queryClient
     .getQueriesData<Column[]>({ queryKey: ['columns'] })
     .flatMap(([, cols]) => cols ?? []);
   const allColumns = cachedCols.length > 0 ? cachedCols : DEMO_COLUMNS;
+
+  const boardColumnGroups = React.useMemo(() => {
+    return allBoards.map((b) => ({
+      boardName: b.name,
+      projectName: b.projectName,
+      columns: allColumns.filter((c) => c.boardId === b.id),
+    })).filter((g) => g.columns.length > 0);
+  }, [allBoards, allColumns]);
 
   const filteredAutomations = automations.filter((auto) => {
     if (filter === 'board') return Boolean(auto.boardId) && !auto.columnId;
@@ -231,6 +244,7 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
         workspaceId={workspaceId}
         allColumns={allColumns}
         allBoards={allBoards}
+        boardColumnGroups={boardColumnGroups}
         mode={editingRule ? 'edit' : 'create'}
         initialRule={editingRule}
       />

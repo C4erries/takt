@@ -345,3 +345,15 @@ func (r *AutomationRepository) GetDoneColumn(ctx context.Context, prjID, wsID uu
 	id, _, err := r.findColumnByCategory(ctx, prjID, "done")
 	return id, err
 }
+
+func (r *AutomationRepository) ListColumnIDsByBoard(ctx context.Context, boardID uuid.UUID) ([]uuid.UUID, error) {
+	cols, err := getQuerier(ctx, r.queries).ListColumnsByBoard(ctx, uuidToPg(boardID))
+	if err != nil {
+		return nil, err
+	}
+	res := make([]uuid.UUID, len(cols))
+	for i, c := range cols {
+		res[i] = pgToUUID(c.ID)
+	}
+	return res, nil
+}

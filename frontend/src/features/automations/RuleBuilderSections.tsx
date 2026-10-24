@@ -32,11 +32,12 @@ export interface TriggerSectionProps {
   triggerField: string;
   setTriggerField: (f: string) => void;
   allColumns: { id: string; name: string }[];
+  scope?: string;
 }
 
 export const TriggerSection: React.FC<TriggerSectionProps> = ({
   triggerType, setTriggerType, triggerColumnId, setTriggerColumnId,
-  triggerSlaHours, setTriggerSlaHours, triggerField, setTriggerField, allColumns,
+  triggerSlaHours, setTriggerSlaHours, triggerField, setTriggerField, allColumns, scope,
 }) => (
   <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2.5">
     <div className="flex items-center gap-2">
@@ -54,7 +55,11 @@ export const TriggerSection: React.FC<TriggerSectionProps> = ({
         <div className="space-y-1">
           <label className="text-[10px] font-mono text-muted">В колонке:</label>
           <select value={triggerColumnId} onChange={(e) => setTriggerColumnId(e.target.value)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
-            {allColumns.length === 0 && <option value="">Любая колонка</option>}
+            {triggerType === 'scheduled_sweep' && scope === 'board' ? (
+              <option value="">Все колонки доски (по умолчанию)</option>
+            ) : allColumns.length === 0 ? (
+              <option value="">Любая колонка</option>
+            ) : null}
             {allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
           </select>
         </div>
@@ -213,7 +218,6 @@ const ConditionValuePicker: React.FC<{
       </div>
     );
   }
-
   if (cond.field === 'time_in_column_hours') {
     const hours = Number(cond.value) || 24;
     return (
@@ -224,17 +228,11 @@ const ConditionValuePicker: React.FC<{
       </div>
     );
   }
-
   if (cond.field === 'tags') {
-    if (cond.operator === 'in') {
-      return <MultiTagAutocomplete value={cond.value as string[] | string} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} />;
-    }
+    if (cond.operator === 'in') return <MultiTagAutocomplete value={cond.value as string[] | string} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} />;
     return <TagAutocomplete value={String(cond.value || '')} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} placeholder="Тег..." />;
   }
-
-  return (
-    <input type="text" value={String(cond.value || '')} onChange={(e) => onUpdate({ value: e.target.value })} placeholder="Значение..." className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1 focus:outline-none" />
-  );
+  return <input type="text" value={String(cond.value || '')} onChange={(e) => onUpdate({ value: e.target.value })} placeholder="Значение..." className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1 focus:outline-none" />;
 };
 
 export interface ConditionsSectionProps {
@@ -306,7 +304,6 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
               </select>
 
               <ConditionValuePicker cond={cond} onUpdate={(patch) => onUpdate(index, patch)} workspaceId={workspaceId} />
-
               <button type="button" onClick={() => onRemove(index)} className="text-muted hover:text-primary p-1 rounded transition-colors shrink-0 ml-auto sm:ml-0" title="Удалить условие">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -324,7 +321,7 @@ export interface ActionsSectionProps {
   onRemove: (idx: number) => void;
   onUpdate: (idx: number, patch: Partial<AutomationAction>) => void;
   allColumns: { id: string; name: string }[];
-  boardColumnGroups?: { boardName: string; columns: { id: string; name: string }[] }[];
+  boardColumnGroups?: { boardName: string; projectName?: string; columns: { id: string; name: string }[] }[];
   workspaceId?: string;
 }
 
@@ -342,7 +339,6 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
         <Button type="button" variant="ghost" size="sm" onClick={onAdd} leftIcon={<Plus className="w-3.5 h-3.5" />} className="text-[11px] h-7 px-2">Добавить действие</Button>
       )}
     </div>
-
     <div className="space-y-2">
       {actions.map((act, index) => (
         <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-subtle text-xs flex-wrap sm:flex-nowrap">
@@ -355,7 +351,11 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
             <select value={String(act.params?.target_column_id || '')} onChange={(e) => onUpdate(index, { params: { ...act.params, target_column_id: e.target.value } })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
               <option value="">Выберите колонку...</option>
               {boardColumnGroups && boardColumnGroups.length > 0
-                ? boardColumnGroups.map((g) => (<optgroup key={g.boardName} label={g.boardName}>{g.columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}</optgroup>))
+                ? boardColumnGroups.map((g) => (
+                    <optgroup key={`${g.projectName || ''}-${g.boardName}`} label={`${g.projectName ? g.projectName + ' → ' : ''}${g.boardName}`}>
+                      {g.columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                    </optgroup>
+                  ))
                 : allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           )}

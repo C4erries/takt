@@ -11,6 +11,7 @@ export interface BoardColumnOption {
 export interface BoardGroupOption {
   boardId: string;
   boardName: string;
+  projectName?: string;
   columns: BoardColumnOption[];
 }
 
@@ -43,7 +44,9 @@ export const MoveTaskModal: React.FC<MoveTaskModalProps> = ({
 
     return boardGroups
       .map((bg) => {
-        const boardMatches = bg.boardName.toLowerCase().includes(cleanQuery);
+        const boardMatches =
+          bg.boardName.toLowerCase().includes(cleanQuery) ||
+          (bg.projectName?.toLowerCase().includes(cleanQuery) ?? false);
         const matchingColumns = bg.columns.filter((c) =>
           c.name.toLowerCase().includes(cleanQuery)
         );
@@ -116,7 +119,7 @@ export const MoveTaskModal: React.FC<MoveTaskModalProps> = ({
                 {/* Board Group Header */}
                 <div className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold text-muted bg-canvas/50 rounded-md">
                   <FolderKanban className="w-3.5 h-3.5 text-muted shrink-0" />
-                  <span className="truncate">{bg.boardName}</span>
+                  <span className="truncate">{bg.projectName ? `${bg.projectName} → ${bg.boardName}` : bg.boardName}</span>
                 </div>
 
                 {/* Columns Rows */}

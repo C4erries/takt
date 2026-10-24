@@ -66,6 +66,7 @@ type TaskReader interface {
 type ProjectReader interface {
 	GetFirstTodoColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
 	GetDoneColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
+	ListColumnIDsByBoard(ctx context.Context, boardID uuid.UUID) ([]uuid.UUID, error)
 }
 
 // EventPublisher publishes domain events.

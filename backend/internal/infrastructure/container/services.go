@@ -43,7 +43,7 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 		automationService = automationApp.NewService(repos.AutomationRepo, repos.AutomationRepo, evaluator)
 		listener := automationApp.NewEventListener(repos.AutomationRepo, repos.AutomationRepo, repos.AutomationRepo, nil)
 		_ = listener.Register(eventBus)
-		automationWorker = automationApp.NewWorker(repos.AutomationRepo, repos.AutomationRepo, evaluator, 0)
+		automationWorker = automationApp.NewWorker(repos.AutomationRepo, repos.AutomationRepo, evaluator, 0, repos.AutomationRepo)
 		if repos.TaskRepo != nil {
 			automationWorker.SetBatchExecutor(repos.TaskRepo)
 		}

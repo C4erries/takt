@@ -23,7 +23,7 @@ export interface UseRuleBuilderParams {
   prefilledColumnId?: string | null;
   prefilledColumnName?: string | null;
   allColumns?: { id: string; name: string }[];
-  allBoards?: { id: string; name: string }[];
+  allBoards?: { id: string; name: string; projectName?: string }[];
   mode?: 'create' | 'edit';
   initialRule?: Automation | null;
   taskId?: string | null;
@@ -311,7 +311,11 @@ export function useRuleBuilder({
       triggerType === 'task_completed_in_column' ||
       triggerType === 'scheduled_sweep'
     ) {
-      if (effectiveColumnId) triggerParams.column_id = effectiveColumnId;
+      if (effectiveColumnId) {
+        triggerParams.column_id = effectiveColumnId;
+      } else if (scope === 'board' && triggerType === 'scheduled_sweep' && triggerColumnId) {
+        triggerParams.column_id = triggerColumnId;
+      }
     } else if (triggerType === 'column_sla_timer' || triggerType === 'task_timer') {
       if (effectiveColumnId) triggerParams.column_id = effectiveColumnId;
       triggerParams.duration_hours = Number(triggerSlaHours) || 24;

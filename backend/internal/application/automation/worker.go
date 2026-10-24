@@ -15,6 +15,7 @@ type Worker struct {
 	repo           AutomationRepository
 	taskReader     TaskReader
 	evaluator      *Evaluator
+	projectReader  ProjectReader
 	batchExecutor  BatchTaskExecutor
 	eventPublisher EventPublisher
 	interval       time.Duration
@@ -31,17 +32,30 @@ func NewWorker(
 	taskReader TaskReader,
 	evaluator *Evaluator,
 	interval time.Duration,
+	projectReader ...ProjectReader,
 ) *Worker {
 	if interval <= 0 {
 		interval = 1 * time.Minute
 	}
-	return &Worker{
-		repo:       repo,
-		taskReader: taskReader,
-		evaluator:  evaluator,
-		interval:   interval,
-		stopCh:     make(chan struct{}),
+	var pr ProjectReader
+	if len(projectReader) > 0 {
+		pr = projectReader[0]
+	} else if evaluator != nil {
+		pr = evaluator.projectReader
 	}
+	return &Worker{
+		repo:          repo,
+		taskReader:    taskReader,
+		evaluator:     evaluator,
+		projectReader: pr,
+		interval:      interval,
+		stopCh:        make(chan struct{}),
+	}
+}
+
+// SetProjectReader sets the project reader for inspecting board structure.
+func (w *Worker) SetProjectReader(reader ProjectReader) {
+	w.projectReader = reader
 }
 
 // SetBatchExecutor injects a BatchTaskExecutor for fast-path batch executions (ADR-0008).
@@ -252,14 +266,27 @@ func (w *Worker) processScheduledSweepRule(ctx context.Context, rule *domainAuto
 	if colIDStr == "" && rule.ColumnID != nil {
 		colIDStr = rule.ColumnID.String()
 	}
-	if colIDStr == "" {
-		return
-	}
-	colUUID, err := uuid.Parse(colIDStr)
-	if err != nil {
+	if colIDStr != "" {
+		colUUID, err := uuid.Parse(colIDStr)
+		if err != nil {
+			return
+		}
+		w.sweepColumn(ctx, rule, colUUID)
 		return
 	}
 
+	if rule.BoardID != nil && w.projectReader != nil {
+		columns, err := w.projectReader.ListColumnIDsByBoard(ctx, *rule.BoardID)
+		if err != nil {
+			return
+		}
+		for _, colUUID := range columns {
+			w.sweepColumn(ctx, rule, colUUID)
+		}
+	}
+}
+
+func (w *Worker) sweepColumn(ctx context.Context, rule *domainAutomation.Automation, colUUID uuid.UUID) {
 	// ADR-0008 Fast Path: execute single batch query for scheduled sweep
 	if w.batchExecutor != nil && CanUseBatchPath(rule.RuleDefinition) {
 		affected, err := w.batchExecutor.ArchiveCompletedTasksBatchSQL(ctx, rule.WorkspaceID, colUUID, 0)

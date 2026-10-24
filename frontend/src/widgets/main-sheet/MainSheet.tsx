@@ -13,6 +13,7 @@ import { TodayView } from './TodayView';
 import { ProjectView } from './ProjectView';
 import { AutomationsHub } from '@/features/automations';
 import { ArchiveView } from '@/features/archive';
+import { TagManagerView } from '@/features/tag-manager';
 
 export interface MainSheetProps {
   tasks?: Task[];
@@ -122,6 +123,8 @@ export const MainSheet: React.FC<MainSheetProps> = ({
         <AutomationsHub workspaceId={workspaceId} />
       ) : activeNav === 'archive' ? (
         <ArchiveView workspaceId={workspaceId} />
+      ) : activeNav === 'tags' ? (
+        <TagManagerView workspaceId={workspaceId} />
       ) : (
         <InboxView
           tasks={currentTasks}

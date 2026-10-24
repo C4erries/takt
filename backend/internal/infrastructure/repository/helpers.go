@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -231,5 +232,60 @@ func loadSubtaskCountsForTasks(ctx context.Context, q *sqlc.Queries, tasks []*do
 	}
 	return nil
 }
+
+func mapSingleTaskRow(ctx context.Context, q *sqlc.Queries, row sqlc.Task) *domainTask.Task {
+	task := mapTaskRowToDomain(row)
+	_ = loadSubtaskCountsForTasks(ctx, q, []*domainTask.Task{task})
+	return task
+}
+
+func mapTagRowsToDomain(rows []sqlc.Tag) []*domainTask.Tag {
+	tags := make([]*domainTask.Tag, len(rows))
+	for i, row := range rows {
+		tags[i] = mapTagRowToDomain(row)
+	}
+	return tags
+}
+
+func mapTagMetricsRowsToDomain(rows []sqlc.ListWorkspaceTagsWithMetricsRow) []*domainTask.TagWithMetrics {
+	tags := make([]*domainTask.TagWithMetrics, len(rows))
+	for i, row := range rows {
+		item := domainTask.NewTagWithMetrics(domainTask.Tag{
+			ID:          pgToUUID(row.ID),
+			WorkspaceID: pgToUUID(row.WorkspaceID),
+			Name:        row.Name,
+			ColorHex:    row.ColorHex,
+			CreatedAt:   pgToTime(row.CreatedAt),
+		}, row.TaskCount)
+		tags[i] = &item
+	}
+	return tags
+}
+
+func mapActivityRowToDomain(row sqlc.ListTaskActivitiesByTaskIDRow) *domainTask.TaskActivity {
+	var payload map[string]interface{}
+	if len(row.Payload) > 0 {
+		_ = json.Unmarshal(row.Payload, &payload)
+	}
+	if payload == nil {
+		payload = make(map[string]interface{})
+	}
+	var userName *string
+	if row.UserName.Valid && row.UserName.String != "" {
+		userName = &row.UserName.String
+	} else if row.UserEmail.Valid && row.UserEmail.String != "" {
+		userName = &row.UserEmail.String
+	}
+	return &domainTask.TaskActivity{
+		ID:           pgToUUID(row.ID),
+		TaskID:       pgToUUID(row.TaskID),
+		UserID:       pgToUUIDPtr(row.UserID),
+		UserName:     userName,
+		ActivityType: row.ActivityType,
+		Payload:      payload,
+		CreatedAt:    pgToTime(row.CreatedAt),
+	}
+}
+
 
 

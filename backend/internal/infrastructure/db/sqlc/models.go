@@ -99,6 +99,15 @@ type Task struct {
 	ArchivedAt          pgtype.Timestamptz `json:"archived_at"`
 }
 
+type TaskActivity struct {
+	ID           pgtype.UUID        `json:"id"`
+	TaskID       pgtype.UUID        `json:"task_id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	ActivityType string             `json:"activity_type"`
+	Payload      []byte             `json:"payload"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type TaskTag struct {
 	TaskID pgtype.UUID `json:"task_id"`
 	TagID  pgtype.UUID `json:"tag_id"`

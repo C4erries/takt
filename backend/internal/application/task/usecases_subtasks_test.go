@@ -42,6 +42,7 @@ func TestService_CreateInboxTask_Subtask(t *testing.T) {
 				task.ColumnID != nil && *task.ColumnID == columnID &&
 				task.Title == "Subtask 1"
 		})).Return(nil).Once()
+		mockRepo.EXPECT().CreateActivity(mock.Anything, mock.Anything).Return(nil).Maybe()
 
 		mockEvents.EXPECT().Publish(mock.Anything, mock.MatchedBy(func(evt any) bool {
 			return true

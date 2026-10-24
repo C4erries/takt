@@ -80,20 +80,43 @@ func (s *Service) AddTagToTask(ctx context.Context, taskID, tagID, workspaceID u
 	if _, err := s.taskRepo.GetByID(ctx, taskID, workspaceID); err != nil {
 		return err
 	}
-	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
+	tag, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID)
+	if err != nil {
 		return err
 	}
-	return s.tagRepo.AddTagToTask(ctx, taskID, tagID)
+	if err := s.tagRepo.AddTagToTask(ctx, taskID, tagID); err != nil {
+		return err
+	}
+	actorID := getActorIDFromContext(ctx)
+	activity, err := domainTask.NewTaskActivity(taskID, actorID, domainTask.ActivityTagAdded, map[string]interface{}{
+		"tag_name":  tag.Name,
+		"color_hex": tag.ColorHex,
+	})
+	if err == nil {
+		_ = s.taskRepo.CreateActivity(ctx, activity)
+	}
+	return nil
 }
 
 func (s *Service) RemoveTagFromTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error {
 	if _, err := s.taskRepo.GetByID(ctx, taskID, workspaceID); err != nil {
 		return err
 	}
-	if _, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID); err != nil {
+	tag, err := s.tagRepo.GetTagByID(ctx, tagID, workspaceID)
+	if err != nil {
 		return err
 	}
-	return s.tagRepo.RemoveTagFromTask(ctx, taskID, tagID)
+	if err := s.tagRepo.RemoveTagFromTask(ctx, taskID, tagID); err != nil {
+		return err
+	}
+	actorID := getActorIDFromContext(ctx)
+	activity, err := domainTask.NewTaskActivity(taskID, actorID, domainTask.ActivityTagRemoved, map[string]interface{}{
+		"tag_name": tag.Name,
+	})
+	if err == nil {
+		_ = s.taskRepo.CreateActivity(ctx, activity)
+	}
+	return nil
 }
 
 func (s *Service) checkWorkspaceAccess(ctx context.Context, workspaceID uuid.UUID) error {

@@ -22,4 +22,6 @@ type TaskRepository interface {
 	ArchiveCompletedTasksInColumn(ctx context.Context, columnID uuid.UUID) (int64, error)
 	UnarchiveTask(ctx context.Context, taskID, workspaceID, columnID uuid.UUID, projectID *uuid.UUID, position float64) (*Task, error)
 	ArchiveCompletedTasksBatchSQL(ctx context.Context, workspaceID, columnID uuid.UUID, olderThanHours float64) (int64, error)
+	CreateActivity(ctx context.Context, activity *TaskActivity) error
+	ListActivitiesByTaskID(ctx context.Context, taskID uuid.UUID) ([]*TaskActivity, error)
 }

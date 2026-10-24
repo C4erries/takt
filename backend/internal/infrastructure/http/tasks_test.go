@@ -40,6 +40,7 @@ type mockTaskService struct {
 	listArchivedFn      func(ctx context.Context, wsID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Task, error)
 	archiveInColFn      func(ctx context.Context, wsID, columnID uuid.UUID) (int64, error)
 	unarchiveFn         func(ctx context.Context, wsID, taskID, columnID uuid.UUID, boardID *uuid.UUID) (*domainTask.Task, error)
+	listActivitiesFn    func(ctx context.Context, wsID, taskID uuid.UUID) ([]*domainTask.TaskActivity, error)
 }
 
 func (m *mockTaskService) GetInboxTasks(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Task, error) {
@@ -122,6 +123,10 @@ func (m *mockTaskService) ArchiveCompletedTasksInColumn(ctx context.Context, wsI
 }
 func (m *mockTaskService) UnarchiveTask(ctx context.Context, wsID, taskID, columnID uuid.UUID, boardID *uuid.UUID) (*domainTask.Task, error) {
 	if m.unarchiveFn != nil { return m.unarchiveFn(ctx, wsID, taskID, columnID, boardID) }
+	return nil, nil
+}
+func (m *mockTaskService) ListTaskActivities(ctx context.Context, wsID, taskID uuid.UUID) ([]*domainTask.TaskActivity, error) {
+	if m.listActivitiesFn != nil { return m.listActivitiesFn(ctx, wsID, taskID) }
 	return nil, nil
 }
 

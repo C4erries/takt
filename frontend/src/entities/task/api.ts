@@ -8,6 +8,7 @@ import type {
   SetFocusRequest,
   CreateInboxTaskRequest,
   CreateTaskData,
+  TaskActivity,
 } from './types';
 
 export const taskDetailApi = {
@@ -112,7 +113,17 @@ export const taskDetailApi = {
       method: 'POST',
     });
   },
+
+  async listActivities(workspaceId: string, taskId: string): Promise<TaskActivity[]> {
+    return request<TaskActivity[]>(`/workspaces/${workspaceId}/tasks/${taskId}/activities`, {
+      method: 'GET',
+    });
+  },
 };
+
+export async function listTaskActivities(workspaceId: string, taskId: string): Promise<TaskActivity[]> {
+  return taskDetailApi.listActivities(workspaceId, taskId);
+}
 
 export async function duplicateTask(workspaceId: string, taskId: string): Promise<Task> {
   return taskDetailApi.duplicateTask(workspaceId, taskId);

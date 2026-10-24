@@ -239,6 +239,7 @@ func TestService_AddTagToTask(t *testing.T) {
 			workspaceID: wsID,
 			setupTaskRepo: func(m *mocks.MockTaskRepository) {
 				m.EXPECT().GetByID(mock.Anything, taskID, wsID).Return(task, nil).Once()
+				m.EXPECT().CreateActivity(mock.Anything, mock.Anything).Return(nil).Maybe()
 			},
 			setupTagRepo: func(m *mocks.MockTagRepository) {
 				m.EXPECT().GetTagByID(mock.Anything, tagID, wsID).Return(tag, nil).Once()
@@ -262,6 +263,7 @@ func TestService_AddTagToTask(t *testing.T) {
 			workspaceID: wsID,
 			setupTaskRepo: func(m *mocks.MockTaskRepository) {
 				m.EXPECT().GetByID(mock.Anything, taskID, wsID).Return(task, nil).Once()
+				m.EXPECT().CreateActivity(mock.Anything, mock.Anything).Return(nil).Maybe()
 			},
 			setupTagRepo: func(m *mocks.MockTagRepository) {
 				m.EXPECT().GetTagByID(mock.Anything, tagID, wsID).Return(nil, domainTask.ErrTagNotFound).Once()
@@ -320,6 +322,7 @@ func TestService_RemoveTagFromTask(t *testing.T) {
 			workspaceID: wsID,
 			setupTaskRepo: func(m *mocks.MockTaskRepository) {
 				m.EXPECT().GetByID(mock.Anything, taskID, wsID).Return(task, nil).Once()
+				m.EXPECT().CreateActivity(mock.Anything, mock.Anything).Return(nil).Maybe()
 			},
 			setupTagRepo: func(m *mocks.MockTagRepository) {
 				m.EXPECT().GetTagByID(mock.Anything, tagID, wsID).Return(tag, nil).Once()

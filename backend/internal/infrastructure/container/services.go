@@ -61,6 +61,10 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 		if repos.AttachmentRepo != nil {
 			taskService.SetAttachmentRepository(repos.AttachmentRepo)
 		}
+		if eventBus != nil {
+			activityLogger := taskApp.NewActivityLogger(repos.TaskRepo)
+			_ = activityLogger.Register(eventBus)
+		}
 	}
 
 	var workspaceService *workspaceApp.Service

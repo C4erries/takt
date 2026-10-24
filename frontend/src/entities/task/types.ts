@@ -8,6 +8,7 @@ import type {
   CreateInboxTaskRequest,
   UnarchiveTaskRequest,
   ArchiveCompletedColumnTasksResponse,
+  TaskActivity,
 } from '@/shared/api';
 
 export type {
@@ -20,6 +21,7 @@ export type {
   CreateInboxTaskRequest,
   UnarchiveTaskRequest,
   ArchiveCompletedColumnTasksResponse,
+  TaskActivity,
 };
 
 export interface UpdateTagRequest {

@@ -73,6 +73,16 @@ export interface ArchiveCompletedColumnTasksResponse {
   archivedCount: number;
 }
 
+export interface TaskActivity {
+  id: string;
+  taskId: string;
+  userId?: string | null;
+  userName?: string | null;
+  activityType: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface UpdateTaskRequest {
   title?: string;
   descriptionMarkdown?: string;

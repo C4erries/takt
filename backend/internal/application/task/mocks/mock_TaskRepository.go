@@ -315,6 +315,63 @@ func (_c *MockTaskRepository_Create_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
+// CreateActivity provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) CreateActivity(ctx context.Context, activity *task.TaskActivity) error {
+	ret := _mock.Called(ctx, activity)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateActivity")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *task.TaskActivity) error); ok {
+		r0 = returnFunc(ctx, activity)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTaskRepository_CreateActivity_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateActivity'
+type MockTaskRepository_CreateActivity_Call struct {
+	*mock.Call
+}
+
+// CreateActivity is a helper method to define mock.On call
+//   - ctx context.Context
+//   - activity *task.TaskActivity
+func (_e *MockTaskRepository_Expecter) CreateActivity(ctx any, activity any) *MockTaskRepository_CreateActivity_Call {
+	return &MockTaskRepository_CreateActivity_Call{Call: _e.mock.On("CreateActivity", ctx, activity)}
+}
+
+func (_c *MockTaskRepository_CreateActivity_Call) Run(run func(ctx context.Context, activity *task.TaskActivity)) *MockTaskRepository_CreateActivity_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *task.TaskActivity
+		if args[1] != nil {
+			arg1 = args[1].(*task.TaskActivity)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_CreateActivity_Call) Return(err error) *MockTaskRepository_CreateActivity_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTaskRepository_CreateActivity_Call) RunAndReturn(run func(ctx context.Context, activity *task.TaskActivity) error) *MockTaskRepository_CreateActivity_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Delete provides a mock function for the type MockTaskRepository
 func (_mock *MockTaskRepository) Delete(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) error {
 	ret := _mock.Called(ctx, id, workspaceID)
@@ -650,6 +707,74 @@ func (_c *MockTaskRepository_GetTodayTasks_Call) Return(tasks []*task.Task, err 
 }
 
 func (_c *MockTaskRepository_GetTodayTasks_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task.Task, error)) *MockTaskRepository_GetTodayTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListActivitiesByTaskID provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) ListActivitiesByTaskID(ctx context.Context, taskID uuid.UUID) ([]*task.TaskActivity, error) {
+	ret := _mock.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListActivitiesByTaskID")
+	}
+
+	var r0 []*task.TaskActivity
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*task.TaskActivity, error)); ok {
+		return returnFunc(ctx, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*task.TaskActivity); ok {
+		r0 = returnFunc(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task.TaskActivity)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_ListActivitiesByTaskID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListActivitiesByTaskID'
+type MockTaskRepository_ListActivitiesByTaskID_Call struct {
+	*mock.Call
+}
+
+// ListActivitiesByTaskID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+func (_e *MockTaskRepository_Expecter) ListActivitiesByTaskID(ctx any, taskID any) *MockTaskRepository_ListActivitiesByTaskID_Call {
+	return &MockTaskRepository_ListActivitiesByTaskID_Call{Call: _e.mock.On("ListActivitiesByTaskID", ctx, taskID)}
+}
+
+func (_c *MockTaskRepository_ListActivitiesByTaskID_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *MockTaskRepository_ListActivitiesByTaskID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_ListActivitiesByTaskID_Call) Return(taskActivitys []*task.TaskActivity, err error) *MockTaskRepository_ListActivitiesByTaskID_Call {
+	_c.Call.Return(taskActivitys, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_ListActivitiesByTaskID_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) ([]*task.TaskActivity, error)) *MockTaskRepository_ListActivitiesByTaskID_Call {
 	_c.Call.Return(run)
 	return _c
 }

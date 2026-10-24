@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	searchApp "takt/internal/application/search"
 	taskApp "takt/internal/application/task"
 	workspaceApp "takt/internal/application/workspace"
+	domainTask "takt/internal/domain/task"
 	domainWorkspace "takt/internal/domain/workspace"
 	"takt/internal/infrastructure/http/generated"
 )
@@ -95,17 +97,9 @@ func (h *Handler) GetHealth(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 2*time.Second)
 	defer cancel()
 
-	dbStatus := generated.Connected
-	overallStatus := generated.HealthStatusOk
-
-	if h.dbChecker != nil {
-		if err := h.dbChecker.Ping(ctx); err != nil {
-			dbStatus = generated.Disconnected
-			overallStatus = generated.HealthStatusDegraded
-		}
-	} else {
-		dbStatus = generated.Disconnected
-		overallStatus = generated.HealthStatusDegraded
+	dbStatus, overallStatus := generated.Disconnected, generated.HealthStatusDegraded
+	if h.dbChecker != nil && h.dbChecker.Ping(ctx) == nil {
+		dbStatus, overallStatus = generated.Connected, generated.HealthStatusOk
 	}
 
 	uptime := int(time.Since(startTime).Seconds())
@@ -149,23 +143,21 @@ func mapWorkspaceToGenerated(w *domainWorkspace.UserWorkspace) generated.Workspa
 	}
 }
 
+func jsonErr(c echo.Context, status int, code, msg string) error {
+	return c.JSON(status, generated.Error{Code: code, Message: msg})
+}
+
 func (h *Handler) Register(c echo.Context) error {
 	var req generated.RegisterJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Invalid request payload",
-		})
+		return jsonErr(c, http.StatusBadRequest, "BAD_REQUEST", "Invalid request payload")
 	}
 
 	email := strings.TrimSpace(string(req.Email))
 	displayName := strings.TrimSpace(req.DisplayName)
 
 	if email == "" || req.Password == "" || displayName == "" {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Email, password and displayName are required",
-		})
+		return jsonErr(c, http.StatusBadRequest, "BAD_REQUEST", "Email, password and displayName are required")
 	}
 
 	out, err := h.workspaceService.Register(c.Request().Context(), workspaceApp.RegisterInput{
@@ -175,23 +167,14 @@ func (h *Handler) Register(c echo.Context) error {
 	})
 	if err != nil {
 		if errors.Is(err, domainWorkspace.ErrUserAlreadyExists) {
-			return c.JSON(http.StatusConflict, generated.Error{
-				Code:    "CONFLICT",
-				Message: "User with this email already exists",
-			})
+			return jsonErr(c, http.StatusConflict, "CONFLICT", "User with this email already exists")
 		}
 		if errors.Is(err, domainWorkspace.ErrInvalidPassword) ||
 			errors.Is(err, domainWorkspace.ErrInvalidEmail) ||
 			errors.Is(err, domainWorkspace.ErrInvalidDisplayName) {
-			return c.JSON(http.StatusBadRequest, generated.Error{
-				Code:    "BAD_REQUEST",
-				Message: err.Error(),
-			})
+			return jsonErr(c, http.StatusBadRequest, "BAD_REQUEST", err.Error())
 		}
-		return c.JSON(http.StatusInternalServerError, generated.Error{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to register user",
-		})
+		return jsonErr(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to register user")
 	}
 
 	SetAuthCookie(c, out.Token, h.isProduction)
@@ -206,18 +189,12 @@ func (h *Handler) Register(c echo.Context) error {
 func (h *Handler) Login(c echo.Context) error {
 	var req generated.LoginJSONRequestBody
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Invalid request payload",
-		})
+		return jsonErr(c, http.StatusBadRequest, "BAD_REQUEST", "Invalid request payload")
 	}
 
 	email := strings.TrimSpace(string(req.Email))
 	if email == "" || req.Password == "" {
-		return c.JSON(http.StatusBadRequest, generated.Error{
-			Code:    "BAD_REQUEST",
-			Message: "Email and password are required",
-		})
+		return jsonErr(c, http.StatusBadRequest, "BAD_REQUEST", "Email and password are required")
 	}
 
 	out, err := h.workspaceService.Login(c.Request().Context(), workspaceApp.LoginInput{
@@ -226,15 +203,9 @@ func (h *Handler) Login(c echo.Context) error {
 	})
 	if err != nil {
 		if errors.Is(err, domainWorkspace.ErrInvalidCredentials) || errors.Is(err, domainWorkspace.ErrUserNotFound) {
-			return c.JSON(http.StatusUnauthorized, generated.Error{
-				Code:    "UNAUTHORIZED",
-				Message: "Invalid email or password",
-			})
+			return jsonErr(c, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid email or password")
 		}
-		return c.JSON(http.StatusInternalServerError, generated.Error{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to log in",
-		})
+		return jsonErr(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to log in")
 	}
 
 	SetAuthCookie(c, out.Token, h.isProduction)
@@ -256,32 +227,20 @@ func (h *Handler) Logout(c echo.Context) error {
 func (h *Handler) GetMe(c echo.Context) error {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, generated.Error{
-			Code:    "UNAUTHORIZED",
-			Message: err.Error(),
-		})
+		return jsonErr(c, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
 	}
 
 	workspaceID, err := GetWorkspaceIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, generated.Error{
-			Code:    "UNAUTHORIZED",
-			Message: err.Error(),
-		})
+		return jsonErr(c, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
 	}
 
 	out, err := h.workspaceService.GetMe(c.Request().Context(), userID, workspaceID)
 	if err != nil {
 		if errors.Is(err, domainWorkspace.ErrUserNotFound) || errors.Is(err, domainWorkspace.ErrAccessDenied) {
-			return c.JSON(http.StatusUnauthorized, generated.Error{
-				Code:    "UNAUTHORIZED",
-				Message: err.Error(),
-			})
+			return jsonErr(c, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
 		}
-		return c.JSON(http.StatusInternalServerError, generated.Error{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to fetch user profile",
-		})
+		return jsonErr(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to fetch user profile")
 	}
 
 	return c.JSON(http.StatusOK, generated.MeResponse{
@@ -294,37 +253,22 @@ func (h *Handler) GetMe(c echo.Context) error {
 func (h *Handler) SearchWorkspace(c echo.Context, workspaceId openapi_types.UUID, params generated.SearchWorkspaceParams) error {
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, generated.Error{
-			Code:    "UNAUTHORIZED",
-			Message: err.Error(),
-		})
+		return jsonErr(c, http.StatusUnauthorized, "UNAUTHORIZED", err.Error())
 	}
 
 	if h.searchService == nil {
-		return c.JSON(http.StatusInternalServerError, generated.Error{
-			Code:    "INTERNAL_ERROR",
-			Message: "Search service is unavailable",
-		})
+		return jsonErr(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Search service is unavailable")
 	}
 
 	res, err := h.searchService.Search(c.Request().Context(), workspaceId, userID, params.Q)
 	if err != nil {
 		if errors.Is(err, domainWorkspace.ErrAccessDenied) {
-			return c.JSON(http.StatusForbidden, generated.Error{
-				Code:    "FORBIDDEN",
-				Message: "Access to workspace denied",
-			})
+			return jsonErr(c, http.StatusForbidden, "FORBIDDEN", "Access to workspace denied")
 		}
 		if errors.Is(err, domainWorkspace.ErrWorkspaceNotFound) {
-			return c.JSON(http.StatusNotFound, generated.Error{
-				Code:    "NOT_FOUND",
-				Message: "Workspace not found",
-			})
+			return jsonErr(c, http.StatusNotFound, "NOT_FOUND", "Workspace not found")
 		}
-		return c.JSON(http.StatusInternalServerError, generated.Error{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to execute search",
-		})
+		return jsonErr(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to execute search")
 	}
 
 	respTasks := make([]generated.Task, 0, len(res.Tasks))
@@ -342,3 +286,99 @@ func (h *Handler) SearchWorkspace(c echo.Context, workspaceId openapi_types.UUID
 		Projects: respProjects,
 	})
 }
+
+func respondTaskDomainError(c echo.Context, err error) error {
+	status, code := http.StatusInternalServerError, "INTERNAL_ERROR"
+	switch {
+	case errors.Is(err, domainTask.ErrTaskNotFound), errors.Is(err, domainTask.ErrTagNotFound):
+		status, code = http.StatusNotFound, "NOT_FOUND"
+	case errors.Is(err, domainTask.ErrInvalidTaskTitle), errors.Is(err, domainTask.ErrInvalidPriority),
+		errors.Is(err, domainTask.ErrInvalidTagName), errors.Is(err, domainTask.ErrInvalidTagColor),
+		errors.Is(err, domainTask.ErrInvalidFocusOrder), errors.Is(err, domainTask.ErrSelfParenting),
+		errors.Is(err, domainTask.ErrInvalidColumnID), errors.Is(err, domainTask.ErrInvalidTaskID),
+		errors.Is(err, domainTask.ErrInvalidActivityType):
+		status, code = http.StatusBadRequest, "BAD_REQUEST"
+	case errors.Is(err, domainTask.ErrTagAlreadyAttached):
+		status, code = http.StatusConflict, "TAG_ALREADY_ATTACHED"
+	}
+	msg := err.Error()
+	if status == http.StatusInternalServerError {
+		log.Printf("[ERROR 500] %s %s: %+v", c.Request().Method, c.Request().RequestURI, err)
+		msg = "Internal server error"
+	}
+	return jsonErr(c, status, code, msg)
+}
+
+func mapDomainTagToGenerated(tag *domainTask.Tag) generated.Tag {
+	return generated.Tag{
+		Id:          tag.ID,
+		WorkspaceId: tag.WorkspaceID,
+		Name:        tag.Name,
+		ColorHex:    tag.ColorHex,
+		CreatedAt:   tag.CreatedAt,
+	}
+}
+
+func mapDomainTaskToGenerated(t *domainTask.Task) generated.Task {
+	var dueDate *openapi_types.Date
+	if t.DueDate != nil {
+		dueDate = &openapi_types.Date{Time: *t.DueDate}
+	}
+	var tags *[]generated.Tag
+	if t.Tags != nil {
+		mapped := make([]generated.Tag, len(t.Tags))
+		for i, tag := range t.Tags {
+			mapped[i] = mapDomainTagToGenerated(tag)
+		}
+		tags = &mapped
+	}
+	var subCount, subDoneCount *int
+	if t.SubtasksCount > 0 {
+		subCount = &t.SubtasksCount
+	}
+	if t.SubtasksCompletedCount > 0 || t.SubtasksCount > 0 {
+		subDoneCount = &t.SubtasksCompletedCount
+	}
+	return generated.Task{
+		Id: t.ID, WorkspaceId: t.WorkspaceID, ParentId: t.ParentID, ProjectId: t.ProjectID,
+		ColumnId: t.ColumnID, Title: t.Title, DescriptionMarkdown: t.DescriptionMarkdown,
+		IsCompleted: t.IsCompleted, CompletedAt: t.CompletedAt, DueDate: dueDate,
+		Priority: generated.TaskPriority(t.Priority), FocusOrder: t.FocusOrder, Position: float64(t.Position),
+		SubtasksCount: subCount, SubtasksCompletedCount: subDoneCount, Tags: tags,
+		IsArchived: t.IsArchived, ArchivedAt: t.ArchivedAt, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
+	}
+}
+
+func mapDomainTasksToGenerated(tasks []*domainTask.Task) []generated.Task {
+	resp := make([]generated.Task, len(tasks))
+	for i, t := range tasks {
+		resp[i] = mapDomainTaskToGenerated(t)
+	}
+	return resp
+}
+
+func mapDomainActivityToGenerated(a *domainTask.TaskActivity) generated.TaskActivity {
+	var payload *map[string]interface{}
+	if a.Payload != nil {
+		p := a.Payload
+		payload = &p
+	}
+	return generated.TaskActivity{
+		Id:           a.ID,
+		TaskId:       a.TaskID,
+		UserId:       a.UserID,
+		UserName:     a.UserName,
+		ActivityType: a.ActivityType,
+		Payload:      payload,
+		CreatedAt:    a.CreatedAt,
+	}
+}
+
+func mapDomainActivitiesToGenerated(activities []*domainTask.TaskActivity) []generated.TaskActivity {
+	resp := make([]generated.TaskActivity, len(activities))
+	for i, a := range activities {
+		resp[i] = mapDomainActivityToGenerated(a)
+	}
+	return resp
+}
+

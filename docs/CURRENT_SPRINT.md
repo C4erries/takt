@@ -4,68 +4,98 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.9.3 — «Архив задач (Batch SQL ADR-0008)» 🟡 ФАЗА А (Готово к запуску)
+## Текущий спринт: Спринт 0.9.4 — «История изменений задачи (Activity Log)» 🟡 ФАЗА Б (В работе)
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Штаб)
 
-* **Бизнес-цель**: Разгрузка досок от выполненных задач без потери истории с возможностью ручного батч-сброса, авто-архивации по таймеру (ADR-0008 Batch SQL Fast Path) и восстановления из архива.
+* **Бизнес-цель**: Прозрачность жизненного цикла задачи. Пользователь видит в шторке (`TaskDrawer.tsx`) полную хронологическую ленту изменений: кто и когда перенёс задачу в другую колонку, изменил статус/приоритет, назначил дедлайн, добавил тег или подзадачу.
 
-* **Связь с бэклогом и ADR**: [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B05), [`docs/decisions/0008-hybrid-batch-automation-execution.md`](decisions/0008-hybrid-batch-automation-execution.md).
+* **Связь с бэклогом и ADR**: [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B06).
 
 * **Принятые микро-решения**:
 
-  1. **Схема БД (миграция 000014_archive)**:
+  1. **Схема БД (миграция 000015_task_activities)**:
      ```sql
-     ALTER TABLE tasks ADD COLUMN is_archived BOOLEAN NOT NULL DEFAULT FALSE;
-     ALTER TABLE tasks ADD COLUMN archived_at TIMESTAMPTZ NULL;
-     CREATE INDEX idx_tasks_workspace_archived ON tasks(workspace_id, is_archived) WHERE is_archived = true;
+     CREATE TABLE task_activities (
+         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+         task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+         user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+         activity_type VARCHAR(64) NOT NULL,
+         payload JSONB NOT NULL DEFAULT '{}',
+         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+     );
+     CREATE INDEX idx_task_activities_task_id ON task_activities(task_id, created_at DESC);
      ```
-     Все регулярные запросы выборки задач на досках (`ListTasksByProject`, `ListTasksByColumn` и т.д.) дополняются условием `AND is_archived = false`.
+     `user_id` может быть `NULL` для системных/автоматических действий.
 
-  2. **API Архива**:
-     - `GET /workspaces/{wid}/tasks/archived?project_id=...` — список архивированных задач.
-     - `POST /workspaces/{wid}/columns/{id}/archive-completed` — батч-сброс выполненных задач колонки в архив одним SQL (`UPDATE tasks SET is_archived = true, archived_at = NOW() WHERE column_id = $1 AND is_completed = true AND is_archived = false`).
-     - `PATCH /workspaces/{wid}/tasks/{id}/unarchive` с `{ columnId: string, boardId?: string }` — разархивирование задачи с возвращением в выбранную колонку (`is_archived = false`, `archived_at = null`).
+  2. **Типы событий и payload (`activity_type`)**:
+     - `column_moved`: `{ "from_column": "В работе", "to_column": "Готово" }`
+     - `status_changed`: `{ "is_completed": true/false }`
+     - `priority_changed`: `{ "from_priority": "normal", "to_priority": "high" }`
+     - `due_date_set`: `{ "due_date": "2026-10-25T00:00:00Z" }`
+     - `due_date_cleared`: `{}`
+     - `tag_added`: `{ "tag_name": "Баг", "color_hex": "#ef4444" }`
+     - `tag_removed`: `{ "tag_name": "Баг" }`
+     - `title_changed`: `{ "from_title": "...", "to_title": "..." }`
+     - `subtask_added`: `{ "title": "...", "subtask_id": "..." }`
+     - `task_archived`: `{}`
+     - `task_unarchived`: `{ "column_name": "..." }`
 
-  3. **ADR-0008 Batch Fast Path в Automations Worker**:
-     - Интерфейс `BatchTaskExecutor` в `backend/internal/application/automation/ports.go`:
-       `ArchiveCompletedTasksInColumn(ctx context.Context, workspaceID, columnID uuid.UUID, olderThanHours float64) (int64, error)`.
-     - Метод `canUseBatchPath(rule)` в воркере: если действие `archive_task`, conditions только `is_completed = true` — использовать быстрый SQL вместо N+1 цикла.
-     - Событие `BatchSweepCompletedEvent` в `domain/events/` для агрегированного уведомления.
+  3. **EventBus & Асинхронное логирование**:
+     - Listener `ActivityLogger` подписывается на события через EventBus:
+       `task_moved`, `task_updated`, `task_completed`.
+     - Также Use Cases (например, привязка/отвязка тегов, добавление подзадачи) могут логировать напрямую через `ActivityRepository` или публикацию событий.
 
-  4. **UI Архива**:
-     - Доступ: пункт «Архив» в боковом сайдбаре (`Sidebar.tsx`, иконка `Archive`, счётчик архивированных задач).
-     - Полноценный экран/вид `frontend/src/features/archive/ArchiveView.tsx`: список архивных задач, фильтр по проекту, дата архивации, кнопка «Восстановить» (поповер выбора доски и колонки).
-     - В меню колонки (3 точки) на доске: кнопка «Сгрузить выполненные в архив» с подтверждением.
+  4. **API Контракты (OpenAPI)**:
+     - `GET /workspaces/{workspace_id}/tasks/{task_id}/activities` -> `[]TaskActivity`
+     - Модель `TaskActivity`:
+       ```yaml
+       TaskActivity:
+         type: object
+         required: [id, taskId, activityType, createdAt]
+         properties:
+           id: { type: string, format: uuid }
+           taskId: { type: string, format: uuid }
+           userId: { type: string, format: uuid, nullable: true }
+           userName: { type: string, nullable: true }
+           activityType: { type: string }
+           payload: { type: object, additionalProperties: true }
+           createdAt: { type: string, format: date-time }
+       ```
+
+  5. **UI — Вкладка «История» в шторке (`TaskDrawer.tsx`)**:
+     - Дополнительная вкладка «История» рядом с «Подзадачи» в шторке задачи.
+     - Ленивая загрузка (запрос выполняется только при открытии вкладки).
+     - Хронологическая вертикальная лента с иконками типов событий, именем пользователя, красивым описанием и относительным временем (`2 мин назад`, `вчера в 15:40`).
 
 ---
 
-## 📋 2. Таблица задач спринта 0.9.3
+## 📋 2. Таблица задач спринта 0.9.4
 
 | # | Задача | Статус | Приоритет | Ответственный | Файлы |
 |---|--------|--------|-----------|---------------|-------|
-| 1 | **[B05 Step 1] Archive Schema & Contracts**: миграция 000014, sqlc queries, OpenAPI эндпоинты, make generate, чистый домен | ✅ Готово | Высокий | `backend_developer` | `migrations/`, `queries/tasks.sql`, `api/openapi/*` |
-| 2 | **[B05 Step 2] Archive Application, Fast Path & HTTP**: use cases, BatchTaskExecutor, worker fast path, handlers, тесты | ✅ Готово | Высокий | `backend_developer` | `application/task/`, `application/automation/`, `infrastructure/http/` |
-| 3 | **[B05 UI] Archive Navigation & Column Flush**: иконка в сайдбаре, кнопка сброса выполненных в колонке | ⏳ Ожидает | Средний | `frontend_developer` | `Sidebar.tsx`, `KanbanColumn.tsx` |
-| 4 | **[B05 UI] Archive View & Restore Modal**: экран архива `ArchiveView.tsx`, разархивирование в выбранную колонку | ⏳ Ожидает | Высокий | `frontend_developer` | `ArchiveView.tsx`, `RestoreTaskPopover.tsx` |
-| 5 | **[Verification]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, коммит | ⏳ В очереди | Критический | Lead Orchestrator | — |
+| 1 | **[B06 Step 1] Activities Schema, Queries & OpenAPI**: миграция 000015, sqlc queries, OpenAPI эндпоинт, domain model, make generate | ✅ Готово | Высокий | `backend_developer` | `migrations/`, `queries/activities.sql`, `api/openapi/*`, `internal/domain/task/` |
+| 2 | **[B06 Step 2] Activities Listener, Use Cases & HTTP**: listener в EventBus, repo methods, HTTP handler GetTaskActivities, тесты | ✅ Готово | Высокий | `backend_developer` | `application/task/`, `infrastructure/repository/`, `infrastructure/http/` |
+| 3 | **[B06 UI] Task Drawer History Tab**: компонент `TaskActivityTab.tsx`, иконки действий, относительное время | ⏳ Ожидает | Высокий | `frontend_developer` | `frontend/src/widgets/task-drawer/` |
+| 4 | **[Verification]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, `docker compose up -d --build`, `pytest tests/`, коммит | ⏳ В очереди | Критический | Lead Orchestrator | — |
 
 ---
 
 ## 🎯 3. Definition of Done (DoD)
 
-- [x] Выполнена миграция `000014_archive` (`is_archived`, `archived_at`, индекс).
-- [x] Обычные списки задач доски и Inbox исключают архивные задачи (`AND is_archived = false`).
-- [x] Работают API архива: `GET /tasks/archived`, `POST /columns/{id}/archive-completed`, `PATCH /tasks/{id}/unarchive`.
-- [x] Реализован ADR-0008 Batch SQL Fast Path в воркере автоматизаций (`ArchiveCompletedTasksInColumn` выполняется 1 SQL-запросом).
-- [ ] В сайдбаре есть секция «Архив» со счётчиком; по клику открывается `ArchiveView`.
-- [ ] В меню колонки доски доступно действие «Сгрузить выполненные в архив».
-- [ ] На карточке архивной задачи есть действие «Восстановить» с выбором целевой колонки.
-- [ ] `make check-arch` — 0 ошибок.
+- [x] Выполнена миграция `000015_task_activities` (таблица `task_activities`, индексы).
+- [x] Описан OpenAPI эндпоинт `GET /workspaces/{workspace_id}/tasks/{task_id}/activities` и сгенерированы типы.
+- [x] Реализованы queries для sqlc (`CreateActivity`, `ListActivitiesByTaskID`).
+- [x] Реализован чистый домен `TaskActivity` с валидацией инвариантов.
+- [x] Реализован `ActivityLogger` (EventBus listener) и/или методы логирования активности в Use Cases.
+- [x] Реализован HTTP-хендлер `GetTaskActivities` с проверкой доступа к воркспейсу.
+- [ ] Во фронтенде в `TaskDrawer` добавлена вкладка «История» с человекопонятным рендерингом событий и датами.
+- [x] `make check-arch` — 0 ошибок (файлы < 400 строк, папки <= 7 файлов, чистый domain).
 - [ ] `npm run build && npm run lint` — 0 ошибок.
-- [ ] `make test` — все тесты зелёные.
+- [x] `make test` — все тесты зелёные.
+- [ ] `uv run pytest tests/` — 100% PASS.
 
 ---
 
@@ -73,6 +103,5 @@
 
 | Спринт | Задачи | Суть |
 |--------|--------|------|
-| **0.9.4** | B06 | История изменений задачи (новая таблица + EventBus listener) |
-| **0.9.5** | B09 | Профиль пользователя: имя + аватар |
+| **0.9.5** | B14, B15, B09 | UX Polish (расписание без жесткой колонки, иерархия проектов/досок/колонок, полноэкранный менеджер тегов) + Профиль (отложено) |
 | **Future** | B01 | Subtasks Automation Suite (L-задача) |

@@ -924,6 +924,80 @@ func (_c *MockUseCases_ListSubtasks_Call) RunAndReturn(run func(ctx context.Cont
 	return _c
 }
 
+// ListTaskActivities provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) ListTaskActivities(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID) ([]*task0.TaskActivity, error) {
+	ret := _mock.Called(ctx, workspaceID, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListTaskActivities")
+	}
+
+	var r0 []*task0.TaskActivity
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) ([]*task0.TaskActivity, error)); ok {
+		return returnFunc(ctx, workspaceID, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) []*task0.TaskActivity); ok {
+		r0 = returnFunc(ctx, workspaceID, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task0.TaskActivity)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_ListTaskActivities_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListTaskActivities'
+type MockUseCases_ListTaskActivities_Call struct {
+	*mock.Call
+}
+
+// ListTaskActivities is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+//   - taskID uuid.UUID
+func (_e *MockUseCases_Expecter) ListTaskActivities(ctx any, workspaceID any, taskID any) *MockUseCases_ListTaskActivities_Call {
+	return &MockUseCases_ListTaskActivities_Call{Call: _e.mock.On("ListTaskActivities", ctx, workspaceID, taskID)}
+}
+
+func (_c *MockUseCases_ListTaskActivities_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID)) *MockUseCases_ListTaskActivities_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_ListTaskActivities_Call) Return(taskActivitys []*task0.TaskActivity, err error) *MockUseCases_ListTaskActivities_Call {
+	_c.Call.Return(taskActivitys, err)
+	return _c
+}
+
+func (_c *MockUseCases_ListTaskActivities_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, taskID uuid.UUID) ([]*task0.TaskActivity, error)) *MockUseCases_ListTaskActivities_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListWorkspaceTags provides a mock function for the type MockUseCases
 func (_mock *MockUseCases) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*task0.Tag, error) {
 	ret := _mock.Called(ctx, workspaceID)

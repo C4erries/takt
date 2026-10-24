@@ -77,6 +77,7 @@
 | **Sprint 0.9.1** | [sprint-0.9.1.md](sprint-0.9.1.md) | 2026-10-24 | `✅ Done` | UX Polish: хоткей заметок Shift+Enter/Ctrl+Enter, эргономика подзадач + привязка существующей задачи, менеджер тегов |
 | **Sprint 0.9.2** | [sprint-0.9.2.md](sprint-0.9.2.md) | 2026-10-24 | `✅ Done` | Core Features: глубокое копирование задачи (подзадачи, теги, вложения), скоуп автоматизаций по доске в listener и UI |
 | **Sprint 0.9.3** | [sprint-0.9.3.md](sprint-0.9.3.md) | 2026-10-24 | `✅ Done` | Архив задач: ADR-0008 batch SQL fast path, сброс завершенных в колонке, экран архива и разархивация |
+| **Sprint 0.9.4** | [sprint-0.9.4.md](sprint-0.9.4.md) | 2026-10-24 | `✅ Done` | История изменений задачи (Activity Log): миграция audit trail, EventBus listener, вкладка истории в шторке |
 
 ---
 

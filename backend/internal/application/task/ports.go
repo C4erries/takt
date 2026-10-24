@@ -71,4 +71,5 @@ type UseCases interface {
 	ListArchivedTasks(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Task, error)
 	ArchiveCompletedTasksInColumn(ctx context.Context, workspaceID, columnID uuid.UUID) (int64, error)
 	UnarchiveTask(ctx context.Context, workspaceID, taskID, columnID uuid.UUID, boardID *uuid.UUID) (*domainTask.Task, error)
+	ListTaskActivities(ctx context.Context, workspaceID, taskID uuid.UUID) ([]*domainTask.TaskActivity, error)
 }

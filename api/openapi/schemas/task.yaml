@@ -217,3 +217,39 @@ UnarchiveTaskRequest:
       format: uuid
       nullable: true
       example: "b0000000-0000-0000-0000-000000000001"
+
+TaskActivity:
+  type: object
+  required:
+    - id
+    - taskId
+    - activityType
+    - createdAt
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "a0000000-0000-0000-0000-000000000001"
+    taskId:
+      type: string
+      format: uuid
+      example: "t0000000-0000-0000-0000-000000000001"
+    userId:
+      type: string
+      format: uuid
+      nullable: true
+      example: "u0000000-0000-0000-0000-000000000001"
+    userName:
+      type: string
+      nullable: true
+      example: "Алексей Иванов"
+    activityType:
+      type: string
+      example: "column_moved"
+    payload:
+      type: object
+      additionalProperties: true
+    createdAt:
+      type: string
+      format: date-time
+

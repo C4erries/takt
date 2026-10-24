@@ -3,9 +3,7 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -17,92 +15,6 @@ import (
 	domainTask "takt/internal/domain/task"
 	"takt/internal/infrastructure/http/generated"
 )
-
-func respondTaskDomainError(c echo.Context, err error) error {
-	status, code := http.StatusInternalServerError, "INTERNAL_ERROR"
-	switch {
-	case errors.Is(err, domainTask.ErrTaskNotFound), errors.Is(err, domainTask.ErrTagNotFound):
-		status, code = http.StatusNotFound, "NOT_FOUND"
-	case errors.Is(err, domainTask.ErrInvalidTaskTitle), errors.Is(err, domainTask.ErrInvalidPriority),
-		errors.Is(err, domainTask.ErrInvalidTagName), errors.Is(err, domainTask.ErrInvalidTagColor),
-		errors.Is(err, domainTask.ErrInvalidFocusOrder), errors.Is(err, domainTask.ErrSelfParenting),
-		errors.Is(err, domainTask.ErrInvalidColumnID):
-		status, code = http.StatusBadRequest, "BAD_REQUEST"
-	case errors.Is(err, domainTask.ErrTagAlreadyAttached):
-		status, code = http.StatusConflict, "TAG_ALREADY_ATTACHED"
-	}
-	msg := err.Error()
-	if status == http.StatusInternalServerError {
-		log.Printf("[ERROR 500] %s %s: %+v", c.Request().Method, c.Request().RequestURI, err)
-		msg = "Internal server error"
-	}
-	return c.JSON(status, generated.Error{Code: code, Message: msg})
-}
-
-func mapDomainTagToGenerated(tag *domainTask.Tag) generated.Tag {
-	return generated.Tag{
-		Id:          tag.ID,
-		WorkspaceId: tag.WorkspaceID,
-		Name:        tag.Name,
-		ColorHex:    tag.ColorHex,
-		CreatedAt:   tag.CreatedAt,
-	}
-}
-
-func mapDomainTaskToGenerated(t *domainTask.Task) generated.Task {
-	var dueDate *openapi_types.Date
-	if t.DueDate != nil {
-		dueDate = &openapi_types.Date{Time: *t.DueDate}
-	}
-
-	var tags *[]generated.Tag
-	if t.Tags != nil {
-		mapped := make([]generated.Tag, len(t.Tags))
-		for i, tag := range t.Tags {
-			mapped[i] = mapDomainTagToGenerated(tag)
-		}
-		tags = &mapped
-	}
-
-	var subCount, subDoneCount *int
-	if t.SubtasksCount > 0 {
-		subCount = &t.SubtasksCount
-	}
-	if t.SubtasksCompletedCount > 0 || t.SubtasksCount > 0 {
-		subDoneCount = &t.SubtasksCompletedCount
-	}
-
-	return generated.Task{
-		Id:                     t.ID,
-		WorkspaceId:            t.WorkspaceID,
-		ParentId:               t.ParentID,
-		ProjectId:              t.ProjectID,
-		ColumnId:               t.ColumnID,
-		Title:                  t.Title,
-		DescriptionMarkdown:    t.DescriptionMarkdown,
-		IsCompleted:            t.IsCompleted,
-		CompletedAt:            t.CompletedAt,
-		DueDate:                dueDate,
-		Priority:               generated.TaskPriority(t.Priority),
-		FocusOrder:             t.FocusOrder,
-		Position:               float64(t.Position),
-		SubtasksCount:          subCount,
-		SubtasksCompletedCount: subDoneCount,
-		Tags:                   tags,
-		IsArchived:             t.IsArchived,
-		ArchivedAt:             t.ArchivedAt,
-		CreatedAt:              t.CreatedAt,
-		UpdatedAt:              t.UpdatedAt,
-	}
-}
-
-func mapDomainTasksToGenerated(tasks []*domainTask.Task) []generated.Task {
-	resp := make([]generated.Task, len(tasks))
-	for i, t := range tasks {
-		resp[i] = mapDomainTaskToGenerated(t)
-	}
-	return resp
-}
 
 func (h *Handler) GetInboxTasks(c echo.Context) error {
 	workspaceID, err := GetWorkspaceIDFromContext(c)
@@ -339,30 +251,22 @@ func (h *Handler) UpdateTag(c echo.Context, workspaceId openapi_types.UUID, tagI
 }
 
 func (h *Handler) DeleteWorkspaceTag(c echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error {
-	if err := h.taskService.DeleteTag(c.Request().Context(), tagId, workspaceId); err != nil {
-		return respondTaskDomainError(c, err)
-	}
+	if err := h.taskService.DeleteTag(c.Request().Context(), tagId, workspaceId); err != nil { return respondTaskDomainError(c, err) }
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) DeleteUnusedWorkspaceTags(c echo.Context, workspaceId openapi_types.UUID) error {
-	if err := h.taskService.DeleteUnusedTags(c.Request().Context(), workspaceId); err != nil {
-		return respondTaskDomainError(c, err)
-	}
+	if err := h.taskService.DeleteUnusedTags(c.Request().Context(), workspaceId); err != nil { return respondTaskDomainError(c, err) }
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) AddTagToTask(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID, tagId openapi_types.UUID) error {
-	if err := h.taskService.AddTagToTask(c.Request().Context(), taskId, tagId, workspaceId); err != nil {
-		return respondTaskDomainError(c, err)
-	}
+	if err := h.taskService.AddTagToTask(c.Request().Context(), taskId, tagId, workspaceId); err != nil { return respondTaskDomainError(c, err) }
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) RemoveTagFromTask(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID, tagId openapi_types.UUID) error {
-	if err := h.taskService.RemoveTagFromTask(c.Request().Context(), taskId, tagId, workspaceId); err != nil {
-		return respondTaskDomainError(c, err)
-	}
+	if err := h.taskService.RemoveTagFromTask(c.Request().Context(), taskId, tagId, workspaceId); err != nil { return respondTaskDomainError(c, err) }
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -393,4 +297,13 @@ func (h *Handler) UnarchiveTask(c echo.Context, workspaceId openapi_types.UUID, 
 	}
 	return c.JSON(http.StatusOK, mapDomainTaskToGenerated(task))
 }
+
+func (h *Handler) ListTaskActivities(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error {
+	activities, err := h.taskService.ListTaskActivities(c.Request().Context(), workspaceId, taskId)
+	if err != nil {
+		return respondTaskDomainError(c, err)
+	}
+	return c.JSON(http.StatusOK, mapDomainActivitiesToGenerated(activities))
+}
+
 

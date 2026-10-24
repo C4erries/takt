@@ -15,4 +15,6 @@ var (
 	ErrSelfParenting      = errors.New("task cannot be its own parent")
 	ErrInvalidParent      = ErrSelfParenting
 	ErrInvalidColumnID    = errors.New("column id cannot be empty")
+	ErrInvalidTaskID      = errors.New("task id cannot be empty")
+	ErrInvalidActivityType = errors.New("invalid activity type")
 )

@@ -2,19 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Star, CheckCircle2, Circle, Trash2, FolderClosed, Clock, CornerUpLeft } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Task } from '@/shared/api';
-import {
-  useUpdateTaskMutation,
-  useSetTaskFocusMutation,
-  useSubtasksQuery,
-  formatTaskNumber,
-} from '@/entities/task';
-import {
-  useProjectsQuery,
-  useProjectBoardsQuery,
-  useBoardColumnsQuery,
-  useProjectAllColumnsQuery,
-  useMoveTaskMutation,
-} from '@/entities/project';
+import { useUpdateTaskMutation, useSetTaskFocusMutation, useSubtasksQuery, formatTaskNumber } from '@/entities/task';
+import { useProjectsQuery, useProjectBoardsQuery, useBoardColumnsQuery, useProjectAllColumnsQuery, useMoveTaskMutation } from '@/entities/project';
 import { useUploadAttachmentMutation } from '@/entities/attachment';
 import { MarkdownNotes, TaskAttachments } from '@/widgets/task-inspector';
 import { Button, Input } from '@/shared/components/ui';
@@ -24,6 +13,7 @@ import { QuickActionBar } from './QuickActionBar';
 import { TaskTagSection } from './TaskTagSection';
 import { TaskSubtasksSection } from './TaskSubtasksSection';
 import { TaskAutomationsSection } from './TaskAutomationsSection';
+import { TaskActivityTab } from './TaskActivityTab';
 import { type TaskDrawerProps, PRIORITIES, PRIORITY_ACTIVE_STYLES } from './types';
 
 export const TaskDrawer: React.FC<TaskDrawerProps> = ({
@@ -74,6 +64,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
   const [title, setTitle] = useState(currentTask?.title ?? '');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const drawerRef = useRef<HTMLElement | null>(null);
 
@@ -82,6 +73,7 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
       setTitle(task.title ?? '');
       setIsEditingTitle(false);
       setIsAddingTag(false);
+      setActiveTab('details');
     }
   }, [task?.id, task?.title]);
 
@@ -186,30 +178,18 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                   {/* WEEEK-style breadcrumbs #parent > #child or task number badge */}
                   {currentTask.parentId ? (
                     <div className="flex items-center gap-1 font-mono text-xs text-muted bg-canvas/60 px-2 py-0.5 rounded border border-subtle/60">
-                      <button
-                        type="button"
-                        onClick={() => onSelectTask?.(currentTask.parentId!)}
-                        className="hover:text-accent-solid transition-colors"
-                        title={parentTask?.title ? `Перейти к: ${parentTask.title}` : 'Родительская задача'}
-                      >
+                      <button type="button" onClick={() => onSelectTask?.(currentTask.parentId!)} className="hover:text-accent-solid transition-colors" title={parentTask?.title ? `Перейти к: ${parentTask.title}` : 'Родительская задача'}>
                         {formatTaskNumber(currentTask.parentId)}
                       </button>
                       <span className="text-muted/50">&gt;</span>
                       <span className="text-primary font-medium">{formatTaskNumber(currentTask.id)}</span>
                     </div>
                   ) : (
-                    <span className="font-mono text-xs text-muted bg-canvas/40 px-2 py-0.5 rounded border border-subtle/40">
-                      {formatTaskNumber(currentTask.id)}
-                    </span>
+                    <span className="font-mono text-xs text-muted bg-canvas/40 px-2 py-0.5 rounded border border-subtle/40">{formatTaskNumber(currentTask.id)}</span>
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-canvas transition-colors"
-                  title="Закрыть (Esc)"
-                >
+                <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-muted hover:text-primary hover:bg-canvas transition-colors" title="Закрыть (Esc)">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -278,93 +258,104 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                 onColumnChange={handleColumnChange}
               />
 
-              {/* Back button to parent task if subtask */}
-              {currentTask.parentId && (
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => onSelectTask?.(currentTask.parentId!)}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-solid hover:text-accent-solid-hover bg-accent-surface/30 hover:bg-accent-surface/50 border border-accent-solid/30 rounded-lg px-2.5 py-1.5 transition-colors max-w-full truncate"
-                    title={parentTask?.title ? `Вернуться к: ${parentTask.title}` : 'Родительская задача'}
-                  >
-                    <CornerUpLeft className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{parentTask?.title || 'Родительская задача'}</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Subtasks Section */}
-              <TaskSubtasksSection
-                workspaceId={workspaceId}
-                parentTaskId={currentTask.id}
-                onOpenTask={onSelectTask}
-                onToggleTask={onToggleTask}
-              />
-
-              {/* Tags section with autocomplete and color palette */}
-              <TaskTagSection
-                taskId={currentTask.id}
-                tags={currentTask.tags}
-                workspaceId={workspaceId}
-                isAddingTag={isAddingTag}
-                onToggleAddingTag={() => setIsAddingTag((prev) => !prev)}
-              />
-
-              {/* Priority row with self-colored active selection (D-071-3) */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-mono uppercase tracking-wider text-muted">Приоритет</label>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {PRIORITIES.map((p) => {
-                    const active = currentTask.priority === p.value || (p.value === 'pending' && currentTask.priority === 'urgent');
-                    return (
-                      <button
-                        key={p.value}
-                        type="button"
-                        onClick={() => updateTaskMutation.mutate({ taskId: currentTask.id, data: { priority: p.value } })}
-                        className={cn('text-xs px-2.5 py-1 rounded-full border transition-all', active ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle/60 text-muted hover:text-primary hover:bg-canvas/50')}
-                      >
-                        {p.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Project row */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-mono uppercase tracking-wider text-muted flex items-center gap-1">
-                  <FolderClosed className="w-3 h-3" /> Проект
-                </label>
-                <select
-                  value={currentTask.projectId ?? ''}
-                  onChange={(e) => updateTaskMutation.mutate({ taskId: currentTask.id, data: { projectId: e.target.value || null } })}
-                  className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
+              {/* Tab Switcher: Детали / История */}
+              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-canvas border border-subtle">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('details')}
+                  className={cn(
+                    'flex-1 py-1 rounded-md text-xs font-medium transition-colors text-center',
+                    activeTab === 'details' ? 'bg-surface text-primary shadow-washi-sm font-semibold' : 'text-muted hover:text-primary'
+                  )}
                 >
-                  <option value="">(Входящие)</option>
-                  {projects.map((proj) => <option key={proj.id} value={proj.id}>{proj.name}</option>)}
-                </select>
+                  Детали
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('history')}
+                  className={cn(
+                    'flex-1 py-1 rounded-md text-xs font-medium transition-colors text-center',
+                    activeTab === 'history' ? 'bg-surface text-primary shadow-washi-sm font-semibold' : 'text-muted hover:text-primary'
+                  )}
+                >
+                  История
+                </button>
               </div>
 
-              {/* Markdown Notes with Ctrl+V support */}
-              <MarkdownNotes
-                initialValue={currentTask.descriptionMarkdown ?? ''}
-                onSave={(val) => updateTaskMutation.mutate({ taskId: currentTask.id, data: { descriptionMarkdown: val } })}
-                onUploadImage={handleUploadImageForNotes}
-              />
+              {activeTab === 'history' ? (
+                <TaskActivityTab workspaceId={workspaceId} taskId={currentTask.id} isActive={activeTab === 'history'} />
+              ) : (
+                <>
+                  {/* Back button to parent task if subtask */}
+                  {currentTask.parentId && (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => onSelectTask?.(currentTask.parentId!)}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-solid hover:text-accent-solid-hover bg-accent-surface/30 hover:bg-accent-surface/50 border border-accent-solid/30 rounded-lg px-2.5 py-1.5 transition-colors max-w-full truncate"
+                        title={parentTask?.title ? `Вернуться к: ${parentTask.title}` : 'Родительская задача'}
+                      >
+                        <CornerUpLeft className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{parentTask?.title || 'Родительская задача'}</span>
+                      </button>
+                    </div>
+                  )}
 
-              {/* Attachments Section */}
-              <TaskAttachments workspaceId={workspaceId} taskId={currentTask.id} />
+                  <TaskSubtasksSection workspaceId={workspaceId} parentTaskId={currentTask.id} onOpenTask={onSelectTask} onToggleTask={onToggleTask} />
+                  <TaskTagSection taskId={currentTask.id} tags={currentTask.tags} workspaceId={workspaceId} isAddingTag={isAddingTag} onToggleAddingTag={() => setIsAddingTag((prev) => !prev)} />
 
-              {/* Task automations (D-072-4) */}
-              <TaskAutomationsSection
-                taskId={currentTask.id}
-                workspaceId={workspaceId}
-                columnId={currentTask.columnId}
-                boardId={activeBoard?.id}
-                projectId={currentTask.projectId}
-                allColumns={allColumns}
-                boardColumnGroups={boardGroups}
-              />
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-muted">Приоритет</label>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {PRIORITIES.map((p) => {
+                        const active = currentTask.priority === p.value || (p.value === 'pending' && currentTask.priority === 'urgent');
+                        return (
+                          <button
+                            key={p.value}
+                            type="button"
+                            onClick={() => updateTaskMutation.mutate({ taskId: currentTask.id, data: { priority: p.value } })}
+                            className={cn('text-xs px-2.5 py-1 rounded-full border transition-all', active ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle/60 text-muted hover:text-primary hover:bg-canvas/50')}
+                          >
+                            {p.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-muted flex items-center gap-1">
+                      <FolderClosed className="w-3 h-3" /> Проект
+                    </label>
+                    <select
+                      value={currentTask.projectId ?? ''}
+                      onChange={(e) => updateTaskMutation.mutate({ taskId: currentTask.id, data: { projectId: e.target.value || null } })}
+                      className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
+                    >
+                      <option value="">(Входящие)</option>
+                      {projects.map((proj) => <option key={proj.id} value={proj.id}>{proj.name}</option>)}
+                    </select>
+                  </div>
+
+                  <MarkdownNotes
+                    initialValue={currentTask.descriptionMarkdown ?? ''}
+                    onSave={(val) => updateTaskMutation.mutate({ taskId: currentTask.id, data: { descriptionMarkdown: val } })}
+                    onUploadImage={handleUploadImageForNotes}
+                  />
+
+                  <TaskAttachments workspaceId={workspaceId} taskId={currentTask.id} />
+
+                  <TaskAutomationsSection
+                    taskId={currentTask.id}
+                    workspaceId={workspaceId}
+                    columnId={currentTask.columnId}
+                    boardId={activeBoard?.id}
+                    projectId={currentTask.projectId}
+                    allColumns={allColumns}
+                    boardColumnGroups={boardGroups}
+                  />
+                </>
+              )}
             </div>
 
             {/* Footer actions */}

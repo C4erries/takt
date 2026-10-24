@@ -966,6 +966,26 @@ type Task struct {
 // TaskPriority Example: none
 type TaskPriority string
 
+// TaskActivity defines model for TaskActivity.
+type TaskActivity struct {
+	// ActivityType Example: column_moved
+	ActivityType string    `json:"activityType"`
+	CreatedAt    time.Time `json:"createdAt"`
+
+	// Id Example: a0000000-0000-0000-0000-000000000001
+	Id      openapi_types.UUID      `json:"id"`
+	Payload *map[string]interface{} `json:"payload,omitempty"`
+
+	// TaskId Example: t0000000-0000-0000-0000-000000000001
+	TaskId openapi_types.UUID `json:"taskId"`
+
+	// UserId Example: u0000000-0000-0000-0000-000000000001
+	UserId *openapi_types.UUID `json:"userId,omitempty"`
+
+	// UserName Example: Алексей Иванов
+	UserName *string `json:"userName,omitempty"`
+}
+
 // ToggleAutomationRequest defines model for ToggleAutomationRequest.
 type ToggleAutomationRequest struct {
 	// IsEnabled Example: true
@@ -1468,6 +1488,9 @@ type ServerInterface interface {
 	// UpdateTask Update a task
 	// (PATCH /workspaces/{workspace_id}/tasks/{task_id})
 	UpdateTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
+	// ListTaskActivities List task activities
+	// (GET /workspaces/{workspace_id}/tasks/{task_id}/activities)
+	ListTaskActivities(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
 	// ListTaskAttachments List attachments for a task
 	// (GET /workspaces/{workspace_id}/tasks/{task_id}/attachments)
 	ListTaskAttachments(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
@@ -2474,6 +2497,30 @@ func (w *ServerInterfaceWrapper) UpdateTask(ctx echo.Context) error {
 	return err
 }
 
+// ListTaskActivities converts echo context to params.
+func (w *ServerInterfaceWrapper) ListTaskActivities(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListTaskActivities(ctx, workspaceId, taskId)
+	return err
+}
+
 // ListTaskAttachments converts echo context to params.
 func (w *ServerInterfaceWrapper) ListTaskAttachments(ctx echo.Context) error {
 	var err error
@@ -2803,6 +2850,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/archived", wrapper.ListArchivedTasks, options.OperationMiddlewares["listArchivedTasks"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/today", wrapper.GetTodayTasks, options.OperationMiddlewares["getTodayTasks"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id", wrapper.UpdateTask, options.OperationMiddlewares["updateTask"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/activities", wrapper.ListTaskActivities, options.OperationMiddlewares["listTaskActivities"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.ListTaskAttachments, options.OperationMiddlewares["listTaskAttachments"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.UploadTaskAttachment, options.OperationMiddlewares["uploadTaskAttachment"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/duplicate", wrapper.DuplicateTask, options.OperationMiddlewares["duplicateTask"]...)

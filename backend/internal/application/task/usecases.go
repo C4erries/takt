@@ -92,6 +92,17 @@ func (s *Service) CreateInboxTask(ctx context.Context, input CreateInboxTaskInpu
 		return nil, err
 	}
 
+	if parent != nil {
+		actorID := getActorIDFromContext(ctx)
+		subtaskAct, err := domainTask.NewTaskActivity(parent.ID, actorID, domainTask.ActivitySubtaskAdded, map[string]interface{}{
+			"title":      t.Title,
+			"subtask_id": t.ID.String(),
+		})
+		if err == nil {
+			_ = s.taskRepo.CreateActivity(ctx, subtaskAct)
+		}
+	}
+
 	t.Tags = []*domainTask.Tag{}
 
 	if s.eventBus != nil {

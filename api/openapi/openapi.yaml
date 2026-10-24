@@ -60,6 +60,8 @@ paths:
     $ref: './paths/tasks.yaml#/duplicateTask'
   /workspaces/{workspace_id}/tasks/{task_id}/unarchive:
     $ref: './paths/tasks.yaml#/unarchiveTask'
+  /workspaces/{workspace_id}/tasks/{task_id}/activities:
+    $ref: './paths/tasks.yaml#/taskActivities'
   /workspaces/{workspace_id}/tags:
     $ref: './paths/tags.yaml#/tags'
   /workspaces/{workspace_id}/tags/metrics:
@@ -152,6 +154,8 @@ components:
       $ref: './schemas/workspace.yaml#/WorkspaceSwitchResponse'
     Task:
       $ref: './schemas/task.yaml#/Task'
+    TaskActivity:
+      $ref: './schemas/task.yaml#/TaskActivity'
     Tag:
       $ref: './schemas/tag.yaml#/Tag'
     CreateTagRequest:

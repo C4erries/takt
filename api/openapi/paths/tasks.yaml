@@ -342,3 +342,51 @@ subtasks:
             schema:
               $ref: '../schemas/error.yaml'
 
+duplicateTask:
+  post:
+    tags:
+      - Tasks
+    summary: Duplicate a task with its subtasks, tags and attachments
+    description: Deep duplicate a task into a new independent task with "Копия — " prefix, tags and subtasks.
+    operationId: duplicateTask
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '201':
+        description: Task duplicated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/task.yaml#/Task'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '404':
+        description: Task not found in workspace
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'

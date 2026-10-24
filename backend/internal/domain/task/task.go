@@ -166,3 +166,38 @@ func (t *Task) SetSubtaskCounts(total, completed int) {
 	t.SubtasksCompletedCount = completed
 }
 
+// Duplicate creates an independent uncompleted copy of the task with a new ID, title, and position.
+// Due date, completion status, and focus order are intentionally reset.
+func (t *Task) Duplicate(newTitle string, newPosition float64) *Task {
+	title := strings.TrimSpace(newTitle)
+	if title == "" {
+		title = t.Title
+	}
+
+	tagsCopy := make([]*Tag, len(t.Tags))
+	copy(tagsCopy, t.Tags)
+
+	now := time.Now().UTC()
+	return &Task{
+		ID:                     uuid.New(),
+		WorkspaceID:            t.WorkspaceID,
+		ParentID:               t.ParentID,
+		ProjectID:              t.ProjectID,
+		ColumnID:               t.ColumnID,
+		Title:                  title,
+		DescriptionMarkdown:    t.DescriptionMarkdown,
+		IsCompleted:            false,
+		CompletedAt:            nil,
+		DueDate:                nil,
+		Priority:               t.Priority,
+		FocusOrder:             nil,
+		Position:               int(newPosition),
+		SubtasksCount:          0,
+		SubtasksCompletedCount: 0,
+		Tags:                   tagsCopy,
+		CreatedAt:              now,
+		UpdatedAt:              now,
+	}
+}
+
+

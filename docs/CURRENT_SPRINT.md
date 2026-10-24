@@ -4,67 +4,64 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.9.1 — «UX Polish: Создание задач, Подзадачи, Теги» 🟡 ФАЗА А (Готово к запуску)
+## Текущий спринт: Спринт 0.9.2 — «Core Features: Дублирование и Скоупы» 🟡 ФАЗА А (Готово к запуску)
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Штаб)
 
-* **Бизнес-цель**: Три связанных UX-улучшения вокруг создания задач, эргономики подзадач и централизованного управления тегами воркспейса.
+* **Бизнес-цель**: Добавить возможность глубокого дублирования задач с подзадачами, тегами и вложениями, а также починить фильтрацию области действия автоматизаций по доске в фоновом слушателе событий.
 
-* **Связь с бэклогом**: Подробные спецификации каждой задачи — в [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B12, TASK-B02, TASK-B13).
+* **Связь с бэклогом**: Подробные спецификации задач — в [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B03, TASK-B08).
 
 * **Принятые микро-решения**:
 
-  1. **TASK-B12 — Хоткей заметок при создании задачи**:
-     - В форме инлайн-создания (`KanbanColumn.tsx`): однострочный input заголовка по умолчанию.
-     - `Shift+Enter` в заголовке раскрывает `textarea` для описания/заметок с плавной анимацией (`motion/react`).
-     - Фокус автоматически переходит в `textarea`.
-     - `Ctrl+Enter` (или `Cmd+Enter`) сохраняет задачу с заголовком и описанием. Обычный `Enter` в input заголовка создает задачу только с заголовком.
+  1. **TASK-B03 — Глубокое копирование задачи (Deep Duplicate)**:
+     - Новый API: `POST /workspaces/{wid}/tasks/{task_id}/duplicate` (возвращает скопированную `Task`).
+     - Что копируется:
+       - Название с префиксом `Копия — [Оригинальное название]`.
+       - Описание (`description_markdown`), приоритет, проект, колонка, позиция (`original.position + 0.5`).
+       - Теги (`task_tags`).
+       - Подзадачи (все дочерние задачи с `parent_id = original.id` копируются с новыми UUID и `parent_id = new_task.id`).
+       - Вложения (`attachments`): shallow copy (новые записи в `attachments` с теми же `s3_key`, S3 не дублируется).
+     - Что НЕ копируется: `due_date`, статус выполнения (`is_completed = false`, `completed_at = null`), история изменений.
+     - Операция выполняется в единой транзакции базы данных.
+     - UI: пункт «Дублировать задачу» в выпадающем меню карточки задачи (`KanbanCard.tsx`, и в шторке `TaskDrawer` при наличии меню).
 
-  2. **TASK-B02 — Эргономика подзадач + привязка существующей задачи**:
-     - В `TaskSubtasksSection.tsx` увеличить комфорт ввода: `min-h-[34px] py-1.5`.
-     - Кнопка с иконкой `Link` рядом с добавлением подзадачи открывает поповер `AttachTaskPopover.tsx`.
-     - Поиск через существующий API поиска воркспейса (`GET /workspaces/{id}/search?q=...`).
-     - Фильтрация: исключить задачи, у которых уже есть `parent_id` (нет 2-го уровня вложенности), задачи с собственными подзадачами и саму текущую задачу.
-     - Привязка через `PATCH /workspaces/{wid}/tasks/{id}` с `{ parentId: currentTask.id }`.
-     - Инвалидация кэша React Query для обновления списка задач и подзадач.
-
-  3. **TASK-B13 — Централизованный менеджер тегов воркспейса**:
-     - Доступ: пункт/иконка «Теги» в сайдбаре (`Sidebar.tsx`) открывает модальное окно `TagManagerModal.tsx`.
-     - Контракты OpenAPI (`api/openapi/paths/tasks.yaml` или `tags.yaml`):
-       - `GET /workspaces/{wid}/tags/metrics` — теги воркспейса со счётчиком задач `task_count`.
-       - `PATCH /workspaces/{wid}/tags/{id}` — обновление названия и цвета тега.
-       - `DELETE /workspaces/{wid}/tags/{id}` — удаление тега (отвязка от всех задач).
-       - `DELETE /workspaces/{wid}/tags/unused` — удаление всех тегов с `task_count = 0`.
-     - Бэкенд: методы репозитория, Use Cases в `internal/application/task/` и хендлеры в `internal/infrastructure/http/`.
-     - Фронтенд: модалка с поиском, списком тегов, редактированием цвета/имени, подтверждением удаления и кнопкой «Удалить неиспользуемые».
+  2. **TASK-B08 — Скоуп автоматизаций по доске в EventListener & UI**:
+     - В `backend/internal/application/automation/listener.go`:
+       - В обработчиках событий задач (`HandleTaskCreated`, `HandleTaskEnteredColumn`, `HandleTaskCompleted`, `HandleTaskFieldChanged`) добавить фильтрацию по `board_id`:
+         ```go
+         if rule.BoardID != nil && (taskInfo.ProjectID == nil || *rule.BoardID != *taskInfo.ProjectID) {
+             continue
+         }
+         ```
+     - В `frontend/src/features/automations/AutomationsHub.tsx`:
+       - Обновить категории фильтров: вместо `'all' / 'column' / 'global'` сделать `'all' / 'board' / 'column'` с понятными лейблами «Все», «На доску», «На колонку».
+     - В `frontend/src/features/automations/RuleBuilderModal.tsx` и `RuleBuilderSections.tsx`:
+       - Добавить выбор «Область применения» (Вся доска / Конкретная колонка / Глобально) с сохранением соответствующего `board_id` / `column_id`.
 
 ---
 
-## 📋 2. Таблица задач спринта 0.9.1
+## 📋 2. Таблица задач спринта 0.9.2
 
 | # | Задача | Статус | Приоритет | Ответственный | Файлы |
 |---|--------|--------|-----------|---------------|-------|
-| 1 | **[B12] Notes Hotkey**: инлайн-раскрытие заметок по Shift+Enter, Ctrl+Enter сабмит | ⏳ Ожидает | Средний | `frontend_developer` | `KanbanColumn.tsx` |
-| 2 | **[B02] Subtasks Ergonomics & Attach**: поле ввода подзадач, поповер привязки существующей задачи | ⏳ Ожидает | Средний | `frontend_developer` | `TaskSubtasksSection.tsx`, `AttachTaskPopover.tsx` |
-| 3 | **[B13 Step 1] Tag Manager Contracts & DB**: SQL-запросы, OpenAPI эндпоинты тегов, make generate, чистый домен | ⏳ Ожидает | Высокий | `backend_developer` | `queries/tasks.sql`, `api/openapi/*` |
-| 4 | **[B13 Step 2] Tag Manager Application & HTTP**: use-cases управления тегами, HTTP-хендлеры, регистрация роутов | ⏳ Ожидает | Высокий | `backend_developer` | `application/task/`, `infrastructure/http/` |
-| 5 | **[B13 UI] Tag Manager Modal**: модалка управления тегами, вызов из сайдбара, операции над тегами | ⏳ Ожидает | Высокий | `frontend_developer` | `TagManagerModal.tsx`, `Sidebar.tsx` |
+| 1 | **[B03 Step 1] Duplicate Task Contracts & SQL**: OpenAPI эндпоинт, queries sqlc, make generate, чистый домен | ✅ Готово | Высокий | `backend_developer` | `api/openapi/*`, `queries/tasks.sql` |
+| 2 | **[B03 Step 2] Duplicate Task Application & Infra**: Use Case `DuplicateTask`, транзакция, http хендлер, тесты | ✅ Готово | Высокий | `backend_developer` | `application/task/`, `infrastructure/http/` |
+| 3 | **[B08 Backend] Automation Board Scope Filter**: фильтрация по `board_id` в `listener.go` + unit-тесты | ✅ Готово | Высокий | `backend_developer` | `application/automation/listener.go` |
+| 4 | **[B03 UI] Duplicate Task Action**: пункт «Дублировать задачу» в меню карточки | ⏳ Ожидает | Средний | `frontend_developer` | `KanbanCard.tsx` |
+| 5 | **[B08 UI] Automations Scope Selector & Filters**: фильтры в Хабе и область применения в модалке | ⏳ Ожидает | Средний | `frontend_developer` | `AutomationsHub.tsx`, `RuleBuilderModal.tsx` |
 | 6 | **[Verification]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, коммит | ⏳ В очереди | Критический | Lead Orchestrator | — |
 
 ---
 
 ## 🎯 3. Definition of Done (DoD)
 
-- [ ] В инлайн-создании задачи на доске `Shift+Enter` плавно раскрывает текстовое поле заметок и переводит туда фокус; `Ctrl+Enter` создает задачу с описанием.
-- [ ] В секции подзадач инпут ввода имеет комфортную высоту (`min-h-[34px]`), есть кнопка `Link` для поиска и привязки существующей задачи без подзадач.
-- [ ] Существуют и работают API:
-  - `GET /workspaces/{wid}/tags/metrics`
-  - `PATCH /workspaces/{wid}/tags/{id}`
-  - `DELETE /workspaces/{wid}/tags/{id}`
-  - `DELETE /workspaces/{wid}/tags/unused`
-- [ ] Модальное окно «Менеджер тегов» открывается из сайдбара, отображает все теги воркспейса с количеством связанных задач, позволяет менять название/цвет, удалять тег и удалять неиспользуемые теги в 1 клик.
+- [x] API `POST /workspaces/{wid}/tasks/{task_id}/duplicate` создаёт полную копию задачи с подзадачами, тегами и вложениями под префиксом «Копия — » в транзакции.
+- [ ] В контекстном меню карточки задачи на канбан-доске есть пункт «Дублировать», при клике задача копируется и появляется на доске.
+- [x] Правила автоматизации с `board_id` корректно применяются только к задачам заданной доски и игнорируют другие доски.
+- [ ] В Хабе автоматизаций доступны фильтры «Все», «На доску», «На колонку», а в конструкторе правил есть выбор области применения.
 - [ ] `make check-arch` — 0 ошибок.
 - [ ] `npm run build && npm run lint` — 0 ошибок.
 - [ ] `make test` — все тесты зелёные.
@@ -75,8 +72,8 @@
 
 | Спринт | Задачи | Суть |
 |--------|--------|------|
-| **0.9.2** | B03, B08 | Дублирование задачи · Скоуп автоматизаций по доске |
 | **0.9.3** | B05 | Архив задач (миграция + Batch SQL ADR-0008) |
 | **0.9.4** | B06 | История изменений задачи (новая таблица + EventBus listener) |
 | **0.9.5** | B09 | Профиль пользователя: имя + аватар |
 | **Future** | B01 | Subtasks Automation Suite (L-задача) |
+

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, AlertCircle, Clock, Calendar, MoreHorizontal, GitFork } from 'lucide-react';
+import { GripVertical, AlertCircle, Clock, Calendar, MoreHorizontal, GitFork, Copy, FolderInput } from 'lucide-react';
 import { Checkbox, Badge } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import { motion, strikeThroughVariants } from '@/shared/lib/motion';
@@ -11,7 +11,7 @@ import {
   useProjectAllColumnsQuery,
   useMoveTaskMutation,
 } from '@/entities/project';
-import { useSubtasksQuery, formatTaskNumber, useShowTaskNumbers } from '@/entities/task';
+import { useSubtasksQuery, formatTaskNumber, useShowTaskNumbers, useDuplicateTaskMutation } from '@/entities/task';
 import { MoveTaskModal } from './MoveTaskModal';
 
 export interface KanbanCardProps {
@@ -47,12 +47,10 @@ function getDueDateInfo(dueDateStr?: string | null) {
   if (!dueDateStr) return null;
   const due = new Date(dueDateStr);
   if (isNaN(due.getTime())) return null;
-
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const endOfTomorrow = new Date(startOfToday.getTime() + 48 * 60 * 60 * 1000);
   const dueMidnight = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-
   if (dueMidnight.getTime() < startOfToday.getTime()) {
     return { isOverdue: true, isSoon: false, text: due.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) };
   }
@@ -77,6 +75,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const boards = boardsQuery.data ?? [];
   const { data: boardGroups = [] } = useProjectAllColumnsQuery(workspaceId, boards);
   const moveTaskMutation = useMoveTaskMutation(workspaceId, effectiveProjectId);
+  const duplicateMutation = useDuplicateTaskMutation(workspaceId);
 
   const currentBoard = boardGroups.find((bg) => bg.columns.some((c) => c.id === task.columnId));
 
@@ -92,27 +91,29 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   const [storedShowTaskNumbers] = useShowTaskNumbers();
   const effectiveShowTaskNumber = showTaskNumber ?? storedShowTaskNumbers;
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [isMarkingCompleted, setIsMarkingCompleted] = useState(false);
   const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => () => { if (completionTimerRef.current) clearTimeout(completionTimerRef.current); }, []);
+  useEffect(() => { if (task.isCompleted) setIsMarkingCompleted(false); }, [task.isCompleted]);
   useEffect(() => {
-    return () => {
-      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
+    if (!isMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
     };
-  }, []);
-
-  useEffect(() => {
-    if (task.isCompleted) setIsMarkingCompleted(false);
-  }, [task.isCompleted]);
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [isMenuOpen]);
 
   const handleToggle = () => {
+    if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
     if (task.isCompleted) {
       setIsMarkingCompleted(false);
-      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
       onToggle?.(task.id);
     } else {
       setIsMarkingCompleted(true);
-      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
       completionTimerRef.current = setTimeout(() => onToggle?.(task.id), 350);
     }
   };
@@ -264,27 +265,11 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               {subtaskList.length > 0 && (
                 <div className="space-y-1 pt-0.5" onClick={(e) => e.stopPropagation()}>
                   {subtaskList.map((st) => (
-                    <div
-                      key={st.id}
-                      className="flex items-center gap-2 group/st py-0.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div
-                        className="shrink-0 scale-90"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Checkbox
-                          checked={st.isCompleted}
-                          onChange={() => onToggle?.(st.id)}
-                          aria-label={`Завершить подзадачу ${st.title}`}
-                        />
+                    <div key={st.id} className="flex items-center gap-2 group/st py-0.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="shrink-0 scale-90" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox checked={st.isCompleted} onChange={() => onToggle?.(st.id)} aria-label={`Завершить подзадачу ${st.title}`} />
                       </div>
-                      <span
-                        className={cn(
-                          'text-[11px] leading-tight truncate transition-colors',
-                          st.isCompleted ? 'line-through text-muted/70' : 'text-primary'
-                        )}
-                      >
+                      <span className={cn('text-[11px] leading-tight truncate transition-colors', st.isCompleted ? 'line-through text-muted/70' : 'text-primary')}>
                         {st.title}
                       </span>
                     </div>
@@ -303,17 +288,54 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         >
           {!isOverlay && (
             <>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsMoveModalOpen(true);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-canvas text-muted hover:text-primary transition-opacity"
-                title="Переместить задачу..."
-              >
-                <MoreHorizontal className="w-3.5 h-3.5" />
-              </button>
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsMenuOpen((prev) => !prev);
+                  }}
+                  className={cn(
+                    'p-1 rounded hover:bg-canvas text-muted hover:text-primary transition-opacity',
+                    isMenuOpen ? 'opacity-100 bg-canvas text-primary' : 'opacity-0 group-hover:opacity-100'
+                  )}
+                  title="Действия с задачей"
+                >
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                </button>
+
+                {isMenuOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-1 w-44 bg-surface border border-subtle rounded-lg shadow-washi-modal py-1 z-30 text-xs animate-in fade-in zoom-in-95 duration-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        duplicateMutation.mutate(task.id);
+                      }}
+                      disabled={duplicateMutation.isPending}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-accent-surface/60 transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-accent-solid shrink-0" />
+                      <span>{duplicateMutation.isPending ? 'Копирование...' : 'Дублировать'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setIsMoveModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-primary hover:bg-accent-surface/60 transition-colors"
+                    >
+                      <FolderInput className="w-3.5 h-3.5 text-muted shrink-0" />
+                      <span>Переместить на доску...</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <MoveTaskModal
                 isOpen={isMoveModalOpen}
@@ -327,14 +349,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                   columns: bg.columns.map((c) => ({ id: c.id, name: c.name })),
                 }))}
                 onMove={(_targetBoardId, targetColumnId) => {
-                  moveTaskMutation.mutate({
-                    taskId: task.id,
-                    data: {
-                      columnId: targetColumnId,
-                      position: task.position,
-                      projectId: effectiveProjectId,
-                    },
-                  });
+                  moveTaskMutation.mutate({ taskId: task.id, data: { columnId: targetColumnId, position: task.position, projectId: effectiveProjectId } });
                 }}
                 isLoading={boardsQuery.isLoading}
               />

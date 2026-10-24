@@ -352,3 +352,31 @@ export const useUpdateTagMutation = (workspaceId?: string) => {
     },
   });
 };
+
+export const useDuplicateTaskMutation = (workspaceId?: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      if (!workspaceId || !getAuthToken()) {
+        return {
+          id: `task-${Date.now()}`,
+          workspaceId: workspaceId || 'demo-workspace',
+          title: 'Копия задачи',
+          descriptionMarkdown: '',
+          isCompleted: false,
+          priority: 'none',
+          position: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } as Task;
+      }
+      return taskDetailApi.duplicateTask(workspaceId, taskId);
+    },
+    onSuccess: () => {
+      [TASKS_QUERY_KEY, ['tasks'], ['project-tasks'], ['subtasks'], ['columns']].forEach((k) =>
+        queryClient.invalidateQueries({ queryKey: k })
+      );
+    },
+  });
+};

@@ -15,7 +15,7 @@ import {
   useCreateAutomationMutation,
   type Automation,
 } from '@/entities/automation';
-import { DEMO_COLUMNS, type Column } from '@/entities/project';
+import { DEMO_COLUMNS, DEMO_BOARDS, type Column, type Board } from '@/entities/project';
 import { AutomationCard } from './AutomationCard';
 import { RuleBuilderModal, RuleDetailModal } from './RuleBuilderModal';
 
@@ -23,7 +23,7 @@ export interface AutomationsHubProps {
   workspaceId?: string;
 }
 
-type FilterCategory = 'all' | 'column' | 'global';
+type FilterCategory = 'all' | 'board' | 'column';
 
 export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) => {
   const queryClient = useQueryClient();
@@ -37,15 +37,20 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
   const [detailRule, setDetailRule] = useState<Automation | null>(null);
   const [editingRule, setEditingRule] = useState<Automation | null>(null);
 
-  // Collect columns from cache or fallback to default project columns
+  // Collect boards and columns from cache or fallback to default demo data
+  const cachedBoards = queryClient
+    .getQueriesData<Board[]>({ queryKey: ['boards'] })
+    .flatMap(([, b]) => b ?? []);
+  const allBoards = cachedBoards.length > 0 ? cachedBoards : DEMO_BOARDS;
+
   const cachedCols = queryClient
     .getQueriesData<Column[]>({ queryKey: ['columns'] })
     .flatMap(([, cols]) => cols ?? []);
   const allColumns = cachedCols.length > 0 ? cachedCols : DEMO_COLUMNS;
 
   const filteredAutomations = automations.filter((auto) => {
+    if (filter === 'board') return Boolean(auto.boardId) && !auto.columnId;
     if (filter === 'column') return Boolean(auto.columnId);
-    if (filter === 'global') return !auto.columnId;
     return true;
   });
 
@@ -123,11 +128,11 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-2">
-        {(['all', 'column', 'global'] as FilterCategory[]).map((cat) => {
+        {(['all', 'board', 'column'] as FilterCategory[]).map((cat) => {
           const labels: Record<FilterCategory, string> = {
             all: `Все (${automations.length})`,
-            column: `Колоночные (${automations.filter((a) => a.columnId).length})`,
-            global: `Глобальные (${automations.filter((a) => !a.columnId).length})`,
+            board: `На доску (${automations.filter((a) => a.boardId && !a.columnId).length})`,
+            column: `На колонку (${automations.filter((a) => a.columnId).length})`,
           };
           const isSelected = filter === cat;
           return (
@@ -225,6 +230,7 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
         }}
         workspaceId={workspaceId}
         allColumns={allColumns}
+        allBoards={allBoards}
         mode={editingRule ? 'edit' : 'create'}
         initialRule={editingRule}
       />

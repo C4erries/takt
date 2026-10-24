@@ -106,7 +106,17 @@ export const taskDetailApi = {
       }
     );
   },
+
+  async duplicateTask(workspaceId: string, taskId: string): Promise<Task> {
+    return request<Task>(`/workspaces/${workspaceId}/tasks/${taskId}/duplicate`, {
+      method: 'POST',
+    });
+  },
 };
+
+export async function duplicateTask(workspaceId: string, taskId: string): Promise<Task> {
+  return taskDetailApi.duplicateTask(workspaceId, taskId);
+}
 
 export async function listSubtasks(workspaceId: string, taskId: string): Promise<Task[]> {
   return taskDetailApi.listSubtasks(workspaceId, taskId);

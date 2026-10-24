@@ -40,6 +40,7 @@ type Querier interface {
 	DeleteWorkspaceInvite(ctx context.Context, id pgtype.UUID) error
 	DeleteWorkspaceInviteByToken(ctx context.Context, token string) error
 	DeleteWorkspaceMember(ctx context.Context, arg DeleteWorkspaceMemberParams) error
+	DuplicateTaskRow(ctx context.Context, arg DuplicateTaskRowParams) (Task, error)
 	GetActiveWorkspaceInvite(ctx context.Context, workspaceID pgtype.UUID) (WorkspaceInvite, error)
 	GetAttachmentByID(ctx context.Context, arg GetAttachmentByIDParams) (Attachment, error)
 	GetAutomation(ctx context.Context, arg GetAutomationParams) (Automation, error)

@@ -294,6 +294,10 @@ func (l *EventListener) evaluateAndExecute(
 	taskCtx domainAutomation.TaskContext,
 	taskInfo *TaskInfo,
 ) {
+	if rule.BoardID != nil && (taskInfo.ProjectID == nil || *rule.BoardID != *taskInfo.ProjectID) {
+		return
+	}
+
 	if rule.RuleDefinition != nil {
 		_ = l.dslEvaluator.ExecuteRule(ctx, rule.RuleDefinition, taskInfo)
 		return

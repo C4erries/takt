@@ -354,15 +354,9 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
           {act.type === 'move_to_column' && (
             <select value={String(act.params?.target_column_id || '')} onChange={(e) => onUpdate(index, { params: { ...act.params, target_column_id: e.target.value } })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
               <option value="">Выберите колонку...</option>
-              {boardColumnGroups && boardColumnGroups.length > 0 ? (
-                boardColumnGroups.map((g) => (
-                  <optgroup key={g.boardName} label={g.boardName}>
-                    {g.columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                  </optgroup>
-                ))
-              ) : (
-                allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))
-              )}
+              {boardColumnGroups && boardColumnGroups.length > 0
+                ? boardColumnGroups.map((g) => (<optgroup key={g.boardName} label={g.boardName}>{g.columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}</optgroup>))
+                : allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
             </select>
           )}
           {act.type === 'set_priority' && (

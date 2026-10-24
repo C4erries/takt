@@ -49,6 +49,12 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 	var taskService *taskApp.Service
 	if repos.TaskRepo != nil {
 		taskService = taskApp.NewService(repos.TaskRepo, repos.TaskRepo, nil, eventBus)
+		if repos.DB != nil {
+			taskService.SetTransactor(repos.DB)
+		}
+		if repos.AttachmentRepo != nil {
+			taskService.SetAttachmentRepository(repos.AttachmentRepo)
+		}
 	}
 
 	var workspaceService *workspaceApp.Service

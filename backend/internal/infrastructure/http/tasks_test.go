@@ -36,6 +36,7 @@ type mockTaskService struct {
 	deleteUnusedTagsFn  func(ctx context.Context, wsID uuid.UUID) error
 	addTagToTaskFn      func(ctx context.Context, taskID, tagID, wsID uuid.UUID) error
 	removeTagFromTaskFn func(ctx context.Context, taskID, tagID, wsID uuid.UUID) error
+	duplicateTaskFn     func(ctx context.Context, wsID, taskID uuid.UUID) (*domainTask.Task, error)
 }
 
 func (m *mockTaskService) GetInboxTasks(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Task, error) {
@@ -105,6 +106,13 @@ func (m *mockTaskService) RemoveTagFromTask(ctx context.Context, taskID, tagID, 
 		return m.removeTagFromTaskFn(ctx, taskID, tagID, wsID)
 	}
 	return nil
+}
+
+func (m *mockTaskService) DuplicateTask(ctx context.Context, wsID, taskID uuid.UUID) (*domainTask.Task, error) {
+	if m.duplicateTaskFn != nil {
+		return m.duplicateTaskFn(ctx, wsID, taskID)
+	}
+	return nil, nil
 }
 
 func TestHandler_GetInboxTasks_Success(t *testing.T) {

@@ -366,3 +366,11 @@ func (h *Handler) RemoveTagFromTask(c echo.Context, workspaceId openapi_types.UU
 	}
 	return c.NoContent(http.StatusNoContent)
 }
+
+func (h *Handler) DuplicateTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error {
+	t, err := h.taskService.DuplicateTask(ctx.Request().Context(), workspaceId, taskId)
+	if err != nil {
+		return respondTaskDomainError(ctx, err)
+	}
+	return ctx.JSON(http.StatusCreated, mapDomainTaskToGenerated(t))
+}

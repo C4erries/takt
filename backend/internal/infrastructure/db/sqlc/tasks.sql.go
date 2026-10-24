@@ -97,6 +97,69 @@ func (q *Queries) DeleteTask(ctx context.Context, arg DeleteTaskParams) error {
 	return err
 }
 
+const duplicateTaskRow = `-- name: DuplicateTaskRow :one
+INSERT INTO tasks (
+    workspace_id,
+    project_id,
+    column_id,
+    title,
+    description_markdown,
+    is_completed,
+    completed_at,
+    due_date,
+    priority,
+    focus_order,
+    position,
+    parent_id
+) VALUES (
+    $1, $2, $3, $4, $5, false, NULL, NULL, $6, NULL, $7, $8
+)
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
+`
+
+type DuplicateTaskRowParams struct {
+	WorkspaceID         pgtype.UUID `json:"workspace_id"`
+	ProjectID           pgtype.UUID `json:"project_id"`
+	ColumnID            pgtype.UUID `json:"column_id"`
+	Title               string      `json:"title"`
+	DescriptionMarkdown string      `json:"description_markdown"`
+	Priority            string      `json:"priority"`
+	Position            float64     `json:"position"`
+	ParentID            pgtype.UUID `json:"parent_id"`
+}
+
+func (q *Queries) DuplicateTaskRow(ctx context.Context, arg DuplicateTaskRowParams) (Task, error) {
+	row := q.db.QueryRow(ctx, duplicateTaskRow,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.ColumnID,
+		arg.Title,
+		arg.DescriptionMarkdown,
+		arg.Priority,
+		arg.Position,
+		arg.ParentID,
+	)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.WorkspaceID,
+		&i.ProjectID,
+		&i.ColumnID,
+		&i.Title,
+		&i.DescriptionMarkdown,
+		&i.IsCompleted,
+		&i.CompletedAt,
+		&i.DueDate,
+		&i.Priority,
+		&i.FocusOrder,
+		&i.Position,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ParentID,
+	)
+	return i, err
+}
+
 const getInboxTasks = `-- name: GetInboxTasks :many
 SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
 WHERE workspace_id = $1

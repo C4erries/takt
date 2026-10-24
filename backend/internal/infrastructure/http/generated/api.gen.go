@@ -1447,6 +1447,9 @@ type ServerInterface interface {
 	// UploadTaskAttachment Upload an attachment for a task
 	// (POST /workspaces/{workspace_id}/tasks/{task_id}/attachments)
 	UploadTaskAttachment(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
+	// DuplicateTask Duplicate a task with its subtasks, tags and attachments
+	// (POST /workspaces/{workspace_id}/tasks/{task_id}/duplicate)
+	DuplicateTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
 	// SetTaskFocus Set or clear task focus order
 	// (POST /workspaces/{workspace_id}/tasks/{task_id}/focus)
 	SetTaskFocus(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
@@ -2440,6 +2443,30 @@ func (w *ServerInterfaceWrapper) UploadTaskAttachment(ctx echo.Context) error {
 	return err
 }
 
+// DuplicateTask converts echo context to params.
+func (w *ServerInterfaceWrapper) DuplicateTask(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DuplicateTask(ctx, workspaceId, taskId)
+	return err
+}
+
 // SetTaskFocus converts echo context to params.
 func (w *ServerInterfaceWrapper) SetTaskFocus(ctx echo.Context) error {
 	var err error
@@ -2673,6 +2700,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id", wrapper.UpdateTask, options.OperationMiddlewares["updateTask"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.ListTaskAttachments, options.OperationMiddlewares["listTaskAttachments"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.UploadTaskAttachment, options.OperationMiddlewares["uploadTaskAttachment"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/duplicate", wrapper.DuplicateTask, options.OperationMiddlewares["duplicateTask"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/focus", wrapper.SetTaskFocus, options.OperationMiddlewares["setTaskFocus"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/move", wrapper.MoveTaskToColumn, options.OperationMiddlewares["moveTaskToColumn"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/subtasks", wrapper.ListSubtasks, options.OperationMiddlewares["listSubtasks"]...)

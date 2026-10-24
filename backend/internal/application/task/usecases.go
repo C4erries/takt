@@ -10,31 +10,13 @@ import (
 	domainTask "takt/internal/domain/task"
 )
 
-type UseCases interface {
-	GetInboxTasks(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Task, error)
-	CreateInboxTask(ctx context.Context, input CreateInboxTaskInput) (*domainTask.Task, error)
-	ToggleTask(ctx context.Context, id, workspaceID uuid.UUID) (*domainTask.Task, error)
-	DeleteTask(ctx context.Context, id, workspaceID uuid.UUID) error
-	CreateInitialInboxTasks(ctx context.Context, workspaceID uuid.UUID) error
-	GetTodayTasks(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Task, error)
-	UpdateTask(ctx context.Context, input UpdateTaskInput) (*domainTask.Task, error)
-	SetTaskFocus(ctx context.Context, input SetFocusInput) (*domainTask.Task, error)
-	ListSubtasks(ctx context.Context, workspaceID, parentID uuid.UUID) ([]*domainTask.Task, error)
-	CreateTag(ctx context.Context, input CreateTagInput) (*domainTask.Tag, error)
-	ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error)
-	ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.TagWithMetrics, error)
-	UpdateTag(ctx context.Context, input UpdateTagInput) (*domainTask.Tag, error)
-	DeleteTag(ctx context.Context, tagID, workspaceID uuid.UUID) error
-	DeleteUnusedTags(ctx context.Context, workspaceID uuid.UUID) error
-	AddTagToTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error
-	RemoveTagFromTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error
-}
-
 type Service struct {
-	taskRepo      TaskRepository
-	tagRepo       TagRepository
-	accessChecker WorkspaceAccessChecker
-	eventBus      EventPublisher
+	taskRepo       TaskRepository
+	tagRepo        TagRepository
+	accessChecker  WorkspaceAccessChecker
+	eventBus       EventPublisher
+	transactor     Transactor
+	attachmentRepo AttachmentRepository
 }
 
 func NewService(taskRepo TaskRepository, tagRepo TagRepository, accessChecker WorkspaceAccessChecker, publisher ...EventPublisher) *Service {
@@ -52,6 +34,14 @@ func NewService(taskRepo TaskRepository, tagRepo TagRepository, accessChecker Wo
 
 func (s *Service) SetEventPublisher(pub EventPublisher) {
 	s.eventBus = pub
+}
+
+func (s *Service) SetTransactor(tx Transactor) {
+	s.transactor = tx
+}
+
+func (s *Service) SetAttachmentRepository(repo AttachmentRepository) {
+	s.attachmentRepo = repo
 }
 
 func (s *Service) GetInboxTasks(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Task, error) {

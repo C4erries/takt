@@ -217,3 +217,79 @@ func TestTask_SubtasksCount(t *testing.T) {
 	}
 }
 
+func TestTask_Duplicate(t *testing.T) {
+	wsID := uuid.New()
+	projID := uuid.New()
+	colID := uuid.New()
+	dueDate := time.Now().UTC().Add(24 * time.Hour)
+	focusOrder := 1
+
+	orig, err := NewInboxTask(wsID, "Original Title", "Original Notes", PriorityHigh, &dueDate, 100)
+	require.NoError(t, err)
+	orig.ProjectID = &projID
+	orig.ColumnID = &colID
+	orig.FocusOrder = &focusOrder
+	orig.Toggle() // make it completed
+	require.True(t, orig.IsCompleted)
+	require.NotNil(t, orig.CompletedAt)
+
+	tag, err := NewTag(wsID, "backend", "#3B82F6")
+	require.NoError(t, err)
+	require.NoError(t, orig.AddTag(tag))
+
+	tests := []struct {
+		name          string
+		inputTitle    string
+		inputPosition float64
+		expectedTitle string
+	}{
+		{
+			name:          "duplicate with custom title and fractional position",
+			inputTitle:    "Копия — Original Title",
+			inputPosition: 100.5,
+			expectedTitle: "Копия — Original Title",
+		},
+		{
+			name:          "duplicate with empty title falls back to original",
+			inputTitle:    "   ",
+			inputPosition: 200.0,
+			expectedTitle: "Original Title",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dup := orig.Duplicate(tt.inputTitle, tt.inputPosition)
+
+			require.NotNil(t, dup)
+			assert.NotEqual(t, orig.ID, dup.ID)
+			assert.Equal(t, tt.expectedTitle, dup.Title)
+			assert.Equal(t, orig.WorkspaceID, dup.WorkspaceID)
+			assert.Equal(t, orig.ProjectID, dup.ProjectID)
+			assert.Equal(t, orig.ColumnID, dup.ColumnID)
+			assert.Equal(t, orig.DescriptionMarkdown, dup.DescriptionMarkdown)
+			assert.Equal(t, orig.Priority, dup.Priority)
+			assert.Equal(t, int(tt.inputPosition), dup.Position)
+
+			// Invariants: reset status and dates
+			assert.False(t, dup.IsCompleted)
+			assert.Nil(t, dup.CompletedAt)
+			assert.Nil(t, dup.DueDate)
+			assert.Nil(t, dup.FocusOrder)
+			assert.Equal(t, 0, dup.SubtasksCount)
+			assert.Equal(t, 0, dup.SubtasksCompletedCount)
+
+			// Tags copied independently
+			require.Len(t, dup.Tags, 1)
+			assert.Equal(t, orig.Tags[0].ID, dup.Tags[0].ID)
+
+			// Modifying dup tags does not affect original
+			tag2, _ := NewTag(wsID, "frontend", "#10B981")
+			_ = dup.AddTag(tag2)
+			assert.Len(t, dup.Tags, 2)
+			assert.Len(t, orig.Tags, 1)
+		})
+	}
+}
+
+

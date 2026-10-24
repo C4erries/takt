@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, Clock, Zap, Copy, Pencil, ArrowRight, Paperclip } from 'lucide-react';
 import { Modal, Button, Input, Badge } from '@/shared/components/ui';
+import { cn } from '@/shared/lib/cn';
 import type { Automation, AutomationCondition, AutomationAction } from '@/entities/automation';
 import {
   useRuleBuilder,
@@ -18,9 +19,11 @@ export interface RuleBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
   workspaceId?: string;
+  prefilledBoardId?: string | null;
   prefilledColumnId?: string | null;
   prefilledColumnName?: string | null;
   allColumns?: { id: string; name: string }[];
+  allBoards?: { id: string; name: string }[];
   boardColumnGroups?: { boardName: string; columns: { id: string; name: string }[] }[];
   mode?: 'create' | 'edit';
   initialRule?: Automation | null;
@@ -32,9 +35,11 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
   isOpen,
   onClose,
   workspaceId,
+  prefilledBoardId,
   prefilledColumnId,
   prefilledColumnName,
   allColumns = [],
+  allBoards = [],
   boardColumnGroups,
   mode = 'create',
   initialRule,
@@ -43,39 +48,17 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
 }) => {
   const isEdit = mode === 'edit';
   const {
-    ruleName,
-    setRuleName,
-    setIsCustomName,
-    triggerType,
-    setTriggerType,
-    triggerColumnId,
-    setTriggerColumnId,
-    triggerSlaHours,
-    setTriggerSlaHours,
-    triggerField,
-    setTriggerField,
-    conditions,
-    logicalOperator,
-    setLogicalOperator,
-    handleAddCondition,
-    handleRemoveCondition,
-    handleUpdateCondition,
-    actions,
-    handleAddAction,
-    handleRemoveAction,
-    handleUpdateAction,
-    handleSave,
-    isSubmitting,
+    ruleName, setRuleName, setIsCustomName,
+    scope, setScope, selectedBoardId, setSelectedBoardId,
+    triggerType, setTriggerType, triggerColumnId, setTriggerColumnId,
+    triggerSlaHours, setTriggerSlaHours, triggerField, setTriggerField,
+    conditions, logicalOperator, setLogicalOperator,
+    handleAddCondition, handleRemoveCondition, handleUpdateCondition,
+    actions, handleAddAction, handleRemoveAction, handleUpdateAction,
+    handleSave, isSubmitting,
   } = useRuleBuilder({
-    workspaceId,
-    prefilledColumnId,
-    prefilledColumnName,
-    allColumns,
-    mode,
-    initialRule,
-    taskId,
-    onSuccess,
-    onClose,
+    workspaceId, prefilledBoardId, prefilledColumnId, prefilledColumnName,
+    allColumns, allBoards, mode, initialRule, taskId, onSuccess, onClose,
   });
 
   return (
@@ -105,6 +88,65 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
             placeholder="Например: Срочные задачи → в колонку В работе"
             className="text-xs bg-surface border-subtle"
           />
+        </div>
+
+        {/* Scope Selector */}
+        <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Область применения</span>
+            <span className="text-[10px] text-muted">
+              {scope === 'board' ? 'Вся доска' : scope === 'column' ? 'Конкретная колонка' : 'Глобально'}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 p-0.5 rounded-lg bg-canvas border border-subtle">
+            {(
+              [
+                { id: 'board', label: 'Вся доска' },
+                { id: 'column', label: 'Конкретная колонка' },
+                { id: 'global', label: 'Глобально' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setScope(opt.id)}
+                className={cn(
+                  'px-2 py-1.5 rounded-md text-xs font-medium transition-colors text-center',
+                  scope === opt.id ? 'bg-accent-surface text-primary shadow-washi-sm' : 'text-muted hover:text-primary'
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {scope === 'board' && allBoards.length > 0 && (
+            <div className="space-y-1 pt-1">
+              <label className="text-[10px] font-mono text-muted">Целевая доска:</label>
+              <select
+                value={selectedBoardId}
+                onChange={(e) => setSelectedBoardId(e.target.value)}
+                className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
+              >
+                {allBoards.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {scope === 'column' && allColumns.length > 0 && (
+            <div className="space-y-1 pt-1">
+              <label className="text-[10px] font-mono text-muted">Целевая колонка:</label>
+              <select
+                value={triggerColumnId}
+                onChange={(e) => setTriggerColumnId(e.target.value)}
+                className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
+              >
+                {allColumns.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* STEP 1: WHEN */}
@@ -174,38 +216,14 @@ export interface RuleDetailModalProps {
 }
 
 export const RuleDetailModal: React.FC<RuleDetailModalProps> = ({
-  isOpen,
-  onClose,
-  rule,
-  allColumns = [],
-  onEdit,
-  onDuplicate,
-  onBind,
+  isOpen, onClose, rule, allColumns = [], onEdit, onDuplicate, onBind,
 }) => {
   if (!rule) return null;
-
-  const isTimeTrigger =
-    rule.triggerType === 'column_sla_timer' || rule.triggerType === 'scheduled_sweep' || rule.triggerType === 'task_timer';
-  const triggerLabel = formatTriggerLabel(
-    rule.triggerType,
-    rule.columnId,
-    allColumns,
-    rule.ruleDefinition?.trigger?.params
-  );
-
-  const conditions: AutomationCondition[] =
-    rule.ruleDefinition?.conditions ||
-    ((rule.conditionsJson as { conditions?: AutomationCondition[] })?.conditions) ||
-    [];
-  const logicalOp =
-    rule.ruleDefinition?.logicalOperator ||
-    ((rule.conditionsJson as { logical_operator?: 'and' | 'or' })?.logical_operator) ||
-    'and';
-
-  const actions: AutomationAction[] =
-    rule.ruleDefinition?.actions ||
-    ((rule.actionsJson as { actions?: AutomationAction[] })?.actions) ||
-    [];
+  const isTimeTrigger = rule.triggerType === 'column_sla_timer' || rule.triggerType === 'scheduled_sweep' || rule.triggerType === 'task_timer';
+  const triggerLabel = formatTriggerLabel(rule.triggerType, rule.columnId, allColumns, rule.ruleDefinition?.trigger?.params);
+  const conditions: AutomationCondition[] = rule.ruleDefinition?.conditions || ((rule.conditionsJson as { conditions?: AutomationCondition[] })?.conditions) || [];
+  const logicalOp = rule.ruleDefinition?.logicalOperator || ((rule.conditionsJson as { logical_operator?: 'and' | 'or' })?.logical_operator) || 'and';
+  const actions: AutomationAction[] = rule.ruleDefinition?.actions || ((rule.actionsJson as { actions?: AutomationAction[] })?.actions) || [];
 
   return (
     <Modal
@@ -216,61 +234,38 @@ export const RuleDetailModal: React.FC<RuleDetailModalProps> = ({
       className="max-w-xl"
     >
       <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-        {/* Name and State Banner */}
         <div className="flex items-start justify-between gap-3 p-3.5 rounded-xl bg-surface border border-subtle shadow-washi-sm">
           <div className="space-y-1 min-w-0">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted">
-              Название сценария
-            </span>
-            <h3 className="font-serif text-base font-normal text-primary break-words">
-              {rule.name}
-            </h3>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted">Название сценария</span>
+            <h3 className="font-serif text-base font-normal text-primary break-words">{rule.name}</h3>
           </div>
-          <Badge variant={rule.isEnabled ? 'matcha' : 'subtle'} size="sm" dot className="shrink-0 mt-0.5">
-            {rule.isEnabled ? 'Активно' : 'Отключено'}
-          </Badge>
+          <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+            <Badge variant="subtle" size="sm">{rule.columnId ? 'Колонка' : rule.boardId ? 'Доска' : 'Глобально'}</Badge>
+            <Badge variant={rule.isEnabled ? 'matcha' : 'subtle'} size="sm" dot>{rule.isEnabled ? 'Активно' : 'Отключено'}</Badge>
+          </div>
         </div>
 
-        {/* Step 1: WHEN */}
         <div className="p-3.5 rounded-xl border border-subtle bg-surface/50 space-y-2">
           <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-muted">
-            {isTimeTrigger ? (
-              <Clock className="w-3.5 h-3.5 text-accent-solid" />
-            ) : rule.triggerType.includes('completed') ? (
-              <Sparkles className="w-3.5 h-3.5 text-accent-solid" />
-            ) : (
-              <Zap className="w-3.5 h-3.5 text-accent-solid" />
-            )}
+            {isTimeTrigger ? <Clock className="w-3.5 h-3.5 text-accent-solid" /> : rule.triggerType.includes('completed') ? <Sparkles className="w-3.5 h-3.5 text-accent-solid" /> : <Zap className="w-3.5 h-3.5 text-accent-solid" />}
             <span>КОГДА (Триггер)</span>
           </div>
-          <div className="p-2.5 rounded-lg border border-subtle bg-canvas text-xs text-primary font-medium">
-            {triggerLabel}
-          </div>
+          <div className="p-2.5 rounded-lg border border-subtle bg-canvas text-xs text-primary font-medium">{triggerLabel}</div>
         </div>
 
-        {/* Step 2: IF */}
         <div className="p-3.5 rounded-xl border border-subtle bg-surface/50 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-muted">
-              ЕСЛИ (Условия)
-            </span>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-muted">ЕСЛИ (Условия)</span>
             {conditions.length > 1 && (
-              <span className="text-[10px] font-mono text-muted uppercase">
-                {logicalOp === 'or' ? 'Любое из условий (ИЛИ)' : 'Все условия (И)'}
-              </span>
+              <span className="text-[10px] font-mono text-muted uppercase">{logicalOp === 'or' ? 'Любое из условий (ИЛИ)' : 'Все условия (И)'}</span>
             )}
           </div>
           {conditions.length === 0 ? (
-            <p className="text-xs text-muted italic px-2 py-1 bg-canvas/30 rounded border border-subtle/30">
-              Без дополнительных условий (срабатывает всегда)
-            </p>
+            <p className="text-xs text-muted italic px-2 py-1 bg-canvas/30 rounded border border-subtle/30">Без дополнительных условий (срабатывает всегда)</p>
           ) : (
             <div className="space-y-1.5">
               {conditions.map((c, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 p-2 rounded-lg border border-subtle bg-canvas text-xs text-primary"
-                >
+                <div key={i} className="flex items-center gap-2 p-2 rounded-lg border border-subtle bg-canvas text-xs text-primary">
                   <span className="text-[10px] font-mono text-muted w-4">{i + 1}.</span>
                   <span>{formatConditionLabel(c)}</span>
                 </div>
@@ -279,23 +274,17 @@ export const RuleDetailModal: React.FC<RuleDetailModalProps> = ({
           )}
         </div>
 
-        {/* Step 3: THEN */}
         <div className="p-3.5 rounded-xl border border-subtle bg-surface/50 space-y-2">
           <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-muted">
             <ArrowRight className="w-3.5 h-3.5 text-accent-solid" />
             <span>ТО (Действия)</span>
           </div>
           {actions.length === 0 ? (
-            <p className="text-xs text-muted italic px-2 py-1 bg-canvas/30 rounded border border-subtle/30">
-              Действия не настроены
-            </p>
+            <p className="text-xs text-muted italic px-2 py-1 bg-canvas/30 rounded border border-subtle/30">Действия не настроены</p>
           ) : (
             <div className="space-y-1.5">
               {actions.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-2 p-2 rounded-lg border border-subtle bg-canvas text-xs text-primary font-medium"
-                >
+                <div key={i} className="flex items-center gap-2 p-2 rounded-lg border border-subtle bg-canvas text-xs text-primary font-medium">
                   <span className="text-[10px] font-mono text-muted w-4">{i + 1}.</span>
                   <span>{formatActionLabel(a, allColumns)}</span>
                 </div>
@@ -304,56 +293,26 @@ export const RuleDetailModal: React.FC<RuleDetailModalProps> = ({
           )}
         </div>
 
-        {/* Footer Actions */}
         <div className="flex items-center justify-between gap-2 pt-3 border-t border-subtle">
           <div className="flex items-center gap-2">
             {onDuplicate && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  onDuplicate(rule);
-                  onClose();
-                }}
-                leftIcon={<Copy className="w-3.5 h-3.5" />}
-                className="text-xs h-8 shadow-washi-sm"
-              >
+              <Button variant="outline" size="sm" onClick={() => { onDuplicate(rule); onClose(); }} leftIcon={<Copy className="w-3.5 h-3.5" />} className="text-xs h-8 shadow-washi-sm">
                 Создать копию
               </Button>
             )}
             {onBind && (
-              <Button
-                variant="solid"
-                size="sm"
-                onClick={() => {
-                  onBind(rule);
-                  onClose();
-                }}
-                leftIcon={<Paperclip className="w-3.5 h-3.5" />}
-                className="text-xs h-8"
-              >
+              <Button variant="solid" size="sm" onClick={() => { onBind(rule); onClose(); }} leftIcon={<Paperclip className="w-3.5 h-3.5" />} className="text-xs h-8">
                 Привязать к колонке
               </Button>
             )}
           </div>
           <div className="flex items-center gap-2">
             {onEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  onEdit(rule);
-                  onClose();
-                }}
-                leftIcon={<Pencil className="w-3.5 h-3.5" />}
-                className="text-xs h-8"
-              >
+              <Button variant="outline" size="sm" onClick={() => { onEdit(rule); onClose(); }} leftIcon={<Pencil className="w-3.5 h-3.5" />} className="text-xs h-8">
                 Редактировать
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={onClose} className="text-xs h-8">
-              Закрыть
-            </Button>
+            <Button variant="ghost" size="sm" onClick={onClose} className="text-xs h-8">Закрыть</Button>
           </div>
         </div>
       </div>

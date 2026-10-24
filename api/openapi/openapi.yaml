@@ -54,6 +54,8 @@ paths:
     $ref: './paths/tasks.yaml#/focus'
   /workspaces/{workspace_id}/tasks/{task_id}/subtasks:
     $ref: './paths/tasks.yaml#/subtasks'
+  /workspaces/{workspace_id}/tasks/{task_id}/duplicate:
+    $ref: './paths/tasks.yaml#/duplicateTask'
   /workspaces/{workspace_id}/tags:
     $ref: './paths/tags.yaml#/tags'
   /workspaces/{workspace_id}/tags/metrics:

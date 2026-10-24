@@ -110,3 +110,23 @@ SELECT parent_id, COUNT(*)::bigint AS total_count, COUNT(*) FILTER (WHERE is_com
 FROM tasks
 WHERE parent_id = ANY($1::uuid[])
 GROUP BY parent_id;
+
+-- name: DuplicateTaskRow :one
+INSERT INTO tasks (
+    workspace_id,
+    project_id,
+    column_id,
+    title,
+    description_markdown,
+    is_completed,
+    completed_at,
+    due_date,
+    priority,
+    focus_order,
+    position,
+    parent_id
+) VALUES (
+    $1, $2, $3, $4, $5, false, NULL, NULL, $6, NULL, $7, $8
+)
+RETURNING *;
+

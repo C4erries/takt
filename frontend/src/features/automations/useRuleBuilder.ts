@@ -15,11 +15,15 @@ import {
   useUpdateAutomationMutation,
 } from '@/entities/automation';
 
+export type AutomationScope = 'board' | 'column' | 'global';
+
 export interface UseRuleBuilderParams {
   workspaceId?: string;
+  prefilledBoardId?: string | null;
   prefilledColumnId?: string | null;
   prefilledColumnName?: string | null;
   allColumns?: { id: string; name: string }[];
+  allBoards?: { id: string; name: string }[];
   mode?: 'create' | 'edit';
   initialRule?: Automation | null;
   taskId?: string | null;
@@ -37,12 +41,8 @@ export const TRIGGER_OPTIONS: { type: AutomationTriggerType; label: string; desc
 ];
 
 export const CONDITION_FIELDS: { field: AutomationConditionField; label: string }[] = [
-  { field: 'priority', label: 'Приоритет' },
-  { field: 'due_date', label: 'Дедлайн' },
-  { field: 'tags', label: 'Теги' },
-  { field: 'time_in_column_hours', label: 'Время в колонке (ч)' },
-  { field: 'is_completed', label: 'Завершена' },
-  { field: 'due_date_status', label: 'Статус дедлайна' },
+  { field: 'priority', label: 'Приоритет' }, { field: 'due_date', label: 'Дедлайн' }, { field: 'tags', label: 'Теги' },
+  { field: 'time_in_column_hours', label: 'Время в колонке (ч)' }, { field: 'is_completed', label: 'Завершена' }, { field: 'due_date_status', label: 'Статус дедлайна' },
 ];
 
 export const CONDITION_OPERATORS: { operator: AutomationConditionOperator; label: string }[] = [
@@ -54,10 +54,8 @@ export const CONDITION_OPERATORS: { operator: AutomationConditionOperator; label
 ];
 
 export const FIELD_OPERATORS_MAP: Record<AutomationConditionField, AutomationConditionOperator[]> = {
-  time_in_column_hours: ['greater_than', 'less_than', 'equals'],
-  is_completed: ['equals', 'not_equals'],
-  priority: ['equals', 'not_equals', 'in', 'not_in'],
-  due_date_status: ['equals', 'not_equals', 'in'],
+  time_in_column_hours: ['greater_than', 'less_than', 'equals'], is_completed: ['equals', 'not_equals'],
+  priority: ['equals', 'not_equals', 'in', 'not_in'], due_date_status: ['equals', 'not_equals', 'in'],
   due_date: ['equals', 'greater_than', 'less_than', 'is_not_empty', 'is_empty'],
   tags: ['contains', 'not_contains', 'in', 'is_not_empty', 'is_empty'],
 };
@@ -80,12 +78,9 @@ export const PRIORITIES = [
 ];
 
 export const PRIORITY_ACTIVE_STYLES: Record<string, string> = {
-  pending: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
-  urgent: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
-  high: 'bg-[#D97746]/15 text-[#D97746] border-[#D97746]/40',
-  medium: 'bg-[#B8943F]/15 text-[#B8943F] border-[#B8943F]/40',
-  low: 'bg-[#566B44]/15 text-[#566B44] border-[#566B44]/40',
-  none: 'bg-surface text-primary border-subtle',
+  pending: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40', urgent: 'bg-[#4A6B82]/15 text-[#4A6B82] border-[#4A6B82]/40',
+  high: 'bg-[#D97746]/15 text-[#D97746] border-[#D97746]/40', medium: 'bg-[#B8943F]/15 text-[#B8943F] border-[#B8943F]/40',
+  low: 'bg-[#566B44]/15 text-[#566B44] border-[#566B44]/40', none: 'bg-surface text-primary border-subtle',
 };
 
 export const DUE_DATE_STATUS_OPTIONS = [
@@ -99,37 +94,21 @@ export function formatTriggerLabel(
   allColumns: { id: string; name: string }[] = [],
   params?: Record<string, unknown>
 ): string {
-  const colName =
-    allColumns.find((c) => c.id === columnId)?.name ||
-    (params?.column_id ? allColumns.find((c) => c.id === params.column_id)?.name : undefined);
-  const slaHours = params?.duration_hours;
-
-  switch (triggerType) {
-    case 'task_entered_column':
-      return colName ? `При попадании в [${colName}]` : 'При попадании в колонку';
-    case 'task_completed_in_column':
-      return colName ? `При завершении в [${colName}]` : 'При завершении в колонке';
-    case 'task_field_changed':
-      return 'При изменении поля задачи';
-    case 'column_sla_timer':
-      return colName
-        ? `Задержка в [${colName}] (> ${slaHours || 24} ч)`
-        : `Задержка в колонке (> ${slaHours || 24} ч)`;
-    case 'task_timer':
-      return `Таймер задачи (> ${slaHours || 24} ч)`;
-    case 'scheduled_sweep':
-      return 'Ежедневная проверка по расписанию';
-    case 'task_completed':
-      return 'При завершении задачи';
-    case 'task_updated':
-      return 'При обновлении задачи';
-    case 'task_created':
-      return 'При создании задачи';
-    case 'due_date_reached':
-      return 'При наступлении дедлайна';
-    default:
-      return triggerType;
-  }
+  const colName = allColumns.find((c) => c.id === columnId)?.name || (params?.column_id ? allColumns.find((c) => c.id === params.column_id)?.name : undefined);
+  const sla = params?.duration_hours || 24;
+  const labels: Record<string, string> = {
+    task_entered_column: colName ? `При попадании в [${colName}]` : 'При попадании в колонку',
+    task_completed_in_column: colName ? `При завершении в [${colName}]` : 'При завершении в колонке',
+    task_field_changed: 'При изменении поля задачи',
+    column_sla_timer: colName ? `Задержка в [${colName}] (> ${sla} ч)` : `Задержка в колонке (> ${sla} ч)`,
+    task_timer: `Таймер задачи (> ${sla} ч)`,
+    scheduled_sweep: 'Ежедневная проверка по расписанию',
+    task_completed: 'При завершении задачи',
+    task_updated: 'При обновлении задачи',
+    task_created: 'При создании задачи',
+    due_date_reached: 'При наступлении дедлайна',
+  };
+  return labels[triggerType] || triggerType;
 }
 
 export function formatConditionLabel(condition: AutomationCondition): string {
@@ -137,35 +116,21 @@ export function formatConditionLabel(condition: AutomationCondition): string {
   const fieldName = fieldObj?.label || String(condition.field);
   const opObj = CONDITION_OPERATORS.find((o) => o.operator === condition.operator);
   const opName = opObj?.label || String(condition.operator);
-
-  if (condition.operator === 'is_empty' || condition.operator === 'is_not_empty') {
-    return `${fieldName} ${opName}`;
-  }
-
+  if (condition.operator === 'is_empty' || condition.operator === 'is_not_empty') return `${fieldName} ${opName}`;
   let val = condition.value;
   if (condition.field === 'is_completed') {
     const isTrue = val === true || val === 'true';
-    return condition.operator === 'equals'
-      ? `Завершена: ${isTrue ? 'Да' : 'Нет'}`
-      : `Завершена ${opName} ${isTrue ? 'Да' : 'Нет'}`;
+    return condition.operator === 'equals' ? `Завершена: ${isTrue ? 'Да' : 'Нет'}` : `Завершена ${opName} ${isTrue ? 'Да' : 'Нет'}`;
   }
-
   if (condition.field === 'due_date_status' && typeof val === 'string') {
-    const st = DUE_DATE_STATUS_OPTIONS.find((s) => s.value === val);
-    val = st ? st.label : val;
+    val = DUE_DATE_STATUS_OPTIONS.find((s) => s.value === val)?.label || val;
   } else if (condition.field === 'priority') {
-    if (Array.isArray(val)) {
-      val = val.map((v) => PRIORITIES.find((p) => p.value === v)?.label || v).join(', ');
-    } else if (typeof val === 'string' && val.includes(',')) {
-      val = val.split(',').map((v) => PRIORITIES.find((p) => p.value === v.trim())?.label || v.trim()).join(', ');
-    } else if (typeof val === 'string') {
-      const p = PRIORITIES.find((item) => item.value === val);
-      if (p) val = p.label;
-    }
+    if (Array.isArray(val)) val = val.map((v) => PRIORITIES.find((p) => p.value === v)?.label || v).join(', ');
+    else if (typeof val === 'string' && val.includes(',')) val = val.split(',').map((v) => PRIORITIES.find((p) => p.value === v.trim())?.label || v.trim()).join(', ');
+    else if (typeof val === 'string') val = PRIORITIES.find((item) => item.value === val)?.label || val;
   } else if (Array.isArray(val)) {
     val = val.join(', ');
   }
-
   return `${fieldName} ${opName} ${val !== undefined && val !== '' ? `«${val}»` : ''}`.trim();
 }
 
@@ -173,46 +138,35 @@ export function formatActionLabel(
   action: AutomationAction,
   allColumns: { id: string; name: string }[] = []
 ): string {
-  const params = action.params || {};
-  switch (action.type) {
-    case 'move_to_column': {
-      const targetCol = allColumns.find((c) => c.id === params.target_column_id)?.name;
-      return targetCol ? `Переместить в [${targetCol}]` : 'Переместить в колонку';
-    }
-    case 'set_priority': {
-      const p = PRIORITIES.find((item) => item.value === params.priority);
-      return `Установить приоритет: ${p?.label || params.priority || 'Высокий'}`;
-    }
-    case 'add_tag':
-      return `Добавить тег: «${params.tag_name || params.tag || ''}»`;
-    case 'remove_tag':
-      return `Удалить тег: «${params.tag_name || params.tag || ''}»`;
-    case 'set_due_date': {
-      const presetMap: Record<string, string> = {
-        today: 'сегодня',
-        tomorrow: 'завтра',
-        next_week: 'следующая неделя',
-      };
-      const presetStr = String(params.preset || '');
-      return `Назначить срок: ${presetMap[presetStr] || presetStr || 'срок'}`;
-    }
-    case 'archive_task':
-      return 'Архивировать задачу';
-    case 'mark_completed':
-      return 'Отметить задачу выполненной';
-    case 'mark_uncompleted':
-      return 'Снять отметку выполнения';
-    case 'clear_due_date':
-      return 'Очистить дедлайн';
-    default:
-      return ACTION_TYPES.find((a) => a.type === action.type)?.label || String(action.type);
+  const p = action.params || {};
+  if (action.type === 'move_to_column') {
+    const target = allColumns.find((c) => c.id === p.target_column_id)?.name;
+    return target ? `Переместить в [${target}]` : 'Переместить в колонку';
   }
+  if (action.type === 'set_priority') {
+    const pr = PRIORITIES.find((item) => item.value === p.priority);
+    return `Установить приоритет: ${pr?.label || p.priority || 'Высокий'}`;
+  }
+  if (action.type === 'add_tag') return `Добавить тег: «${p.tag_name || p.tag || ''}»`;
+  if (action.type === 'remove_tag') return `Удалить тег: «${p.tag_name || p.tag || ''}»`;
+  if (action.type === 'set_due_date') {
+    const presetMap: Record<string, string> = { today: 'сегодня', tomorrow: 'завтра', next_week: 'следующая неделя' };
+    const ps = String(p.preset || '');
+    return `Назначить срок: ${presetMap[ps] || ps || 'срок'}`;
+  }
+  if (action.type === 'archive_task') return 'Архивировать задачу';
+  if (action.type === 'mark_completed') return 'Отметить задачу выполненной';
+  if (action.type === 'mark_uncompleted') return 'Снять отметку выполнения';
+  if (action.type === 'clear_due_date') return 'Очистить дедлайн';
+  return ACTION_TYPES.find((a) => a.type === action.type)?.label || String(action.type);
 }
 
 export function useRuleBuilder({
   workspaceId,
+  prefilledBoardId,
   prefilledColumnId,
   allColumns = [],
+  allBoards = [],
   mode = 'create',
   initialRule,
   taskId,
@@ -224,6 +178,14 @@ export function useRuleBuilder({
 
   const [ruleName, setRuleName] = useState('');
   const [isCustomName, setIsCustomName] = useState(false);
+  const [scope, setScope] = useState<AutomationScope>(() => {
+    if (initialRule?.columnId || prefilledColumnId) return 'column';
+    if (initialRule?.boardId || prefilledBoardId) return 'board';
+    return 'board';
+  });
+  const [selectedBoardId, setSelectedBoardId] = useState<string>(
+    initialRule?.boardId || prefilledBoardId || allBoards[0]?.id || ''
+  );
   const [triggerType, setTriggerType] = useState<AutomationTriggerType>(
     taskId ? 'task_timer' : 'task_entered_column'
   );
@@ -241,6 +203,15 @@ export function useRuleBuilder({
     if (initialRule) {
       setRuleName(initialRule.name);
       setIsCustomName(true);
+      if (initialRule.columnId) {
+        setScope('column');
+        if (initialRule.boardId) setSelectedBoardId(initialRule.boardId);
+      } else if (initialRule.boardId) {
+        setScope('board');
+        setSelectedBoardId(initialRule.boardId);
+      } else {
+        setScope('global');
+      }
       const trig = initialRule.ruleDefinition?.trigger;
       const trigType = (trig?.type || initialRule.triggerType || 'task_entered_column') as AutomationTriggerType;
       setTriggerType(trigType);
@@ -269,11 +240,17 @@ export function useRuleBuilder({
       setTriggerType('task_timer');
     } else if (prefilledColumnId) {
       setTriggerColumnId(prefilledColumnId);
+      setScope('column');
       setTriggerType('task_entered_column');
+    } else if (prefilledBoardId) {
+      setSelectedBoardId(prefilledBoardId);
+      setScope('board');
+    } else if (allBoards.length > 0 && !selectedBoardId) {
+      setSelectedBoardId(allBoards[0].id);
     } else if (allColumns.length > 0 && !triggerColumnId) {
       setTriggerColumnId(allColumns[0].id);
     }
-  }, [initialRule, prefilledColumnId, allColumns, taskId]);
+  }, [initialRule, prefilledColumnId, prefilledBoardId, allColumns, allBoards, taskId]);
 
   useEffect(() => {
     if (!isCustomName) {
@@ -317,7 +294,17 @@ export function useRuleBuilder({
 
   const handleSave = async () => {
     if (!ruleName.trim() || actions.length === 0) return;
-    const effectiveColumnId = prefilledColumnId || triggerColumnId || null;
+    let effectiveBoardId: string | null = null;
+    let effectiveColumnId: string | null = null;
+
+    if (scope === 'column') {
+      effectiveColumnId = triggerColumnId || prefilledColumnId || (allColumns[0]?.id ?? null);
+      effectiveBoardId = selectedBoardId || prefilledBoardId || null;
+    } else if (scope === 'board') {
+      effectiveBoardId = selectedBoardId || prefilledBoardId || (allBoards[0]?.id ?? null);
+      effectiveColumnId = null;
+    }
+
     const triggerParams: Record<string, unknown> = {};
     if (
       triggerType === 'task_entered_column' ||
@@ -342,6 +329,7 @@ export function useRuleBuilder({
           data: {
             name: ruleName.trim(),
             triggerType,
+            boardId: effectiveBoardId,
             columnId: effectiveColumnId,
             taskId: initialRule.taskId ?? taskId ?? null,
             conditionsJson: { conditions, logical_operator: logicalOperator },
@@ -354,6 +342,7 @@ export function useRuleBuilder({
         const created = await createMutation.mutateAsync({
           name: ruleName.trim(),
           triggerType,
+          boardId: effectiveBoardId,
           columnId: effectiveColumnId,
           taskId: taskId ?? null,
           conditionsJson: { conditions, logical_operator: logicalOperator },
@@ -371,6 +360,7 @@ export function useRuleBuilder({
 
   return {
     ruleName, setRuleName, setIsCustomName,
+    scope, setScope, selectedBoardId, setSelectedBoardId,
     triggerType, setTriggerType, triggerColumnId, setTriggerColumnId,
     triggerSlaHours, setTriggerSlaHours, triggerField, setTriggerField,
     conditions, logicalOperator, setLogicalOperator,

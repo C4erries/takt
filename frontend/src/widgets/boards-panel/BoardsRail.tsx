@@ -303,7 +303,9 @@ export const BoardsRail: React.FC<BoardsRailProps> = ({
                 {sortedBoards.map((board, idx) => {
                   const boardCols = columnsByBoardId.get(board.id) ?? [];
                   const colIds = new Set(boardCols.map((c) => c.id));
-                  const count = tasks.filter((t) => t.columnId && colIds.has(t.columnId)).length;
+                  const count = tasks.filter(
+                    (t) => t.columnId && colIds.has(t.columnId) && !t.isCompleted && !t.parentId
+                  ).length;
                   const isActive = activeBoardId ? board.id === activeBoardId : idx === 0;
 
                   return (

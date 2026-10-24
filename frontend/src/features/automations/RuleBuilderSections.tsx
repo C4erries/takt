@@ -61,7 +61,7 @@ export const TriggerSection: React.FC<TriggerSectionProps> = ({
       )}
       {(triggerType === 'column_sla_timer' || triggerType === 'task_timer') && (
         <div className="space-y-1">
-          <label className="text-[10px] font-mono text-muted">{triggerType === 'task_timer' ? 'Таймер задачи:' : 'Порог нахождения:'}</label>
+          <label className="text-[10px] font-mono text-muted">{triggerType === 'task_timer' ? 'Таймер задачи:' : 'Задача в колонке дольше чем:'}</label>
           <div className="flex items-center gap-2">
             <Input type="number" min={1} max={720} value={triggerSlaHours} onChange={(e) => setTriggerSlaHours(Number(e.target.value) || 24)} className="text-xs bg-surface border-subtle h-8" />
             <span className="text-xs text-muted">часов</span>

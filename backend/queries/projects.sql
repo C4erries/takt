@@ -116,6 +116,11 @@ SELECT COUNT(*)::BIGINT AS task_count
 FROM tasks
 WHERE column_id = $1;
 
+-- name: CountActiveTasksByBoard :one
+SELECT COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL)::BIGINT AS active_tasks_count
+FROM tasks
+WHERE column_id IN (SELECT id FROM columns WHERE board_id = $1);
+
 -- name: MoveTaskToColumnAndPosition :one
 UPDATE tasks
 SET column_id = $1,

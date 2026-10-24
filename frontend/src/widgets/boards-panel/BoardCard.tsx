@@ -26,15 +26,6 @@ function formatColumns(n: number): string {
   return `${n} колонок`;
 }
 
-function formatTasks(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 14) return `${n} задач`;
-  if (mod10 === 1) return `${n} задача`;
-  if (mod10 >= 2 && mod10 <= 4) return `${n} задачи`;
-  return `${n} задач`;
-}
-
 export const BoardCard: React.FC<BoardCardProps> = ({
   board,
   taskCount,
@@ -220,9 +211,9 @@ export const BoardCard: React.FC<BoardCardProps> = ({
 
       {/* Second row: board metrics */}
       <div className="flex items-center gap-1.5 text-[11px] text-muted font-mono mt-1 pl-4">
-        <span>⊞ {formatColumns(columnCount)}</span>
+        <span>{formatColumns(columnCount)}</span>
         <span className="text-muted/50">·</span>
-        <span>✓ {formatTasks(taskCount)}</span>
+        <span>{taskCount > 0 ? `${taskCount} в работе` : 'нет задач'}</span>
       </div>
     </div>
   );

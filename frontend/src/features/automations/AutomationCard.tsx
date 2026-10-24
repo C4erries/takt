@@ -11,6 +11,7 @@ import {
 
 export interface AutomationCardProps {
   automation: Automation;
+  index?: number;
   onToggle: (automation: Automation) => void;
   onDelete?: (automationId: string) => void;
   onDetail?: (automation: Automation) => void;
@@ -23,6 +24,7 @@ export interface AutomationCardProps {
 
 export const AutomationCard: React.FC<AutomationCardProps> = ({
   automation,
+  index,
   onToggle,
   onDelete,
   onDetail,
@@ -69,6 +71,11 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
 
           <div className="space-y-1.5 min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
+              {typeof index === 'number' && (
+                <Badge variant="subtle" size="sm" className="font-mono text-[10px]">
+                  #A-{(index + 1).toString().padStart(2, '0')}
+                </Badge>
+              )}
               <h4
                 className={cn(
                   'font-serif text-sm font-normal text-primary',

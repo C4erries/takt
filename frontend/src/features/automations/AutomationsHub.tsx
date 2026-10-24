@@ -196,12 +196,13 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
       {/* State 4: Success (List of Rules) */}
       {!isLoading && !isError && filteredAutomations.length > 0 && (
         <div className="space-y-3 flex-1 overflow-y-auto pr-1">
-          {filteredAutomations.map((auto) => {
+          {filteredAutomations.map((auto, index) => {
             const col = allColumns.find((c) => c.id === auto.columnId);
             return (
               <AutomationCard
                 key={auto.id}
                 automation={auto}
+                index={index}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
                 onDetail={(r) => setDetailRule(r)}

@@ -31,7 +31,7 @@ export const TRIGGER_OPTIONS: { type: AutomationTriggerType; label: string; desc
   { type: 'task_entered_column', label: 'Попадание в колонку', desc: 'Задача создана или перемещена в колонку' },
   { type: 'task_completed_in_column', label: 'Завершение в колонке', desc: 'Задача выполнена в колонке' },
   { type: 'task_field_changed', label: 'Изменение поля', desc: 'Смена приоритета, дедлайна или статуса' },
-  { type: 'column_sla_timer', label: 'SLA таймер в колонке', desc: 'Задача в колонке дольше N часов' },
+  { type: 'column_sla_timer', label: 'Задержка в колонке', desc: 'Задача в колонке дольше N часов' },
   { type: 'task_timer', label: 'Таймер задачи', desc: 'Через N часов выполнить действие' },
   { type: 'scheduled_sweep', label: 'Ежедневное расписание', desc: 'Регулярная утренняя проверка' },
 ];
@@ -113,8 +113,8 @@ export function formatTriggerLabel(
       return 'При изменении поля задачи';
     case 'column_sla_timer':
       return colName
-        ? `SLA таймер в [${colName}] (> ${slaHours || 24} ч)`
-        : `SLA таймер (> ${slaHours || 24} ч)`;
+        ? `Задержка в [${colName}] (> ${slaHours || 24} ч)`
+        : `Задержка в колонке (> ${slaHours || 24} ч)`;
     case 'task_timer':
       return `Таймер задачи (> ${slaHours || 24} ч)`;
     case 'scheduled_sweep':
@@ -212,7 +212,6 @@ export function formatActionLabel(
 export function useRuleBuilder({
   workspaceId,
   prefilledColumnId,
-  prefilledColumnName,
   allColumns = [],
   mode = 'create',
   initialRule,
@@ -279,12 +278,11 @@ export function useRuleBuilder({
   useEffect(() => {
     if (!isCustomName) {
       const triggerLabel = TRIGGER_OPTIONS.find((t) => t.type === triggerType)?.label ?? triggerType;
-      const col = allColumns.find((c) => c.id === triggerColumnId)?.name ?? prefilledColumnName ?? '';
       const actionLabel = ACTION_TYPES.find((a) => a.type === actions[0]?.type)?.label ?? 'Действие';
-      const name = col ? `${triggerLabel} [${col}] → ${actionLabel}` : `${triggerLabel} → ${actionLabel}`;
+      const name = `${triggerLabel} → ${actionLabel}`;
       setRuleName(name);
     }
-  }, [triggerType, triggerColumnId, actions, isCustomName, allColumns, prefilledColumnName]);
+  }, [triggerType, actions, isCustomName]);
 
   const handleAddCondition = () => {
     if (conditions.length >= 5) return;

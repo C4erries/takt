@@ -11,6 +11,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countActiveTasksByBoard = `-- name: CountActiveTasksByBoard :one
+SELECT COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL)::BIGINT AS active_tasks_count
+FROM tasks
+WHERE column_id IN (SELECT id FROM columns WHERE board_id = $1)
+`
+
+func (q *Queries) CountActiveTasksByBoard(ctx context.Context, boardID pgtype.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countActiveTasksByBoard, boardID)
+	var active_tasks_count int64
+	err := row.Scan(&active_tasks_count)
+	return active_tasks_count, err
+}
+
 const countTasksInColumn = `-- name: CountTasksInColumn :one
 SELECT COUNT(*)::BIGINT AS task_count
 FROM tasks

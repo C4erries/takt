@@ -14,6 +14,7 @@ type Querier interface {
 	AddTagToTask(ctx context.Context, arg AddTagToTaskParams) error
 	CheckHealth(ctx context.Context) (int32, error)
 	ClearTaskTags(ctx context.Context, taskID pgtype.UUID) error
+	CountActiveTasksByBoard(ctx context.Context, boardID pgtype.UUID) (int64, error)
 	CountTasksInColumn(ctx context.Context, columnID pgtype.UUID) (int64, error)
 	CreateAttachment(ctx context.Context, arg CreateAttachmentParams) (Attachment, error)
 	CreateAutomation(ctx context.Context, arg CreateAutomationParams) (Automation, error)

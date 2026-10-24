@@ -40,9 +40,11 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
   const [query, setQuery] = useState('');
   const [selectedColor, setSelectedColor] = useState(DEFAULT_TAG_COLOR);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const [activeColorPopoverTagId, setActiveColorPopoverTagId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const colorPopoverRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const { data: allTags = [] } = useWorkspaceTagsQuery(workspaceId);
   const createTagMutation = useCreateTagMutation(workspaceId);
@@ -64,11 +66,16 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
     (t) => t.name.toLowerCase() === cleanQuery.toLowerCase()
   );
 
-  const handleSelectExistingTag = async (tag: Tag) => {
-    await addTagMutation.mutateAsync({ taskId, tag });
+  const resetInput = () => {
     setQuery('');
+    setFocusedIndex(-1);
     setIsDropdownOpen(false);
     setIsAdding(false);
+  };
+
+  const handleSelectExistingTag = async (tag: Tag) => {
+    await addTagMutation.mutateAsync({ taskId, tag });
+    resetInput();
   };
 
   const handleCreateNewTag = async (e?: React.FormEvent) => {
@@ -88,10 +95,37 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
       });
       await addTagMutation.mutateAsync({ taskId, tag: created });
     }
+    resetInput();
+  };
 
-    setQuery('');
-    setIsDropdownOpen(false);
-    setIsAdding(false);
+  useEffect(() => {
+    if (focusedIndex >= 0 && itemRefs.current[focusedIndex]) {
+      itemRefs.current[focusedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [focusedIndex]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsDropdownOpen(false);
+      setFocusedIndex(-1);
+      return;
+    }
+
+    if (!isDropdownOpen || matchingTags.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedIndex((prev) => (prev + 1) % matchingTags.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedIndex((prev) => (prev - 1 + matchingTags.length) % matchingTags.length);
+    } else if (e.key === 'Enter') {
+      if (focusedIndex >= 0 && matchingTags[focusedIndex]) {
+        e.preventDefault();
+        handleSelectExistingTag(matchingTags[focusedIndex]);
+      }
+    }
   };
 
   // Close dropdown and color popovers on outside click
@@ -100,6 +134,7 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
       const target = e.target as Node;
       if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsDropdownOpen(false);
+        setFocusedIndex(-1);
       }
       if (colorPopoverRef.current && !colorPopoverRef.current.contains(target)) {
         setActiveColorPopoverTagId(null);
@@ -209,8 +244,10 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
+                  setFocusedIndex(-1);
                   setIsDropdownOpen(true);
                 }}
+                onKeyDown={handleKeyDown}
                 onFocus={() => setIsDropdownOpen(true)}
                 className="text-xs bg-surface border-subtle h-8 w-full"
               />
@@ -222,7 +259,10 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => setIsAdding(false)}
+              onClick={() => {
+                setIsAdding(false);
+                setFocusedIndex(-1);
+              }}
               className="h-8 text-xs px-2 shrink-0"
               title="Отмена"
             >
@@ -240,27 +280,41 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                     Существующие теги
                   </span>
                   <div className="max-h-32 overflow-y-auto space-y-0.5">
-                    {matchingTags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        onClick={() => handleSelectExistingTag(tag)}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-canvas/70 text-primary transition-colors flex items-center justify-between group"
-                      >
-                        <div className="flex items-center gap-2">
-                          {tag.colorHex && (
-                            <span
-                              className="w-2.5 h-2.5 rounded-full shrink-0"
-                              style={{ backgroundColor: tag.colorHex }}
-                            />
+                    {matchingTags.map((tag, idx) => {
+                      const isFocused = focusedIndex === idx;
+                      return (
+                        <button
+                          key={tag.id}
+                          ref={(el) => {
+                            itemRefs.current[idx] = el;
+                          }}
+                          type="button"
+                          onClick={() => handleSelectExistingTag(tag)}
+                          className={cn(
+                            'w-full text-left px-2.5 py-1.5 rounded-lg text-primary transition-colors flex items-center justify-between group',
+                            isFocused ? 'bg-canvas/90 ring-1 ring-subtle' : 'hover:bg-canvas/70'
                           )}
-                          <span className="font-medium">{tag.name}</span>
-                        </div>
-                        <span className="text-[10px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">
-                          Выбрать ↵
-                        </span>
-                      </button>
-                    ))}
+                        >
+                          <div className="flex items-center gap-2">
+                            {tag.colorHex && (
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: tag.colorHex }}
+                              />
+                            )}
+                            <span className="font-medium">{tag.name}</span>
+                          </div>
+                          <span
+                            className={cn(
+                              'text-[10px] text-muted transition-opacity',
+                              isFocused ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                            )}
+                          >
+                            Выбрать ↵
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

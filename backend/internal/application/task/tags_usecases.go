@@ -95,3 +95,30 @@ func (s *Service) RemoveTagFromTask(ctx context.Context, taskID, tagID, workspac
 	}
 	return s.tagRepo.RemoveTagFromTask(ctx, taskID, tagID)
 }
+
+func (s *Service) checkWorkspaceAccess(ctx context.Context, workspaceID uuid.UUID) error {
+	if s.accessChecker == nil {
+		return nil
+	}
+	if val := ctx.Value("userID"); val != nil {
+		if uid, ok := val.(uuid.UUID); ok && uid != uuid.Nil {
+			return s.accessChecker.CheckAccess(ctx, workspaceID, uid)
+		}
+	}
+	return nil
+}
+
+func (s *Service) ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.TagWithMetrics, error) {
+	if err := s.checkWorkspaceAccess(ctx, workspaceID); err != nil {
+		return nil, err
+	}
+	return s.tagRepo.ListWorkspaceTagsWithMetrics(ctx, workspaceID)
+}
+
+func (s *Service) DeleteUnusedTags(ctx context.Context, workspaceID uuid.UUID) error {
+	if err := s.checkWorkspaceAccess(ctx, workspaceID); err != nil {
+		return err
+	}
+	return s.tagRepo.DeleteUnusedTags(ctx, workspaceID)
+}
+

@@ -437,6 +437,63 @@ func (_c *MockUseCases_DeleteTask_Call) RunAndReturn(run func(ctx context.Contex
 	return _c
 }
 
+// DeleteUnusedTags provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) DeleteUnusedTags(ctx context.Context, workspaceID uuid.UUID) error {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteUnusedTags")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockUseCases_DeleteUnusedTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteUnusedTags'
+type MockUseCases_DeleteUnusedTags_Call struct {
+	*mock.Call
+}
+
+// DeleteUnusedTags is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) DeleteUnusedTags(ctx any, workspaceID any) *MockUseCases_DeleteUnusedTags_Call {
+	return &MockUseCases_DeleteUnusedTags_Call{Call: _e.mock.On("DeleteUnusedTags", ctx, workspaceID)}
+}
+
+func (_c *MockUseCases_DeleteUnusedTags_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockUseCases_DeleteUnusedTags_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_DeleteUnusedTags_Call) Return(err error) *MockUseCases_DeleteUnusedTags_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockUseCases_DeleteUnusedTags_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) error) *MockUseCases_DeleteUnusedTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetInboxTasks provides a mock function for the type MockUseCases
 func (_mock *MockUseCases) GetInboxTasks(ctx context.Context, workspaceID uuid.UUID) ([]*task0.Task, error) {
 	ret := _mock.Called(ctx, workspaceID)
@@ -711,6 +768,74 @@ func (_c *MockUseCases_ListWorkspaceTags_Call) Return(tags []*task0.Tag, err err
 }
 
 func (_c *MockUseCases_ListWorkspaceTags_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task0.Tag, error)) *MockUseCases_ListWorkspaceTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListWorkspaceTagsWithMetrics provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID uuid.UUID) ([]*task0.TagWithMetrics, error) {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListWorkspaceTagsWithMetrics")
+	}
+
+	var r0 []*task0.TagWithMetrics
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*task0.TagWithMetrics, error)); ok {
+		return returnFunc(ctx, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*task0.TagWithMetrics); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task0.TagWithMetrics)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_ListWorkspaceTagsWithMetrics_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListWorkspaceTagsWithMetrics'
+type MockUseCases_ListWorkspaceTagsWithMetrics_Call struct {
+	*mock.Call
+}
+
+// ListWorkspaceTagsWithMetrics is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockUseCases_Expecter) ListWorkspaceTagsWithMetrics(ctx any, workspaceID any) *MockUseCases_ListWorkspaceTagsWithMetrics_Call {
+	return &MockUseCases_ListWorkspaceTagsWithMetrics_Call{Call: _e.mock.On("ListWorkspaceTagsWithMetrics", ctx, workspaceID)}
+}
+
+func (_c *MockUseCases_ListWorkspaceTagsWithMetrics_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockUseCases_ListWorkspaceTagsWithMetrics_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_ListWorkspaceTagsWithMetrics_Call) Return(tagWithMetricss []*task0.TagWithMetrics, err error) *MockUseCases_ListWorkspaceTagsWithMetrics_Call {
+	_c.Call.Return(tagWithMetricss, err)
+	return _c
+}
+
+func (_c *MockUseCases_ListWorkspaceTagsWithMetrics_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task0.TagWithMetrics, error)) *MockUseCases_ListWorkspaceTagsWithMetrics_Call {
 	_c.Call.Return(run)
 	return _c
 }

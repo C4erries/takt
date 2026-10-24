@@ -253,6 +253,7 @@ erDiagram
 | **Features: Workspace Switcher**| `src/features/workspace-switcher`| Выпадающее меню переключения воркспейсов и модал создания. |
 | **Features: Theme Switcher**   | `src/features/theme-switcher`   | Выбор темы оформления из 16 палитр Editorial Tech и анимированных тем, хранение в localStorage. |
 | **Features: Workspace Members** | `src/features/workspace-members` | Управление участниками, генерация инвайт-ссылок и принятие. |
+| **Features: Tag Manager** | `src/features/tag-manager` | Централизованное управление тегами воркспейса (счётчик задач, inline-переименование, палитра, удаление неиспользуемых). |
 | **Widgets: Sidebar** | `src/widgets/sidebar` | Сворачиваемая навигация (Inbox, Today, Someday, Projects, встроенный MiniCalendar). |
 | **Widgets: Boards Rail** | `src/widgets/boards-panel` | Сворачиваемая промежуточная панель мульти-досок WEEEK-style (220px, создание, счетчики). |
 | **Widgets: Main Sheet** | `src/widgets/main-sheet` | 100% Canvas холст (разлинованный список задач или Канбан-доска). |

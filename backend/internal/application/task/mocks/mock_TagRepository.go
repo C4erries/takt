@@ -288,6 +288,63 @@ func (_c *MockTagRepository_DeleteTag_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// DeleteUnusedTags provides a mock function for the type MockTagRepository
+func (_mock *MockTagRepository) DeleteUnusedTags(ctx context.Context, workspaceID uuid.UUID) error {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteUnusedTags")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTagRepository_DeleteUnusedTags_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteUnusedTags'
+type MockTagRepository_DeleteUnusedTags_Call struct {
+	*mock.Call
+}
+
+// DeleteUnusedTags is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockTagRepository_Expecter) DeleteUnusedTags(ctx any, workspaceID any) *MockTagRepository_DeleteUnusedTags_Call {
+	return &MockTagRepository_DeleteUnusedTags_Call{Call: _e.mock.On("DeleteUnusedTags", ctx, workspaceID)}
+}
+
+func (_c *MockTagRepository_DeleteUnusedTags_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockTagRepository_DeleteUnusedTags_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTagRepository_DeleteUnusedTags_Call) Return(err error) *MockTagRepository_DeleteUnusedTags_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTagRepository_DeleteUnusedTags_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) error) *MockTagRepository_DeleteUnusedTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetTagByID provides a mock function for the type MockTagRepository
 func (_mock *MockTagRepository) GetTagByID(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*task.Tag, error) {
 	ret := _mock.Called(ctx, id, workspaceID)
@@ -494,6 +551,74 @@ func (_c *MockTagRepository_ListWorkspaceTags_Call) Return(tags []*task.Tag, err
 }
 
 func (_c *MockTagRepository_ListWorkspaceTags_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task.Tag, error)) *MockTagRepository_ListWorkspaceTags_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListWorkspaceTagsWithMetrics provides a mock function for the type MockTagRepository
+func (_mock *MockTagRepository) ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID uuid.UUID) ([]*task.TagWithMetrics, error) {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListWorkspaceTagsWithMetrics")
+	}
+
+	var r0 []*task.TagWithMetrics
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*task.TagWithMetrics, error)); ok {
+		return returnFunc(ctx, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*task.TagWithMetrics); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task.TagWithMetrics)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTagRepository_ListWorkspaceTagsWithMetrics_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListWorkspaceTagsWithMetrics'
+type MockTagRepository_ListWorkspaceTagsWithMetrics_Call struct {
+	*mock.Call
+}
+
+// ListWorkspaceTagsWithMetrics is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockTagRepository_Expecter) ListWorkspaceTagsWithMetrics(ctx any, workspaceID any) *MockTagRepository_ListWorkspaceTagsWithMetrics_Call {
+	return &MockTagRepository_ListWorkspaceTagsWithMetrics_Call{Call: _e.mock.On("ListWorkspaceTagsWithMetrics", ctx, workspaceID)}
+}
+
+func (_c *MockTagRepository_ListWorkspaceTagsWithMetrics_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockTagRepository_ListWorkspaceTagsWithMetrics_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTagRepository_ListWorkspaceTagsWithMetrics_Call) Return(tagWithMetricss []*task.TagWithMetrics, err error) *MockTagRepository_ListWorkspaceTagsWithMetrics_Call {
+	_c.Call.Return(tagWithMetricss, err)
+	return _c
+}
+
+func (_c *MockTagRepository_ListWorkspaceTagsWithMetrics_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task.TagWithMetrics, error)) *MockTagRepository_ListWorkspaceTagsWithMetrics_Call {
 	_c.Call.Return(run)
 	return _c
 }

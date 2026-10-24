@@ -26,7 +26,7 @@ export interface KanbanBoardProps {
   workspaceId?: string;
   onSelectTask?: (taskId: string) => void;
   selectedTaskId?: string | null;
-  onCreateTaskInColumn?: (title: string, columnId: string) => Promise<void>;
+  onCreateTaskInColumn?: (title: string, columnId: string, description?: string) => Promise<void>;
   filteredTasks?: Task[];
 }
 

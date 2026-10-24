@@ -62,3 +62,17 @@ JOIN task_tags tt ON t.id = tt.tag_id
 WHERE tt.task_id = ANY($1::uuid[])
 ORDER BY t.name ASC;
 
+-- name: ListWorkspaceTagsWithMetrics :many
+SELECT t.*, COUNT(tt.task_id)::BIGINT AS task_count
+FROM tags t
+LEFT JOIN task_tags tt ON t.id = tt.tag_id
+WHERE t.workspace_id = $1
+GROUP BY t.id
+ORDER BY t.name ASC;
+
+-- name: DeleteUnusedTags :exec
+DELETE FROM tags
+WHERE workspace_id = $1
+  AND id NOT IN (SELECT DISTINCT tag_id FROM task_tags);
+
+

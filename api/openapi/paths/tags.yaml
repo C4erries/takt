@@ -40,6 +40,38 @@ tags:
       '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
       '409': { description: Tag with this name already exists in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
+tagsMetrics:
+  get:
+    tags: [Tags]
+    summary: List all tags in a workspace with usage metrics
+    operationId: listWorkspaceTagsMetrics
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '200':
+        description: List of workspace tags with metrics
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '../schemas/tag.yaml#/TagWithMetrics' }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+unusedTags:
+  delete:
+    tags: [Tags]
+    summary: Delete all unused tags in a workspace
+    operationId: deleteUnusedWorkspaceTags
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '204': { description: Unused tags deleted successfully }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
 tagItem:
   patch:
     tags: [Tags]

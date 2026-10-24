@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Inbox, Zap, FolderClosed, Plus, LogOut, LogIn,
-  SlidersHorizontal, Layers, X, Sparkles, Search, PanelLeftClose, Palette,
+  SlidersHorizontal, Layers, X, Sparkles, Search, PanelLeftClose, Palette, Tag,
 } from 'lucide-react';
 import { Button, Badge, Input } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
@@ -9,6 +9,7 @@ import { WorkspaceSwitcher } from '@/features/workspace-switcher';
 import { MiniCalendar } from '@/widgets/mini-calendar';
 import { useTaskStore } from '@/features/task-navigation';
 import { useThemeStore, getTheme } from '@/features/theme-switcher';
+import { TagManagerModal } from '@/features/tag-manager';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
 import { useTodayTasksQuery, useInboxTasks } from '@/entities/task';
 import { useAutomationsQuery } from '@/entities/automation';
@@ -50,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
 
   const todayCount = todayTasks.filter((t) => !t.isCompleted).length;
   const activeAutomationsCount = automations.filter((a) => a.isEnabled).length;
@@ -281,6 +283,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             type="button"
+            onClick={() => setIsTagManagerOpen(true)}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs text-muted hover:text-primary hover:bg-surface/60 transition-all duration-150"
+            title="Менеджер тегов"
+          >
+            <span className="flex items-center gap-2">
+              <Tag className="w-3.5 h-3.5 text-muted group-hover:text-primary transition-colors" />
+              <span>Теги</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={onToggleUiCatalog}
             className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 ${
               showUiCatalog ? 'bg-accent-surface font-medium text-primary' : 'text-muted hover:text-primary hover:bg-surface/60'
@@ -333,6 +347,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </Button>
         )}
       </div>
+
+      <TagManagerModal
+        isOpen={isTagManagerOpen}
+        onClose={() => setIsTagManagerOpen(false)}
+        workspaceId={workspace?.id}
+      />
     </aside>
   );
 };

@@ -24,7 +24,7 @@ export interface KanbanColumnProps {
   projectId?: string; workspaceId?: string;
   onToggleTask?: (taskId: string) => void; onSelectTask?: (taskId: string) => void;
   selectedTaskId?: string | null;
-  onCreateTask?: (title: string, columnId: string) => Promise<void>;
+  onCreateTask?: (title: string, columnId: string, description?: string) => Promise<void>;
   isOverlay?: boolean;
 }
 
@@ -56,6 +56,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAutomationsOpen, setIsAutomationsOpen] = useState(false);
@@ -64,6 +66,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const [editedTitle, setEditedTitle] = useState(column.name);
   const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const boardsQuery = useProjectBoardsQuery(workspaceId, projectId);
@@ -86,47 +89,63 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   }, [isAdding]);
 
   useEffect(() => {
+    if (isNotesOpen) textareaRef.current?.focus();
+  }, [isNotesOpen]);
+
+  useEffect(() => {
     if (isEditingTitle) {
       titleInputRef.current?.focus();
       titleInputRef.current?.select();
     }
   }, [isEditingTitle]);
 
-  const startRename = () => {
-    setEditedTitle(column.name);
-    setIsEditingTitle(true);
-  };
-
+  const startRename = () => { setEditedTitle(column.name); setIsEditingTitle(true); };
   const handleSaveTitle = () => {
     if (!isEditingTitle) return;
     setIsEditingTitle(false);
     const trimmed = editedTitle.trim();
     if (trimmed && trimmed !== column.name) {
       updateColumnMutation.mutate({ columnId: column.id, data: { name: trimmed } });
-    } else {
-      setEditedTitle(column.name);
-    }
+    } else { setEditedTitle(column.name); }
   };
-
-  const handleCancelTitle = () => {
-    setIsEditingTitle(false);
-    setEditedTitle(column.name);
-  };
+  const handleCancelTitle = () => { setIsEditingTitle(false); setEditedTitle(column.name); };
 
   const categoryConfig = CATEGORY_STYLES[column.statusCategory] || CATEGORY_STYLES.todo;
 
-  const handleQuickAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmitTask = async (includeDescription: boolean) => {
     const trimmed = newTitle.trim();
     if (!trimmed || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      if (onCreateTask) await onCreateTask(trimmed, column.id);
+      const desc = includeDescription && isNotesOpen ? newDescription.trim() : '';
+      if (onCreateTask) await onCreateTask(trimmed, column.id, desc);
       setNewTitle('');
+      setNewDescription('');
+      setIsNotesOpen(false);
       inputRef.current?.focus();
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setIsAdding(false); setNewTitle(''); setNewDescription(''); setIsNotesOpen(false);
+    } else if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault(); setIsNotesOpen(true);
+    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault(); handleSubmitTask(true);
+    } else if (e.key === 'Enter') {
+      e.preventDefault(); handleSubmitTask(false);
+    }
+  };
+
+  const handleNotesKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Escape') {
+      setIsAdding(false); setNewTitle(''); setNewDescription(''); setIsNotesOpen(false);
+    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault(); handleSubmitTask(true);
     }
   };
 
@@ -179,11 +198,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               autoFocus
             />
           ) : (
-            <h3
-              onDoubleClick={(e) => { e.stopPropagation(); startRename(); }}
-              className="text-xs font-semibold tracking-wide uppercase text-primary truncate cursor-text"
-              title="Двойной клик для переименования"
-            >
+            <h3 onDoubleClick={(e) => { e.stopPropagation(); startRename(); }} className="text-xs font-semibold tracking-wide uppercase text-primary truncate cursor-text" title="Двойной клик для переименования">
               {column.name}
             </h3>
           )}
@@ -199,17 +214,14 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
         <div className="flex items-center gap-0.5" onPointerDown={(e) => e.stopPropagation()}>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="ghost" size="sm"
             disabled={tasks.length > 0 || deleteColumnMutation.isPending}
             onClick={(e) => {
               e.stopPropagation();
-              if (tasks.length === 0 && window.confirm(`Удалить колонку «${column.name}»?`)) {
-                deleteColumnMutation.mutate(column.id);
-              }
+              if (tasks.length === 0 && window.confirm(`Удалить колонку «${column.name}»?`)) deleteColumnMutation.mutate(column.id);
             }}
             className={cn('h-6 w-6 p-0 transition-colors', tasks.length === 0 ? 'text-muted hover:text-destructive hover:bg-destructive/10' : 'text-muted/40 cursor-not-allowed')}
-            title={tasks.length > 0 ? 'Нельзя удалить колонку с задачами. Сначала переместите или удалите задачи.' : `Удалить колонку «${column.name}»`}
+            title={tasks.length > 0 ? 'Нельзя удалить колонку с задачами' : `Удалить колонку «${column.name}»`}
             aria-label={`Удалить колонку ${column.name}`}
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -217,8 +229,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
           <div className="relative" ref={menuRef}>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="ghost" size="sm"
               onClick={() => setIsMenuOpen((prev) => !prev)}
               className={cn('h-6 w-6 p-0 text-muted hover:text-primary', isMenuOpen && 'bg-canvas/60 text-primary')}
               title="Меню колонки"
@@ -229,17 +240,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
             {isMenuOpen && (
               <div className="absolute right-0 top-full mt-1 w-56 z-30 bg-surface border border-subtle rounded-xl shadow-washi p-1.5 space-y-1 text-xs animate-in fade-in zoom-in-95 duration-100">
-                {/* 0. Rename Column */}
-                <button
-                  type="button"
-                  onClick={() => { setIsMenuOpen(false); startRename(); }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
-                >
+                <button type="button" onClick={() => { setIsMenuOpen(false); startRename(); }} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group">
                   <Pencil className="w-3.5 h-3.5 text-muted group-hover:text-primary shrink-0" />
                   <span>Переименовать</span>
                 </button>
-
-                {/* 1. Toggle Inbox Status */}
                 <button
                   type="button"
                   onClick={() => {
@@ -254,56 +258,27 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                   </span>
                   {column.isInbox && <Check className="w-3 h-3 text-accent-solid shrink-0 ml-1.5" />}
                 </button>
-
-                {/* 2. Column Automations */}
-                <button
-                  type="button"
-                  onClick={() => { setIsMenuOpen(false); setIsAutomationsOpen(true); }}
-                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
-                >
+                <button type="button" onClick={() => { setIsMenuOpen(false); setIsAutomationsOpen(true); }} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group">
                   <Zap className="w-3.5 h-3.5 text-accent-solid shrink-0" />
                   <span>Автоматизации колонки (⚡)</span>
                 </button>
-
-                {/* 3. Move to Board */}
-                <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase border-t border-subtle/40 pt-1.5 mt-1">
-                  Переместить на доску
-                </div>
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase border-t border-subtle/40 pt-1.5 mt-1">Переместить на доску</div>
                 {otherBoards.length === 0 ? (
                   <div className="px-2 py-1 text-[11px] text-muted italic">Нет других досок</div>
                 ) : (
                   <div className="space-y-0.5">
                     {otherBoards.map((targetBoard) => (
-                      <button
-                        key={targetBoard.id}
-                        type="button"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          moveColumnMutation.mutate({ columnId: column.id, targetBoardId: targetBoard.id });
-                        }}
-                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
-                      >
+                      <button key={targetBoard.id} type="button" onClick={() => { setIsMenuOpen(false); moveColumnMutation.mutate({ columnId: column.id, targetBoardId: targetBoard.id }); }} className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group">
                         <span className="truncate">{targetBoard.name}</span>
                         <ArrowRight className="w-3 h-3 text-muted group-hover:text-primary shrink-0 ml-1.5" />
                       </button>
                     ))}
                   </div>
                 )}
-
-                {/* 4. Column Color Picker */}
-                <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase border-t border-subtle/40 pt-1.5 mt-1">
-                  Цвет колонки
-                </div>
+                <div className="px-2 py-1 text-[10px] font-semibold text-muted tracking-wider uppercase border-t border-subtle/40 pt-1.5 mt-1">Цвет колонки</div>
                 <div className="grid grid-cols-4 gap-1.5 px-2 py-1">
                   {COLUMN_COLORS.map((c) => (
-                    <button
-                      key={c.name}
-                      type="button"
-                      onClick={() => handleSelectColor(c.hex)}
-                      title={c.name}
-                      className={cn('w-6 h-6 rounded-full flex items-center justify-center transition-all border shadow-washi-sm', c.hex === columnColor ? 'ring-2 ring-accent-solid scale-105 border-surface' : 'border-subtle/80 hover:scale-105', !c.hex && 'bg-canvas/60 text-muted')}
-                      style={c.hex ? { backgroundColor: c.hex } : undefined}
-                    >
+                    <button key={c.name} type="button" onClick={() => handleSelectColor(c.hex)} title={c.name} className={cn('w-6 h-6 rounded-full flex items-center justify-center transition-all border shadow-washi-sm', c.hex === columnColor ? 'ring-2 ring-accent-solid scale-105 border-surface' : 'border-subtle/80 hover:scale-105', !c.hex && 'bg-canvas/60 text-muted')} style={c.hex ? { backgroundColor: c.hex } : undefined}>
                       {!c.hex && <span className="text-[10px] font-mono leading-none">✕</span>}
                     </button>
                   ))}
@@ -318,21 +293,48 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       {!isOverlay && (
         <div className="mb-2">
           {isAdding ? (
-            <form onSubmit={handleQuickAdd} className="p-2 rounded-xl bg-surface border border-subtle shadow-washi space-y-2 animate-in fade-in duration-100">
+            <form onSubmit={(e) => { e.preventDefault(); handleSubmitTask(isNotesOpen); }} className="p-2 rounded-xl bg-surface border border-subtle shadow-washi space-y-2 animate-in fade-in duration-100">
               <input
                 ref={inputRef}
                 type="text"
                 autoFocus
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Escape') { setIsAdding(false); setNewTitle(''); } }}
-                placeholder="Название задачи... (Enter)"
+                onKeyDown={handleTitleKeyDown}
+                placeholder="Название задачи... (Shift+Enter: заметки)"
                 disabled={isSubmitting}
                 className="w-full px-2.5 py-1.5 text-xs bg-surface border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid"
               />
-              <div className="flex items-center justify-end gap-1.5">
-                <Button type="button" variant="ghost" size="sm" onClick={() => { setIsAdding(false); setNewTitle(''); }} className="text-[11px] h-6 px-2 text-muted hover:text-primary">Отмена</Button>
-                <Button type="submit" variant="solid" size="sm" isLoading={isSubmitting} disabled={!newTitle.trim()} className="text-[11px] h-6 px-2.5">Добавить</Button>
+              <AnimatePresence>
+                {isNotesOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    className="overflow-hidden"
+                  >
+                    <textarea
+                      ref={textareaRef}
+                      value={newDescription}
+                      onChange={(e) => setNewDescription(e.target.value)}
+                      onKeyDown={handleNotesKeyDown}
+                      placeholder="Заметки / описание... (Ctrl+Enter: создать)"
+                      disabled={isSubmitting}
+                      rows={3}
+                      className="w-full px-2.5 py-1.5 text-xs bg-canvas/60 border border-subtle rounded-md text-primary placeholder:text-muted/60 focus:outline-none focus:border-accent-solid resize-none font-mono"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                <span className="text-[10px] text-muted font-mono select-none">
+                  {isNotesOpen ? 'Ctrl+↵ создать' : 'Shift+↵ заметки'}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => { setIsAdding(false); setNewTitle(''); setNewDescription(''); setIsNotesOpen(false); }} className="text-[11px] h-6 px-2 text-muted hover:text-primary">Отмена</Button>
+                  <Button type="submit" variant="solid" size="sm" isLoading={isSubmitting} disabled={!newTitle.trim()} className="text-[11px] h-6 px-2.5">Добавить</Button>
+                </div>
               </div>
             </form>
           ) : (
@@ -368,12 +370,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           </AnimatePresence>
 
           {tasks.length === 0 && !isAdding && (
-            <div
-              className={cn(
-                'h-24 rounded-lg border border-dashed border-subtle/70 flex items-center justify-center text-center p-3 select-none',
-                isOver ? 'border-accent-solid/60 bg-accent-surface/30' : 'bg-surface/30'
-              )}
-            >
+            <div className={cn('h-24 rounded-lg border border-dashed border-subtle/70 flex items-center justify-center text-center p-3 select-none', isOver ? 'border-accent-solid/60 bg-accent-surface/30' : 'bg-surface/30')}>
               <p className="text-[11px] text-muted">Перетащите задачу сюда</p>
             </div>
           )}
@@ -382,13 +379,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
       {/* Column Automations Modal */}
       {!isOverlay && (
-        <ColumnAutomationsModal
-          isOpen={isAutomationsOpen}
-          onClose={() => setIsAutomationsOpen(false)}
-          column={column}
-          allColumns={allColumns || [column]}
-          workspaceId={workspaceId}
-        />
+        <ColumnAutomationsModal isOpen={isAutomationsOpen} onClose={() => setIsAutomationsOpen(false)} column={column} allColumns={allColumns || [column]} workspaceId={workspaceId} />
       )}
     </div>
   );

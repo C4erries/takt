@@ -223,4 +223,50 @@ func TestTag_SetColorHex(t *testing.T) {
 	}
 }
 
+func TestNewTagWithMetrics(t *testing.T) {
+	wsID := uuid.New()
+	baseTag, err := NewTag(wsID, "frontend", "#3b82f6")
+	require.NoError(t, err)
+	require.NotNil(t, baseTag)
+
+	testCases := []struct {
+		name          string
+		inputTag      Tag
+		inputCount    int64
+		expectedCount int64
+	}{
+		{
+			name:          "positive task count",
+			inputTag:      *baseTag,
+			inputCount:    5,
+			expectedCount: 5,
+		},
+		{
+			name:          "zero task count",
+			inputTag:      *baseTag,
+			inputCount:    0,
+			expectedCount: 0,
+		},
+		{
+			name:          "negative count clamped to zero",
+			inputTag:      *baseTag,
+			inputCount:    -3,
+			expectedCount: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := NewTagWithMetrics(tc.inputTag, tc.inputCount)
+			assert.Equal(t, tc.expectedCount, result.TaskCount)
+			assert.Equal(t, tc.inputTag.ID, result.ID)
+			assert.Equal(t, tc.inputTag.WorkspaceID, result.WorkspaceID)
+			assert.Equal(t, tc.inputTag.Name, result.Name)
+			assert.Equal(t, tc.inputTag.ColorHex, result.ColorHex)
+			assert.Equal(t, tc.inputTag, result.Tag)
+		})
+	}
+}
+
+
 

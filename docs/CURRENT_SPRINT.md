@@ -4,60 +4,67 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.9.0 — «UX Quick Wins» 🟡 ФАЗА А (Готово к запуску)
+## Текущий спринт: Спринт 0.9.1 — «UX Polish: Создание задач, Подзадачи, Теги» 🟡 ФАЗА А (Готово к запуску)
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Штаб)
 
-* **Бизнес-цель**: Убрать четыре мелких UX-раздражителя за один быстрый спринт. Все задачи — S-размер, без миграций БД, без новых OpenAPI эндпоинтов. Деплоится одним коммитом.
+* **Бизнес-цель**: Три связанных UX-улучшения вокруг создания задач, эргономики подзадач и централизованного управления тегами воркспейса.
 
-* **Связь с бэклогом**: Подробные спецификации каждой задачи — в [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B10, TASK-B07, TASK-B11, TASK-B04).
+* **Связь с бэклогом**: Подробные спецификации каждой задачи — в [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B12, TASK-B02, TASK-B13).
 
 * **Принятые микро-решения**:
 
-  1. **TASK-B10 — Ребрендинг «SLA»**:
-     - Менять только UI-лейбл в `TRIGGER_OPTIONS`. API-код `column_sla_timer` сохраняется.
-     - `column_sla_timer` → **«Задержка в колонке»**
-     - Параметр «Порог нахождения:» → **«Задача в колонке дольше чем:»**
-     - Единственный файл: `frontend/src/features/automations/useRuleBuilder.ts`
+  1. **TASK-B12 — Хоткей заметок при создании задачи**:
+     - В форме инлайн-создания (`KanbanColumn.tsx`): однострочный input заголовка по умолчанию.
+     - `Shift+Enter` в заголовке раскрывает `textarea` для описания/заметок с плавной анимацией (`motion/react`).
+     - Фокус автоматически переходит в `textarea`.
+     - `Ctrl+Enter` (или `Cmd+Enter`) сохраняет задачу с заголовком и описанием. Обычный `Enter` в input заголовка создает задачу только с заголовком.
 
-  2. **TASK-B07 — Авто-названия автоматизаций**:
-     - Убрать имя колонки из авто-формулы: было `` `${triggerLabel} [${col}] → ${actionLabel}` ``, стало `` `${triggerLabel} → ${actionLabel}` ``
-     - Бейдж `#A-01` в `AutomationCard.tsx` — индекс по `created_at ASC` внутри воркспейса: `#A-${(index+1).toString().padStart(2, '0')}`
-     - Существующие правила с именами не переименовываем автоматически
+  2. **TASK-B02 — Эргономика подзадач + привязка существующей задачи**:
+     - В `TaskSubtasksSection.tsx` увеличить комфорт ввода: `min-h-[34px] py-1.5`.
+     - Кнопка с иконкой `Link` рядом с добавлением подзадачи открывает поповер `AttachTaskPopover.tsx`.
+     - Поиск через существующий API поиска воркспейса (`GET /workspaces/{id}/search?q=...`).
+     - Фильтрация: исключить задачи, у которых уже есть `parent_id` (нет 2-го уровня вложенности), задачи с собственными подзадачами и саму текущую задачу.
+     - Привязка через `PATCH /workspaces/{wid}/tasks/{id}` с `{ parentId: currentTask.id }`.
+     - Инвалидация кэша React Query для обновления списка задач и подзадач.
 
-  3. **TASK-B11 — Клавиатурная навигация в тегах**:
-     - `focusedIndex` state, `ArrowDown`/`ArrowUp` с wrap-around, `Enter` = выбрать, `Escape` = закрыть
-     - При вводе в input — сбрасывать `focusedIndex` в `-1`
-     - `scrollIntoView({ block: 'nearest' })` на активном `li`
-
-  4. **TASK-B04 — Счётчик активных задач**:
-     - SQL: `COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL) AS active_tasks_count`
-     - Текст в UI: `X колонок · Y в работе`
-     - Нужны: изменение SQL-запроса в `backend/queries/projects.sql` + обновление `BoardCard.tsx`
+  3. **TASK-B13 — Централизованный менеджер тегов воркспейса**:
+     - Доступ: пункт/иконка «Теги» в сайдбаре (`Sidebar.tsx`) открывает модальное окно `TagManagerModal.tsx`.
+     - Контракты OpenAPI (`api/openapi/paths/tasks.yaml` или `tags.yaml`):
+       - `GET /workspaces/{wid}/tags/metrics` — теги воркспейса со счётчиком задач `task_count`.
+       - `PATCH /workspaces/{wid}/tags/{id}` — обновление названия и цвета тега.
+       - `DELETE /workspaces/{wid}/tags/{id}` — удаление тега (отвязка от всех задач).
+       - `DELETE /workspaces/{wid}/tags/unused` — удаление всех тегов с `task_count = 0`.
+     - Бэкенд: методы репозитория, Use Cases в `internal/application/task/` и хендлеры в `internal/infrastructure/http/`.
+     - Фронтенд: модалка с поиском, списком тегов, редактированием цвета/имени, подтверждением удаления и кнопкой «Удалить неиспользуемые».
 
 ---
 
-## 📋 2. Таблица задач спринта 0.9.0
+## 📋 2. Таблица задач спринта 0.9.1
 
 | # | Задача | Статус | Приоритет | Ответственный | Файлы |
 |---|--------|--------|-----------|---------------|-------|
-| 1 | **[B10] SLA Rebrand**: переименовать `column_sla_timer` → «Задержка в колонке», параметр «Порог нахождения» → «Задача в колонке дольше чем» | ⏳ Ожидает | Средний | `frontend_developer` | `useRuleBuilder.ts`, `RuleBuilderSections.tsx` |
-| 2 | **[B07] Auto-Names**: убрать имя колонки из авто-названия, добавить бейдж `#A-NN` в `AutomationCard` | ⏳ Ожидает | Средний | `frontend_developer` | `useRuleBuilder.ts`, `AutomationCard.tsx` |
-| 3 | **[B11] Tag Keyboard Nav**: `focusedIndex` + `ArrowDown/Up/Enter/Escape` + `scrollIntoView` в компоненте автокомплита тегов | ⏳ Ожидает | Средний | `frontend_developer` | `TaskTagSection.tsx` или `TagInput.tsx` |
-| 4 | **[B04] Active Tasks Counter**: обновить SQL-запрос и подпись на карточке доски | ⏳ Ожидает | Средний | `backend_developer` + `frontend_developer` | `projects.sql`, `BoardCard.tsx` |
-| 5 | **[Verification]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, коммит | ⏳ В очереди | Критический | Lead Orchestrator | — |
+| 1 | **[B12] Notes Hotkey**: инлайн-раскрытие заметок по Shift+Enter, Ctrl+Enter сабмит | ⏳ Ожидает | Средний | `frontend_developer` | `KanbanColumn.tsx` |
+| 2 | **[B02] Subtasks Ergonomics & Attach**: поле ввода подзадач, поповер привязки существующей задачи | ⏳ Ожидает | Средний | `frontend_developer` | `TaskSubtasksSection.tsx`, `AttachTaskPopover.tsx` |
+| 3 | **[B13 Step 1] Tag Manager Contracts & DB**: SQL-запросы, OpenAPI эндпоинты тегов, make generate, чистый домен | ⏳ Ожидает | Высокий | `backend_developer` | `queries/tasks.sql`, `api/openapi/*` |
+| 4 | **[B13 Step 2] Tag Manager Application & HTTP**: use-cases управления тегами, HTTP-хендлеры, регистрация роутов | ⏳ Ожидает | Высокий | `backend_developer` | `application/task/`, `infrastructure/http/` |
+| 5 | **[B13 UI] Tag Manager Modal**: модалка управления тегами, вызов из сайдбара, операции над тегами | ⏳ Ожидает | Высокий | `frontend_developer` | `TagManagerModal.tsx`, `Sidebar.tsx` |
+| 6 | **[Verification]**: `make check-arch`, `npm run build`, `npm run lint`, `make test`, коммит | ⏳ В очереди | Критический | Lead Orchestrator | — |
 
 ---
 
 ## 🎯 3. Definition of Done (DoD)
 
-- [ ] Триггер «SLA таймер в колонке» отображается как «Задержка в колонке» в конструкторе автоматизаций.
-- [ ] Авто-название правила не содержит имя колонки: «Задержка в колонке → Архивировать задачу».
-- [ ] Каждое правило в списке имеет компактный бейдж `#A-01`, `#A-02` и т.д.
-- [ ] Нажатие `ArrowDown`/`ArrowUp` при открытом выпадающем списке тегов перемещает выделение; `Enter` — добавляет тег; `Escape` — закрывает список.
-- [ ] Карточка доски в боковой панели показывает `X колонок · Y в работе` (только незакрытые корневые задачи).
+- [ ] В инлайн-создании задачи на доске `Shift+Enter` плавно раскрывает текстовое поле заметок и переводит туда фокус; `Ctrl+Enter` создает задачу с описанием.
+- [ ] В секции подзадач инпут ввода имеет комфортную высоту (`min-h-[34px]`), есть кнопка `Link` для поиска и привязки существующей задачи без подзадач.
+- [ ] Существуют и работают API:
+  - `GET /workspaces/{wid}/tags/metrics`
+  - `PATCH /workspaces/{wid}/tags/{id}`
+  - `DELETE /workspaces/{wid}/tags/{id}`
+  - `DELETE /workspaces/{wid}/tags/unused`
+- [ ] Модальное окно «Менеджер тегов» открывается из сайдбара, отображает все теги воркспейса с количеством связанных задач, позволяет менять название/цвет, удалять тег и удалять неиспользуемые теги в 1 клик.
 - [ ] `make check-arch` — 0 ошибок.
 - [ ] `npm run build && npm run lint` — 0 ошибок.
 - [ ] `make test` — все тесты зелёные.
@@ -68,7 +75,6 @@
 
 | Спринт | Задачи | Суть |
 |--------|--------|------|
-| **0.9.1** | B12, B02, B13 | Хоткей заметок при создании · Привязка подзадачи · Менеджер тегов |
 | **0.9.2** | B03, B08 | Дублирование задачи · Скоуп автоматизаций по доске |
 | **0.9.3** | B05 | Архив задач (миграция + Batch SQL ADR-0008) |
 | **0.9.4** | B06 | История изменений задачи (новая таблица + EventBus listener) |

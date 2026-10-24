@@ -56,6 +56,10 @@ paths:
     $ref: './paths/tasks.yaml#/subtasks'
   /workspaces/{workspace_id}/tags:
     $ref: './paths/tags.yaml#/tags'
+  /workspaces/{workspace_id}/tags/metrics:
+    $ref: './paths/tags.yaml#/tagsMetrics'
+  /workspaces/{workspace_id}/tags/unused:
+    $ref: './paths/tags.yaml#/unusedTags'
   /workspaces/{workspace_id}/tags/{tag_id}:
     $ref: './paths/tags.yaml#/tagItem'
   /workspaces/{workspace_id}/tasks/{task_id}/tags/{tag_id}:

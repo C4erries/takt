@@ -26,8 +26,17 @@ export interface Tag {
   createdAt: string;
 }
 
+export interface TagWithMetrics extends Tag {
+  taskCount: number;
+}
+
 export interface CreateTagRequest {
   name: string;
+  colorHex?: string;
+}
+
+export interface UpdateTagRequest {
+  name?: string;
   colorHex?: string;
 }
 

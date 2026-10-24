@@ -36,6 +36,7 @@ type Querier interface {
 	DeleteProject(ctx context.Context, arg DeleteProjectParams) error
 	DeleteTag(ctx context.Context, arg DeleteTagParams) error
 	DeleteTask(ctx context.Context, arg DeleteTaskParams) error
+	DeleteUnusedTags(ctx context.Context, workspaceID pgtype.UUID) error
 	DeleteWorkspaceInvite(ctx context.Context, id pgtype.UUID) error
 	DeleteWorkspaceInviteByToken(ctx context.Context, token string) error
 	DeleteWorkspaceMember(ctx context.Context, arg DeleteWorkspaceMemberParams) error
@@ -77,6 +78,7 @@ type Querier interface {
 	ListWorkspaceAutomations(ctx context.Context, workspaceID pgtype.UUID) ([]Automation, error)
 	ListWorkspaceMembers(ctx context.Context, workspaceID pgtype.UUID) ([]ListWorkspaceMembersRow, error)
 	ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID) ([]Tag, error)
+	ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID pgtype.UUID) ([]ListWorkspaceTagsWithMetricsRow, error)
 	MoveColumnToBoard(ctx context.Context, arg MoveColumnToBoardParams) (Column, error)
 	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)
 	RemoveTagFromTask(ctx context.Context, arg RemoveTagFromTaskParams) error

@@ -85,3 +85,21 @@ func (t *Tag) SetColorHex(colorHex string) error {
 	return nil
 }
 
+// TagWithMetrics represents a tag along with its usage metrics (count of associated tasks).
+type TagWithMetrics struct {
+	Tag
+	TaskCount int64
+}
+
+// NewTagWithMetrics constructs a TagWithMetrics domain object ensuring non-negative task count.
+func NewTagWithMetrics(tag Tag, taskCount int64) TagWithMetrics {
+	if taskCount < 0 {
+		taskCount = 0
+	}
+	return TagWithMetrics{
+		Tag:       tag,
+		TaskCount: taskCount,
+	}
+}
+
+

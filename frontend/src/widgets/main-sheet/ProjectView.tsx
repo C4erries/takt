@@ -58,7 +58,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
   const columnsQuery = useBoardColumnsQuery(workspaceId, activeBoard?.id);
   const firstColumn = columnsQuery.data?.[0];
 
-  const handleCreateTaskInColumn = async (title: string, columnId: string) => {
+  const handleCreateTaskInColumn = async (title: string, columnId: string, description?: string) => {
     const autoConfig = getStoredColumnAutomationConfig(columnId);
     const initialPriority = autoConfig.enterPriorityEnabled ? autoConfig.enterPriority : 'none';
 
@@ -69,7 +69,7 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
         projectId,
         columnId,
         title,
-        descriptionMarkdown: '',
+        descriptionMarkdown: description || '',
         isCompleted: false,
         priority: initialPriority,
         position: Date.now(),
@@ -85,7 +85,11 @@ export const ProjectView: React.FC<ProjectViewProps> = ({
     }
 
     try {
-      const created = await tasksApi.createInbox({ title, priority: initialPriority });
+      const created = await tasksApi.createInbox({
+        title,
+        descriptionMarkdown: description,
+        priority: initialPriority,
+      });
       if (created?.id) {
         await projectApi.moveTask(workspaceId, created.id, {
           columnId,

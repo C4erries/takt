@@ -894,6 +894,27 @@ type Tag struct {
 	WorkspaceId openapi_types.UUID `json:"workspaceId"`
 }
 
+// TagWithMetrics defines model for TagWithMetrics.
+type TagWithMetrics struct {
+	// ColorHex Example: matcha
+	ColorHex string `json:"colorHex"`
+
+	// CreatedAt Example: 2026-10-14T12:00:00Z
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Id Example: t0000000-0000-0000-0000-000000000001
+	Id openapi_types.UUID `json:"id"`
+
+	// Name Example: focus
+	Name string `json:"name"`
+
+	// TaskCount Example: 5
+	TaskCount int `json:"taskCount"`
+
+	// WorkspaceId Example: 123e4567-e89b-12d3-a456-426614174001
+	WorkspaceId openapi_types.UUID `json:"workspaceId"`
+}
+
 // Task defines model for Task.
 type Task struct {
 	ColumnId    *openapi_types.UUID `json:"columnId,omitempty"`
@@ -1402,6 +1423,12 @@ type ServerInterface interface {
 	// CreateWorkspaceTag Create a new tag in a workspace
 	// (POST /workspaces/{workspace_id}/tags)
 	CreateWorkspaceTag(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// ListWorkspaceTagsMetrics List all tags in a workspace with usage metrics
+	// (GET /workspaces/{workspace_id}/tags/metrics)
+	ListWorkspaceTagsMetrics(ctx echo.Context, workspaceId openapi_types.UUID) error
+	// DeleteUnusedWorkspaceTags Delete all unused tags in a workspace
+	// (DELETE /workspaces/{workspace_id}/tags/unused)
+	DeleteUnusedWorkspaceTags(ctx echo.Context, workspaceId openapi_types.UUID) error
 	// DeleteWorkspaceTag Delete a tag
 	// (DELETE /workspaces/{workspace_id}/tags/{tag_id})
 	DeleteWorkspaceTag(ctx echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error
@@ -2245,6 +2272,38 @@ func (w *ServerInterfaceWrapper) CreateWorkspaceTag(ctx echo.Context) error {
 	return err
 }
 
+// ListWorkspaceTagsMetrics converts echo context to params.
+func (w *ServerInterfaceWrapper) ListWorkspaceTagsMetrics(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListWorkspaceTagsMetrics(ctx, workspaceId)
+	return err
+}
+
+// DeleteUnusedWorkspaceTags converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteUnusedWorkspaceTags(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteUnusedWorkspaceTags(ctx, workspaceId)
+	return err
+}
+
 // DeleteWorkspaceTag converts echo context to params.
 func (w *ServerInterfaceWrapper) DeleteWorkspaceTag(ctx echo.Context) error {
 	var err error
@@ -2606,6 +2665,8 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/switch", wrapper.SwitchWorkspace, options.OperationMiddlewares["switchWorkspace"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.ListWorkspaceTags, options.OperationMiddlewares["listWorkspaceTags"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tags", wrapper.CreateWorkspaceTag, options.OperationMiddlewares["createWorkspaceTag"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/tags/metrics", wrapper.ListWorkspaceTagsMetrics, options.OperationMiddlewares["listWorkspaceTagsMetrics"]...)
+	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tags/unused", wrapper.DeleteUnusedWorkspaceTags, options.OperationMiddlewares["deleteUnusedWorkspaceTags"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.DeleteWorkspaceTag, options.OperationMiddlewares["deleteWorkspaceTag"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.UpdateTag, options.OperationMiddlewares["updateTag"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/today", wrapper.GetTodayTasks, options.OperationMiddlewares["getTodayTasks"]...)

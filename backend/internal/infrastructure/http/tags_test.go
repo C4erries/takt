@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -281,5 +282,82 @@ func TestHandler_UpdateTag(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 	})
 }
+
+func TestHandler_ListWorkspaceTagsMetrics_Success(t *testing.T) {
+	wsID := uuid.New()
+	tagID := uuid.New()
+	now := time.Now().UTC()
+
+	mockSvc := &mockTaskService{
+		listTagsMetricsFn: func(ctx context.Context, wID uuid.UUID) ([]*domainTask.TagWithMetrics, error) {
+			m := domainTask.NewTagWithMetrics(domainTask.Tag{
+				ID:          tagID,
+				WorkspaceID: wID,
+				Name:        "Feature",
+				ColorHex:    "#3B82F6",
+				CreatedAt:   now,
+			}, 3)
+			return []*domainTask.TagWithMetrics{&m}, nil
+		},
+	}
+
+	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/"+wsID.String()+"/tags/metrics", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+
+	require.NoError(t, handler.ListWorkspaceTagsMetrics(c, wsID))
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	var tags []generated.TagWithMetrics
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &tags))
+	require.Len(t, tags, 1)
+	assert.Equal(t, "Feature", tags[0].Name)
+	assert.Equal(t, "#3B82F6", tags[0].ColorHex)
+	assert.Equal(t, 3, tags[0].TaskCount)
+}
+
+func TestHandler_DeleteUnusedWorkspaceTags(t *testing.T) {
+	wsID := uuid.New()
+
+	t.Run("success", func(t *testing.T) {
+		mockSvc := &mockTaskService{
+			deleteUnusedTagsFn: func(ctx context.Context, wID uuid.UUID) error {
+				return nil
+			},
+		}
+
+		handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/"+wsID.String()+"/tags/unused", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		require.NoError(t, handler.DeleteUnusedWorkspaceTags(c, wsID))
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+	})
+
+	t.Run("internal error", func(t *testing.T) {
+		mockSvc := &mockTaskService{
+			deleteUnusedTagsFn: func(ctx context.Context, wID uuid.UUID) error {
+				return errors.New("db failure")
+			},
+		}
+
+		handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodDelete, "/api/v1/workspaces/"+wsID.String()+"/tags/unused", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+
+		require.NoError(t, handler.DeleteUnusedWorkspaceTags(c, wsID))
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	})
+}
+
 
 

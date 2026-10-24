@@ -258,6 +258,27 @@ func (r *TaskRepository) ListWorkspaceTags(ctx context.Context, workspaceID uuid
 	return tags, nil
 }
 
+func (r *TaskRepository) ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.TagWithMetrics, error) {
+	q := getQuerier(ctx, r.queries)
+	rows, err := q.ListWorkspaceTagsWithMetrics(ctx, uuidToPg(workspaceID))
+	if err != nil {
+		return nil, err
+	}
+
+	tags := make([]*domainTask.TagWithMetrics, 0, len(rows))
+	for _, row := range rows {
+		item := domainTask.NewTagWithMetrics(domainTask.Tag{
+			ID:          pgToUUID(row.ID),
+			WorkspaceID: pgToUUID(row.WorkspaceID),
+			Name:        row.Name,
+			ColorHex:    row.ColorHex,
+			CreatedAt:   pgToTime(row.CreatedAt),
+		}, row.TaskCount)
+		tags = append(tags, &item)
+	}
+	return tags, nil
+}
+
 func (r *TaskRepository) UpdateTag(ctx context.Context, tag *domainTask.Tag) error {
 	q := getQuerier(ctx, r.queries)
 	row, err := q.UpdateTag(ctx, sqlc.UpdateTagParams{
@@ -283,6 +304,11 @@ func (r *TaskRepository) DeleteTag(ctx context.Context, id, workspaceID uuid.UUI
 		ID:          uuidToPg(id),
 		WorkspaceID: uuidToPg(workspaceID),
 	})
+}
+
+func (r *TaskRepository) DeleteUnusedTags(ctx context.Context, workspaceID uuid.UUID) error {
+	q := getQuerier(ctx, r.queries)
+	return q.DeleteUnusedTags(ctx, uuidToPg(workspaceID))
 }
 
 func (r *TaskRepository) AddTagToTask(ctx context.Context, taskID, tagID uuid.UUID) error {

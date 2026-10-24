@@ -281,6 +281,25 @@ func (h *Handler) ListWorkspaceTags(c echo.Context, workspaceId openapi_types.UU
 	return c.JSON(http.StatusOK, resp)
 }
 
+func (h *Handler) ListWorkspaceTagsMetrics(c echo.Context, workspaceId openapi_types.UUID) error {
+	tags, err := h.taskService.ListWorkspaceTagsWithMetrics(c.Request().Context(), workspaceId)
+	if err != nil {
+		return respondTaskDomainError(c, err)
+	}
+	resp := make([]generated.TagWithMetrics, len(tags))
+	for i, t := range tags {
+		resp[i] = generated.TagWithMetrics{
+			Id:          t.ID,
+			WorkspaceId: t.WorkspaceID,
+			Name:        t.Name,
+			ColorHex:    t.ColorHex,
+			CreatedAt:   t.CreatedAt,
+			TaskCount:   int(t.TaskCount),
+		}
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
 func (h *Handler) CreateWorkspaceTag(c echo.Context, workspaceId openapi_types.UUID) error {
 	var req generated.CreateWorkspaceTagJSONRequestBody
 	if err := c.Bind(&req); err != nil {
@@ -322,6 +341,13 @@ func (h *Handler) UpdateTag(c echo.Context, workspaceId openapi_types.UUID, tagI
 
 func (h *Handler) DeleteWorkspaceTag(c echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error {
 	if err := h.taskService.DeleteTag(c.Request().Context(), tagId, workspaceId); err != nil {
+		return respondTaskDomainError(c, err)
+	}
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *Handler) DeleteUnusedWorkspaceTags(c echo.Context, workspaceId openapi_types.UUID) error {
+	if err := h.taskService.DeleteUnusedTags(c.Request().Context(), workspaceId); err != nil {
 		return respondTaskDomainError(c, err)
 	}
 	return c.NoContent(http.StatusNoContent)

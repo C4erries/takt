@@ -85,6 +85,17 @@ func (q *Queries) DeleteTag(ctx context.Context, arg DeleteTagParams) error {
 	return err
 }
 
+const deleteUnusedTags = `-- name: DeleteUnusedTags :exec
+DELETE FROM tags
+WHERE workspace_id = $1
+  AND id NOT IN (SELECT DISTINCT tag_id FROM task_tags)
+`
+
+func (q *Queries) DeleteUnusedTags(ctx context.Context, workspaceID pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUnusedTags, workspaceID)
+	return err
+}
+
 const getTagByID = `-- name: GetTagByID :one
 SELECT id, workspace_id, name, color_hex, created_at FROM tags
 WHERE id = $1 AND workspace_id = $2
@@ -230,6 +241,51 @@ func (q *Queries) ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID
 			&i.Name,
 			&i.ColorHex,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWorkspaceTagsWithMetrics = `-- name: ListWorkspaceTagsWithMetrics :many
+SELECT t.id, t.workspace_id, t.name, t.color_hex, t.created_at, COUNT(tt.task_id)::BIGINT AS task_count
+FROM tags t
+LEFT JOIN task_tags tt ON t.id = tt.tag_id
+WHERE t.workspace_id = $1
+GROUP BY t.id
+ORDER BY t.name ASC
+`
+
+type ListWorkspaceTagsWithMetricsRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	Name        string             `json:"name"`
+	ColorHex    string             `json:"color_hex"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	TaskCount   int64              `json:"task_count"`
+}
+
+func (q *Queries) ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID pgtype.UUID) ([]ListWorkspaceTagsWithMetricsRow, error) {
+	rows, err := q.db.Query(ctx, listWorkspaceTagsWithMetrics, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListWorkspaceTagsWithMetricsRow{}
+	for rows.Next() {
+		var i ListWorkspaceTagsWithMetricsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WorkspaceID,
+			&i.Name,
+			&i.ColorHex,
+			&i.CreatedAt,
+			&i.TaskCount,
 		); err != nil {
 			return nil, err
 		}

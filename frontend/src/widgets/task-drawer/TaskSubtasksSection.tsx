@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { ChevronDown, Plus, CornerDownRight } from 'lucide-react';
+import { ChevronDown, Plus, CornerDownRight, Link2 } from 'lucide-react';
 import { Checkbox, Input } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import {
   useSubtasksQuery,
   useCreateSubtaskMutation,
+  useUpdateTaskMutation,
   useToggleTaskMutation,
   formatTaskNumber,
 } from '@/entities/task';
+import { AttachTaskPopover } from './AttachTaskPopover';
 
 export interface TaskSubtasksSectionProps {
   workspaceId?: string;
@@ -25,9 +27,11 @@ export const TaskSubtasksSection: React.FC<TaskSubtasksSectionProps> = ({
   const [isExpanded, setIsExpanded] = useState(true);
   const [newTitle, setNewTitle] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [isAttachOpen, setIsAttachOpen] = useState(false);
 
   const { data: subtasks = [], isLoading } = useSubtasksQuery(workspaceId, parentTaskId);
   const createSubtaskMutation = useCreateSubtaskMutation(workspaceId);
+  const updateTaskMutation = useUpdateTaskMutation(workspaceId);
   const toggleMutation = useToggleTaskMutation();
 
   const completedCount = subtasks.filter((s) => s.isCompleted).length;
@@ -55,6 +59,13 @@ export const TaskSubtasksSection: React.FC<TaskSubtasksSectionProps> = ({
     } catch {
       // Handled in mutation
     }
+  };
+
+  const handleAttachTask = async (taskId: string) => {
+    await updateTaskMutation.mutateAsync({
+      taskId,
+      data: { parentId: parentTaskId },
+    });
   };
 
   return (
@@ -141,11 +152,11 @@ export const TaskSubtasksSection: React.FC<TaskSubtasksSectionProps> = ({
             );
           })}
 
-          {/* Inline Input for New Subtask */}
+          {/* Inline Input for New Subtask with Ergonomic Height & Attach Task Popover */}
           <form
             onSubmit={handleCreateSubtask}
             className={cn(
-              'flex items-center gap-2 px-2 py-1.5 rounded-lg border transition-all mt-1',
+              'flex items-center gap-2 px-2 py-1.5 min-h-[34px] rounded-lg border transition-all mt-1',
               isInputFocused
                 ? 'bg-surface border-accent-solid/60 shadow-washi-sm'
                 : 'bg-canvas/30 border-subtle/60 hover:border-subtle hover:bg-canvas/50'
@@ -177,6 +188,28 @@ export const TaskSubtasksSection: React.FC<TaskSubtasksSectionProps> = ({
                 <CornerDownRight className="w-3 h-3" />
               </button>
             )}
+            <div className="relative shrink-0 flex items-center">
+              <button
+                type="button"
+                onClick={() => setIsAttachOpen((prev) => !prev)}
+                className={cn(
+                  'p-1 rounded text-muted hover:text-primary hover:bg-canvas/60 transition-colors',
+                  isAttachOpen && 'text-accent-solid bg-canvas/60'
+                )}
+                title="Привязать существующую задачу"
+                aria-label="Привязать задачу"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+              </button>
+              {isAttachOpen && (
+                <AttachTaskPopover
+                  workspaceId={workspaceId}
+                  currentTaskId={parentTaskId}
+                  onAttach={handleAttachTask}
+                  onClose={() => setIsAttachOpen(false)}
+                />
+              )}
+            </div>
           </form>
         </div>
       )}

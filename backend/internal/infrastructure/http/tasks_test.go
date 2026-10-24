@@ -30,8 +30,10 @@ type mockTaskService struct {
 	listSubtasksFn      func(ctx context.Context, wsID, parentID uuid.UUID) ([]*domainTask.Task, error)
 	createTagFn         func(ctx context.Context, input taskApp.CreateTagInput) (*domainTask.Tag, error)
 	listTagsFn          func(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Tag, error)
+	listTagsMetricsFn   func(ctx context.Context, wsID uuid.UUID) ([]*domainTask.TagWithMetrics, error)
 	updateTagFn         func(ctx context.Context, input taskApp.UpdateTagInput) (*domainTask.Tag, error)
 	deleteTagFn         func(ctx context.Context, tagID, wsID uuid.UUID) error
+	deleteUnusedTagsFn  func(ctx context.Context, wsID uuid.UUID) error
 	addTagToTaskFn      func(ctx context.Context, taskID, tagID, wsID uuid.UUID) error
 	removeTagFromTaskFn func(ctx context.Context, taskID, tagID, wsID uuid.UUID) error
 }
@@ -77,12 +79,20 @@ func (m *mockTaskService) ListWorkspaceTags(ctx context.Context, wsID uuid.UUID)
 	if m.listTagsFn != nil { return m.listTagsFn(ctx, wsID) }
 	return nil, nil
 }
+func (m *mockTaskService) ListWorkspaceTagsWithMetrics(ctx context.Context, wsID uuid.UUID) ([]*domainTask.TagWithMetrics, error) {
+	if m.listTagsMetricsFn != nil { return m.listTagsMetricsFn(ctx, wsID) }
+	return nil, nil
+}
 func (m *mockTaskService) UpdateTag(ctx context.Context, input taskApp.UpdateTagInput) (*domainTask.Tag, error) {
 	if m.updateTagFn != nil { return m.updateTagFn(ctx, input) }
 	return nil, nil
 }
 func (m *mockTaskService) DeleteTag(ctx context.Context, tagID, wsID uuid.UUID) error {
 	if m.deleteTagFn != nil { return m.deleteTagFn(ctx, tagID, wsID) }
+	return nil
+}
+func (m *mockTaskService) DeleteUnusedTags(ctx context.Context, wsID uuid.UUID) error {
+	if m.deleteUnusedTagsFn != nil { return m.deleteUnusedTagsFn(ctx, wsID) }
 	return nil
 }
 func (m *mockTaskService) AddTagToTask(ctx context.Context, taskID, tagID, wsID uuid.UUID) error {

@@ -61,4 +61,41 @@ UpdateTagRequest:
       maxLength: 32
       example: "#6366f1"
 
+TagWithMetrics:
+  type: object
+  required:
+    - id
+    - workspaceId
+    - name
+    - colorHex
+    - createdAt
+    - taskCount
+  properties:
+    id:
+      type: string
+      format: uuid
+      example: "t0000000-0000-0000-0000-000000000001"
+    workspaceId:
+      type: string
+      format: uuid
+      example: "123e4567-e89b-12d3-a456-426614174001"
+    name:
+      type: string
+      minLength: 1
+      maxLength: 64
+      example: "focus"
+    colorHex:
+      type: string
+      minLength: 1
+      maxLength: 32
+      example: "matcha"
+    createdAt:
+      type: string
+      format: date-time
+      example: "2026-10-14T12:00:00Z"
+    taskCount:
+      type: integer
+      example: 5
+
+
 

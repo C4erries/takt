@@ -12,7 +12,7 @@ import (
 )
 
 const countActiveTasksByBoard = `-- name: CountActiveTasksByBoard :one
-SELECT COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL)::BIGINT AS active_tasks_count
+SELECT COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL AND is_archived = false)::BIGINT AS active_tasks_count
 FROM tasks
 WHERE column_id IN (SELECT id FROM columns WHERE board_id = $1)
 `
@@ -28,6 +28,7 @@ const countTasksInColumn = `-- name: CountTasksInColumn :one
 SELECT COUNT(*)::BIGINT AS task_count
 FROM tasks
 WHERE column_id = $1
+  AND is_archived = false
 `
 
 func (q *Queries) CountTasksInColumn(ctx context.Context, columnID pgtype.UUID) (int64, error) {
@@ -353,8 +354,8 @@ func (q *Queries) ListProjectsByWorkspace(ctx context.Context, workspaceID pgtyp
 }
 
 const listTasksByColumn = `-- name: ListTasksByColumn :many
-SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
-WHERE column_id = $1 AND workspace_id = $2 AND parent_id IS NULL
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id, is_archived, archived_at FROM tasks
+WHERE column_id = $1 AND workspace_id = $2 AND parent_id IS NULL AND is_archived = false
 ORDER BY position ASC, created_at DESC
 `
 
@@ -388,6 +389,8 @@ func (q *Queries) ListTasksByColumn(ctx context.Context, arg ListTasksByColumnPa
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ParentID,
+			&i.IsArchived,
+			&i.ArchivedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -400,8 +403,8 @@ func (q *Queries) ListTasksByColumn(ctx context.Context, arg ListTasksByColumnPa
 }
 
 const listTasksByProject = `-- name: ListTasksByProject :many
-SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id FROM tasks
-WHERE project_id = $1 AND workspace_id = $2 AND parent_id IS NULL
+SELECT id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id, is_archived, archived_at FROM tasks
+WHERE project_id = $1 AND workspace_id = $2 AND parent_id IS NULL AND is_archived = false
 ORDER BY position ASC, created_at DESC
 `
 
@@ -435,6 +438,8 @@ func (q *Queries) ListTasksByProject(ctx context.Context, arg ListTasksByProject
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ParentID,
+			&i.IsArchived,
+			&i.ArchivedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -484,7 +489,7 @@ SET column_id = $1,
     position = $3,
     updated_at = NOW()
 WHERE id = $4 AND workspace_id = $5
-RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id
+RETURNING id, workspace_id, project_id, column_id, title, description_markdown, is_completed, completed_at, due_date, priority, focus_order, position, created_at, updated_at, parent_id, is_archived, archived_at
 `
 
 type MoveTaskToColumnAndPositionParams struct {
@@ -520,6 +525,8 @@ func (q *Queries) MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskT
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ParentID,
+		&i.IsArchived,
+		&i.ArchivedAt,
 	)
 	return i, err
 }

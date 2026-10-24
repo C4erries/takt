@@ -23,6 +23,7 @@ WHERE workspace_id = $1
   AND project_id IS NULL
   AND column_id IS NULL
   AND parent_id IS NULL
+  AND is_archived = false
 ORDER BY position ASC, created_at DESC;
 
 -- name: GetTaskByID :one
@@ -47,7 +48,8 @@ FROM tasks
 WHERE workspace_id = $1
   AND project_id IS NULL
   AND column_id IS NULL
-  AND parent_id IS NULL;
+  AND parent_id IS NULL
+  AND is_archived = false;
 
 -- name: UpdateTask :one
 UPDATE tasks
@@ -68,6 +70,7 @@ SELECT * FROM tasks
 WHERE workspace_id = $1
   AND is_completed = FALSE
   AND parent_id IS NULL
+  AND is_archived = false
   AND (due_date <= CURRENT_DATE OR focus_order IS NOT NULL)
 ORDER BY focus_order ASC NULLS LAST, due_date ASC, priority DESC;
 
@@ -129,4 +132,48 @@ INSERT INTO tasks (
     $1, $2, $3, $4, $5, false, NULL, NULL, $6, NULL, $7, $8
 )
 RETURNING *;
+
+-- name: ListArchivedTasks :many
+SELECT * FROM tasks
+WHERE workspace_id = $1
+  AND is_archived = true
+  AND (project_id = $2 OR $2::uuid IS NULL)
+ORDER BY archived_at DESC, created_at DESC;
+
+-- name: CountArchivedTasks :one
+SELECT COUNT(*)::BIGINT AS archived_tasks_count
+FROM tasks
+WHERE workspace_id = $1
+  AND is_archived = true;
+
+-- name: ArchiveCompletedTasksInColumn :execrows
+UPDATE tasks
+SET is_archived = true,
+    archived_at = NOW(),
+    updated_at = NOW()
+WHERE column_id = $1
+  AND is_completed = true
+  AND is_archived = false;
+
+-- name: UnarchiveTask :one
+UPDATE tasks
+SET is_archived = false,
+    archived_at = NULL,
+    column_id = $3,
+    project_id = $4,
+    position = $5,
+    updated_at = NOW()
+WHERE id = $1 AND workspace_id = $2
+RETURNING *;
+
+-- name: ArchiveCompletedTasksBatchSQL :execrows
+UPDATE tasks
+SET is_archived = true,
+    archived_at = NOW(),
+    updated_at = NOW()
+WHERE workspace_id = $1
+  AND column_id = $2
+  AND is_completed = true
+  AND is_archived = false
+  AND updated_at < NOW() - ($3::text || ' hours')::interval;
 

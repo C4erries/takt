@@ -12,9 +12,12 @@ import (
 
 type Querier interface {
 	AddTagToTask(ctx context.Context, arg AddTagToTaskParams) error
+	ArchiveCompletedTasksBatchSQL(ctx context.Context, arg ArchiveCompletedTasksBatchSQLParams) (int64, error)
+	ArchiveCompletedTasksInColumn(ctx context.Context, columnID pgtype.UUID) (int64, error)
 	CheckHealth(ctx context.Context) (int32, error)
 	ClearTaskTags(ctx context.Context, taskID pgtype.UUID) error
 	CountActiveTasksByBoard(ctx context.Context, boardID pgtype.UUID) (int64, error)
+	CountArchivedTasks(ctx context.Context, workspaceID pgtype.UUID) (int64, error)
 	CountTasksInColumn(ctx context.Context, columnID pgtype.UUID) (int64, error)
 	CreateAttachment(ctx context.Context, arg CreateAttachmentParams) (Attachment, error)
 	CreateAutomation(ctx context.Context, arg CreateAutomationParams) (Automation, error)
@@ -64,6 +67,7 @@ type Querier interface {
 	GetWorkspaceMember(ctx context.Context, arg GetWorkspaceMemberParams) (WorkspaceMember, error)
 	GetWorkspacesByUserID(ctx context.Context, userID pgtype.UUID) ([]GetWorkspacesByUserIDRow, error)
 	ListAllEnabledTimerAutomations(ctx context.Context) ([]Automation, error)
+	ListArchivedTasks(ctx context.Context, arg ListArchivedTasksParams) ([]Task, error)
 	ListAttachmentsByTaskID(ctx context.Context, arg ListAttachmentsByTaskIDParams) ([]Attachment, error)
 	ListAutomations(ctx context.Context, workspaceID pgtype.UUID) ([]Automation, error)
 	ListAutomationsByColumn(ctx context.Context, arg ListAutomationsByColumnParams) ([]Automation, error)
@@ -94,6 +98,7 @@ type Querier interface {
 	SetTaskPriority(ctx context.Context, arg SetTaskPriorityParams) (Task, error)
 	ToggleAutomation(ctx context.Context, arg ToggleAutomationParams) (Automation, error)
 	ToggleTaskCompletion(ctx context.Context, arg ToggleTaskCompletionParams) (Task, error)
+	UnarchiveTask(ctx context.Context, arg UnarchiveTaskParams) (Task, error)
 	UpdateAutomation(ctx context.Context, arg UpdateAutomationParams) (Automation, error)
 	UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error)
 	UpdateColumn(ctx context.Context, arg UpdateColumnParams) (Column, error)

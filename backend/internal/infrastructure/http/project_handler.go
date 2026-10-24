@@ -320,3 +320,11 @@ func (h *Handler) ListProjectTasks(ctx echo.Context, workspaceId openapi_types.U
 	return ctx.JSON(http.StatusOK, resp)
 }
 
+func (h *Handler) ArchiveCompletedColumnTasks(ctx echo.Context, workspaceId openapi_types.UUID, columnId openapi_types.UUID) error {
+	count, err := h.taskService.ArchiveCompletedTasksInColumn(ctx.Request().Context(), workspaceId, columnId)
+	if err != nil {
+		return h.respondDomainError(ctx, err)
+	}
+	return ctx.JSON(http.StatusOK, map[string]interface{}{"archivedCount": count})
+}
+

@@ -917,6 +917,7 @@ type TagWithMetrics struct {
 
 // Task defines model for Task.
 type Task struct {
+	ArchivedAt  *time.Time          `json:"archivedAt,omitempty"`
 	ColumnId    *openapi_types.UUID `json:"columnId,omitempty"`
 	CompletedAt *time.Time          `json:"completedAt"`
 
@@ -930,6 +931,9 @@ type Task struct {
 
 	// Id Example: 123e4567-e89b-12d3-a456-426614174000
 	Id openapi_types.UUID `json:"id"`
+
+	// IsArchived Example: false
+	IsArchived bool `json:"isArchived"`
 
 	// IsCompleted Example: false
 	IsCompleted bool                `json:"isCompleted"`
@@ -979,6 +983,15 @@ type Trigger struct {
 
 // TriggerType Example: task_entered_column
 type TriggerType string
+
+// UnarchiveTaskRequest defines model for UnarchiveTaskRequest.
+type UnarchiveTaskRequest struct {
+	// BoardId Example: b0000000-0000-0000-0000-000000000001
+	BoardId *openapi_types.UUID `json:"boardId,omitempty"`
+
+	// ColumnId Example: c0000000-0000-0000-0000-000000000001
+	ColumnId openapi_types.UUID `json:"columnId"`
+}
 
 // UpdateAutomationRequest defines model for UpdateAutomationRequest.
 type UpdateAutomationRequest struct {
@@ -1230,6 +1243,11 @@ type SearchWorkspaceParams struct {
 	Q string `form:"q" json:"q"`
 }
 
+// ListArchivedTasksParams defines parameters for ListArchivedTasks.
+type ListArchivedTasksParams struct {
+	ProjectId *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
+
 // UploadTaskAttachmentMultipartBody defines parameters for UploadTaskAttachment.
 type UploadTaskAttachmentMultipartBody struct {
 	File openapi_types.File `json:"file"`
@@ -1294,6 +1312,9 @@ type SetTaskFocusJSONRequestBody = SetFocusRequest
 
 // MoveTaskToColumnJSONRequestBody defines body for MoveTaskToColumn for application/json ContentType.
 type MoveTaskToColumnJSONRequestBody = MoveTaskRequest
+
+// UnarchiveTaskJSONRequestBody defines body for UnarchiveTask for application/json ContentType.
+type UnarchiveTaskJSONRequestBody = UnarchiveTaskRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -1372,6 +1393,9 @@ type ServerInterface interface {
 	// UpdateBoardColumn Update a column
 	// (PATCH /workspaces/{workspace_id}/boards/{board_id}/columns/{column_id})
 	UpdateBoardColumn(ctx echo.Context, workspaceId openapi_types.UUID, boardId openapi_types.UUID, columnId openapi_types.UUID) error
+	// ArchiveCompletedColumnTasks Archive completed tasks in a column
+	// (POST /workspaces/{workspace_id}/columns/{column_id}/archive-completed)
+	ArchiveCompletedColumnTasks(ctx echo.Context, workspaceId openapi_types.UUID, columnId openapi_types.UUID) error
 	// CreateWorkspaceInvite Generate or get active invite link
 	// (POST /workspaces/{workspace_id}/invites)
 	CreateWorkspaceInvite(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -1435,6 +1459,9 @@ type ServerInterface interface {
 	// UpdateTag Update a tag
 	// (PATCH /workspaces/{workspace_id}/tags/{tag_id})
 	UpdateTag(ctx echo.Context, workspaceId openapi_types.UUID, tagId openapi_types.UUID) error
+	// ListArchivedTasks List archived tasks
+	// (GET /workspaces/{workspace_id}/tasks/archived)
+	ListArchivedTasks(ctx echo.Context, workspaceId openapi_types.UUID, params ListArchivedTasksParams) error
 	// GetTodayTasks Get today's focused and due tasks
 	// (GET /workspaces/{workspace_id}/tasks/today)
 	GetTodayTasks(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -1456,7 +1483,7 @@ type ServerInterface interface {
 	// MoveTaskToColumn Move task to column and position
 	// (POST /workspaces/{workspace_id}/tasks/{task_id}/move)
 	MoveTaskToColumn(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
-	// ListSubtasks List subtasks of a task
+	// ListSubtasks List subtasks for a parent task
 	// (GET /workspaces/{workspace_id}/tasks/{task_id}/subtasks)
 	ListSubtasks(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
 	// RemoveTagFromTask Remove a tag from a task
@@ -1465,6 +1492,9 @@ type ServerInterface interface {
 	// AddTagToTask Attach a tag to a task
 	// (POST /workspaces/{workspace_id}/tasks/{task_id}/tags/{tag_id})
 	AddTagToTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID, tagId openapi_types.UUID) error
+	// UnarchiveTask Unarchive a task
+	// (PATCH /workspaces/{workspace_id}/tasks/{task_id}/unarchive)
+	UnarchiveTask(ctx echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -1903,6 +1933,30 @@ func (w *ServerInterfaceWrapper) UpdateBoardColumn(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.UpdateBoardColumn(ctx, workspaceId, boardId, columnId)
+	return err
+}
+
+// ArchiveCompletedColumnTasks converts echo context to params.
+func (w *ServerInterfaceWrapper) ArchiveCompletedColumnTasks(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "column_id" -------------
+	var columnId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "column_id", ctx.Param("column_id"), &columnId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter column_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ArchiveCompletedColumnTasks(ctx, workspaceId, columnId)
 	return err
 }
 
@@ -2355,6 +2409,31 @@ func (w *ServerInterfaceWrapper) UpdateTag(ctx echo.Context) error {
 	return err
 }
 
+// ListArchivedTasks converts echo context to params.
+func (w *ServerInterfaceWrapper) ListArchivedTasks(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListArchivedTasksParams
+	// ------------- Optional query parameter "project_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project_id", ctx.QueryParams(), &params.ProjectId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter project_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListArchivedTasks(ctx, workspaceId, params)
+	return err
+}
+
 // GetTodayTasks converts echo context to params.
 func (w *ServerInterfaceWrapper) GetTodayTasks(ctx echo.Context) error {
 	var err error
@@ -2603,6 +2682,30 @@ func (w *ServerInterfaceWrapper) AddTagToTask(ctx echo.Context) error {
 	return err
 }
 
+// UnarchiveTask converts echo context to params.
+func (w *ServerInterfaceWrapper) UnarchiveTask(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "workspace_id" -------------
+	var workspaceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "workspace_id", ctx.Param("workspace_id"), &workspaceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
+	}
+
+	// ------------- Path parameter "task_id" -------------
+	var taskId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "task_id", ctx.Param("task_id"), &taskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: ctx.Request().URL.RawPath == ""})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter task_id: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UnarchiveTask(ctx, workspaceId, taskId)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -2675,6 +2778,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns", wrapper.CreateBoardColumn, options.OperationMiddlewares["createBoardColumn"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns/:column_id", wrapper.DeleteBoardColumn, options.OperationMiddlewares["deleteBoardColumn"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/boards/:board_id/columns/:column_id", wrapper.UpdateBoardColumn, options.OperationMiddlewares["updateBoardColumn"]...)
+	router.POST(options.BaseURL+"/workspaces/:workspace_id/columns/:column_id/archive-completed", wrapper.ArchiveCompletedColumnTasks, options.OperationMiddlewares["archiveCompletedColumnTasks"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/invites", wrapper.CreateWorkspaceInvite, options.OperationMiddlewares["createWorkspaceInvite"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/members", wrapper.ListWorkspaceMembers, options.OperationMiddlewares["listWorkspaceMembers"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/members/:user_id", wrapper.RemoveWorkspaceMember, options.OperationMiddlewares["removeWorkspaceMember"]...)
@@ -2696,6 +2800,7 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tags/unused", wrapper.DeleteUnusedWorkspaceTags, options.OperationMiddlewares["deleteUnusedWorkspaceTags"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.DeleteWorkspaceTag, options.OperationMiddlewares["deleteWorkspaceTag"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tags/:tag_id", wrapper.UpdateTag, options.OperationMiddlewares["updateTag"]...)
+	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/archived", wrapper.ListArchivedTasks, options.OperationMiddlewares["listArchivedTasks"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/today", wrapper.GetTodayTasks, options.OperationMiddlewares["getTodayTasks"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id", wrapper.UpdateTask, options.OperationMiddlewares["updateTask"]...)
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/attachments", wrapper.ListTaskAttachments, options.OperationMiddlewares["listTaskAttachments"]...)
@@ -2706,5 +2811,6 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.GET(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/subtasks", wrapper.ListSubtasks, options.OperationMiddlewares["listSubtasks"]...)
 	router.DELETE(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/tags/:tag_id", wrapper.RemoveTagFromTask, options.OperationMiddlewares["removeTagFromTask"]...)
 	router.POST(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/tags/:tag_id", wrapper.AddTagToTask, options.OperationMiddlewares["addTagToTask"]...)
+	router.PATCH(options.BaseURL+"/workspaces/:workspace_id/tasks/:task_id/unarchive", wrapper.UnarchiveTask, options.OperationMiddlewares["unarchiveTask"]...)
 
 }

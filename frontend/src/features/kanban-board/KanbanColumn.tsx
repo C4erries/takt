@@ -1,19 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, ArrowRight, GripVertical, Inbox, Check, Zap, Trash2, Pencil } from 'lucide-react';
+import { Plus, MoreHorizontal, ArrowRight, GripVertical, Inbox, Check, Zap, Trash2, Pencil, Archive } from 'lucide-react';
 import { Badge, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import { motion, AnimatePresence, cardExitVariants } from '@/shared/lib/motion';
 import type { Task } from '@/shared/api';
 import {
-  useProjectBoardsQuery,
-  useMoveColumnMutation,
-  useUpdateColumnMutation,
-  useDeleteColumnMutation,
-  type Column,
-  type ColumnStatusCategory,
+  useProjectBoardsQuery, useMoveColumnMutation, useUpdateColumnMutation,
+  useDeleteColumnMutation, type Column, type ColumnStatusCategory,
 } from '@/entities/project';
+import { useArchiveCompletedColumnMutation } from '@/features/archive';
 import { KanbanCard } from './KanbanCard';
 import { ColumnAutomationsModal } from './automations/ColumnAutomationsModal';
 
@@ -73,31 +70,20 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   const moveColumnMutation = useMoveColumnMutation(workspaceId, column.boardId);
   const updateColumnMutation = useUpdateColumnMutation(workspaceId, column.boardId);
   const deleteColumnMutation = useDeleteColumnMutation(workspaceId, column.boardId);
+  const archiveCompletedMutation = useArchiveCompletedColumnMutation(workspaceId);
+  const completedTasksCount = tasks.filter((t) => t.isCompleted).length;
   const otherBoards = (boardsQuery.data ?? []).filter((b) => b.id !== column.boardId);
 
   useEffect(() => {
     if (!isMenuOpen) return;
-    const onOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false);
-    };
+    const onOutside = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsMenuOpen(false); };
     document.addEventListener('mousedown', onOutside);
     return () => document.removeEventListener('mousedown', onOutside);
   }, [isMenuOpen]);
 
-  useEffect(() => {
-    if (isAdding) inputRef.current?.focus();
-  }, [isAdding]);
-
-  useEffect(() => {
-    if (isNotesOpen) textareaRef.current?.focus();
-  }, [isNotesOpen]);
-
-  useEffect(() => {
-    if (isEditingTitle) {
-      titleInputRef.current?.focus();
-      titleInputRef.current?.select();
-    }
-  }, [isEditingTitle]);
+  useEffect(() => { if (isAdding) inputRef.current?.focus(); }, [isAdding]);
+  useEffect(() => { if (isNotesOpen) textareaRef.current?.focus(); }, [isNotesOpen]);
+  useEffect(() => { if (isEditingTitle) { titleInputRef.current?.focus(); titleInputRef.current?.select(); } }, [isEditingTitle]);
 
   const startRename = () => { setEditedTitle(column.name); setIsEditingTitle(true); };
   const handleSaveTitle = () => {
@@ -246,10 +232,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    updateColumnMutation.mutate({ columnId: column.id, data: { isInbox: !column.isInbox } });
-                  }}
+                  onClick={() => { setIsMenuOpen(false); updateColumnMutation.mutate({ columnId: column.id, data: { isInbox: !column.isInbox } }); }}
                   className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group"
                 >
                   <span className="flex items-center gap-2 truncate">
@@ -257,6 +240,31 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                     <span className="truncate">{column.isInbox ? 'Снять статус Inbox' : 'Сделать входящей (Inbox)'}</span>
                   </span>
                   {column.isInbox && <Check className="w-3 h-3 text-accent-solid shrink-0 ml-1.5" />}
+                </button>
+                <button
+                  type="button"
+                  disabled={completedTasksCount === 0 || archiveCompletedMutation.isPending}
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    if (window.confirm(`Сгрузить выполненные задачи (${completedTasksCount}) в архив?`)) {
+                      archiveCompletedMutation.mutate(column.id);
+                    }
+                  }}
+                  className={cn(
+                    'w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors group',
+                    completedTasksCount > 0 ? 'text-primary hover:bg-canvas/60' : 'text-muted/40 cursor-not-allowed'
+                  )}
+                  title={completedTasksCount > 0 ? `Сгрузить ${completedTasksCount} выполненных задач в архив` : 'Нет выполненных задач в колонке'}
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <Archive className="w-3.5 h-3.5 text-muted group-hover:text-primary shrink-0" />
+                    <span className="truncate">Сгрузить в архив</span>
+                  </span>
+                  {completedTasksCount > 0 && (
+                    <Badge variant="subtle" size="sm" className="font-mono text-[10px] px-1 py-0 ml-1 shrink-0">
+                      {completedTasksCount}
+                    </Badge>
+                  )}
                 </button>
                 <button type="button" onClick={() => { setIsMenuOpen(false); setIsAutomationsOpen(true); }} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-primary hover:bg-canvas/60 transition-colors group">
                   <Zap className="w-3.5 h-3.5 text-accent-solid shrink-0" />
@@ -307,13 +315,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               />
               <AnimatePresence>
                 {isNotesOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="overflow-hidden"
-                  >
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.15, ease: 'easeOut' }} className="overflow-hidden">
                     <textarea
                       ref={textareaRef}
                       value={newDescription}

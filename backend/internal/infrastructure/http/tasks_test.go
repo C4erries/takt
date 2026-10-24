@@ -37,6 +37,9 @@ type mockTaskService struct {
 	addTagToTaskFn      func(ctx context.Context, taskID, tagID, wsID uuid.UUID) error
 	removeTagFromTaskFn func(ctx context.Context, taskID, tagID, wsID uuid.UUID) error
 	duplicateTaskFn     func(ctx context.Context, wsID, taskID uuid.UUID) (*domainTask.Task, error)
+	listArchivedFn      func(ctx context.Context, wsID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Task, error)
+	archiveInColFn      func(ctx context.Context, wsID, columnID uuid.UUID) (int64, error)
+	unarchiveFn         func(ctx context.Context, wsID, taskID, columnID uuid.UUID, boardID *uuid.UUID) (*domainTask.Task, error)
 }
 
 func (m *mockTaskService) GetInboxTasks(ctx context.Context, wsID uuid.UUID) ([]*domainTask.Task, error) {
@@ -102,16 +105,23 @@ func (m *mockTaskService) AddTagToTask(ctx context.Context, taskID, tagID, wsID 
 }
 
 func (m *mockTaskService) RemoveTagFromTask(ctx context.Context, taskID, tagID, wsID uuid.UUID) error {
-	if m.removeTagFromTaskFn != nil {
-		return m.removeTagFromTaskFn(ctx, taskID, tagID, wsID)
-	}
+	if m.removeTagFromTaskFn != nil { return m.removeTagFromTaskFn(ctx, taskID, tagID, wsID) }
 	return nil
 }
-
 func (m *mockTaskService) DuplicateTask(ctx context.Context, wsID, taskID uuid.UUID) (*domainTask.Task, error) {
-	if m.duplicateTaskFn != nil {
-		return m.duplicateTaskFn(ctx, wsID, taskID)
-	}
+	if m.duplicateTaskFn != nil { return m.duplicateTaskFn(ctx, wsID, taskID) }
+	return nil, nil
+}
+func (m *mockTaskService) ListArchivedTasks(ctx context.Context, wsID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Task, error) {
+	if m.listArchivedFn != nil { return m.listArchivedFn(ctx, wsID, projectID) }
+	return nil, nil
+}
+func (m *mockTaskService) ArchiveCompletedTasksInColumn(ctx context.Context, wsID, columnID uuid.UUID) (int64, error) {
+	if m.archiveInColFn != nil { return m.archiveInColFn(ctx, wsID, columnID) }
+	return 0, nil
+}
+func (m *mockTaskService) UnarchiveTask(ctx context.Context, wsID, taskID, columnID uuid.UUID, boardID *uuid.UUID) (*domainTask.Task, error) {
+	if m.unarchiveFn != nil { return m.unarchiveFn(ctx, wsID, taskID, columnID, boardID) }
 	return nil, nil
 }
 

@@ -6,6 +6,8 @@ import type {
   UpdateTaskRequest,
   SetFocusRequest,
   CreateInboxTaskRequest,
+  UnarchiveTaskRequest,
+  ArchiveCompletedColumnTasksResponse,
 } from '@/shared/api';
 
 export type {
@@ -16,6 +18,8 @@ export type {
   UpdateTaskRequest,
   SetFocusRequest,
   CreateInboxTaskRequest,
+  UnarchiveTaskRequest,
+  ArchiveCompletedColumnTasksResponse,
 };
 
 export interface UpdateTagRequest {

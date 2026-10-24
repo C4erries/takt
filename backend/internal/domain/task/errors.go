@@ -14,4 +14,5 @@ var (
 	ErrInvalidFocusOrder  = errors.New("focus order must be non-negative")
 	ErrSelfParenting      = errors.New("task cannot be its own parent")
 	ErrInvalidParent      = ErrSelfParenting
+	ErrInvalidColumnID    = errors.New("column id cannot be empty")
 )

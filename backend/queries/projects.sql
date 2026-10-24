@@ -114,10 +114,11 @@ WHERE id = $1;
 -- name: CountTasksInColumn :one
 SELECT COUNT(*)::BIGINT AS task_count
 FROM tasks
-WHERE column_id = $1;
+WHERE column_id = $1
+  AND is_archived = false;
 
 -- name: CountActiveTasksByBoard :one
-SELECT COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL)::BIGINT AS active_tasks_count
+SELECT COUNT(*) FILTER (WHERE is_completed = false AND parent_id IS NULL AND is_archived = false)::BIGINT AS active_tasks_count
 FROM tasks
 WHERE column_id IN (SELECT id FROM columns WHERE board_id = $1);
 
@@ -146,11 +147,11 @@ WHERE column_id IN (SELECT id FROM columns WHERE board_id = $1) AND workspace_id
 
 -- name: ListTasksByProject :many
 SELECT * FROM tasks
-WHERE project_id = $1 AND workspace_id = $2 AND parent_id IS NULL
+WHERE project_id = $1 AND workspace_id = $2 AND parent_id IS NULL AND is_archived = false
 ORDER BY position ASC, created_at DESC;
 
 -- name: ListTasksByColumn :many
 SELECT * FROM tasks
-WHERE column_id = $1 AND workspace_id = $2 AND parent_id IS NULL
+WHERE column_id = $1 AND workspace_id = $2 AND parent_id IS NULL AND is_archived = false
 ORDER BY position ASC, created_at DESC;
 

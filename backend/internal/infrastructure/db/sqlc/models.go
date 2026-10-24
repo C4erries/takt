@@ -95,6 +95,8 @@ type Task struct {
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 	ParentID            pgtype.UUID        `json:"parent_id"`
+	IsArchived          bool               `json:"is_archived"`
+	ArchivedAt          pgtype.Timestamptz `json:"archived_at"`
 }
 
 type TaskTag struct {

@@ -48,6 +48,8 @@ type Task struct {
 	SubtasksCount          int
 	SubtasksCompletedCount int
 	Tags                   []*Tag
+	IsArchived             bool
+	ArchivedAt             *time.Time
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -90,6 +92,8 @@ func NewInboxTask(
 		SubtasksCount:          0,
 		SubtasksCompletedCount: 0,
 		Tags:                   []*Tag{},
+		IsArchived:             false,
+		ArchivedAt:             nil,
 		CreatedAt:              now,
 		UpdatedAt:              now,
 	}, nil
@@ -195,9 +199,38 @@ func (t *Task) Duplicate(newTitle string, newPosition float64) *Task {
 		SubtasksCount:          0,
 		SubtasksCompletedCount: 0,
 		Tags:                   tagsCopy,
+		IsArchived:             false,
+		ArchivedAt:             nil,
 		CreatedAt:              now,
 		UpdatedAt:              now,
 	}
+}
+
+// Archive marks the task as archived and records the archive timestamp.
+func (t *Task) Archive() {
+	now := time.Now().UTC()
+	t.IsArchived = true
+	t.ArchivedAt = &now
+	t.UpdatedAt = now
+}
+
+// Unarchive restores an archived task to the specified column and project.
+func (t *Task) Unarchive(colID, projectID uuid.UUID, pos float64) error {
+	if colID == uuid.Nil {
+		return ErrInvalidColumnID
+	}
+	now := time.Now().UTC()
+	t.IsArchived = false
+	t.ArchivedAt = nil
+	t.ColumnID = &colID
+	if projectID != uuid.Nil {
+		t.ProjectID = &projectID
+	} else {
+		t.ProjectID = nil
+	}
+	t.Position = int(pos)
+	t.UpdatedAt = now
+	return nil
 }
 
 

@@ -58,8 +58,19 @@ export interface Task {
   focusOrder?: number | null;
   position: number;
   tags?: Tag[];
+  isArchived?: boolean;
+  archivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UnarchiveTaskRequest {
+  columnId: string;
+  boardId?: string | null;
+}
+
+export interface ArchiveCompletedColumnTasksResponse {
+  archivedCount: number;
 }
 
 export interface UpdateTaskRequest {

@@ -188,9 +188,22 @@ func mapTaskRowToDomain(row sqlc.Task) *domainTask.Task {
 		FocusOrder:          pgToIntPtr(row.FocusOrder),
 		Position:            int(row.Position),
 		Tags:                []*domainTask.Tag{},
+		IsArchived:          row.IsArchived,
+		ArchivedAt:          pgToTimePtr(row.ArchivedAt),
 		CreatedAt:           pgToTime(row.CreatedAt),
 		UpdatedAt:           pgToTime(row.UpdatedAt),
 	}
+}
+
+func mapTaskRowsToDomain(ctx context.Context, q *sqlc.Queries, rows []sqlc.Task) ([]*domainTask.Task, error) {
+	tasks := make([]*domainTask.Task, 0, len(rows))
+	for _, row := range rows {
+		tasks = append(tasks, mapTaskRowToDomain(row))
+	}
+	if err := loadSubtaskCountsForTasks(ctx, q, tasks); err != nil {
+		return nil, err
+	}
+	return tasks, nil
 }
 
 func loadSubtaskCountsForTasks(ctx context.Context, q *sqlc.Queries, tasks []*domainTask.Task) error {

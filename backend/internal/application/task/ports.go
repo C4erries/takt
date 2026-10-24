@@ -68,4 +68,7 @@ type UseCases interface {
 	DeleteUnusedTags(ctx context.Context, workspaceID uuid.UUID) error
 	AddTagToTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error
 	RemoveTagFromTask(ctx context.Context, taskID, tagID, workspaceID uuid.UUID) error
+	ListArchivedTasks(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Task, error)
+	ArchiveCompletedTasksInColumn(ctx context.Context, workspaceID, columnID uuid.UUID) (int64, error)
+	UnarchiveTask(ctx context.Context, workspaceID, taskID, columnID uuid.UUID, boardID *uuid.UUID) (*domainTask.Task, error)
 }

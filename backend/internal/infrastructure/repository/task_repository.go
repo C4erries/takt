@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -57,15 +58,7 @@ func (r *TaskRepository) GetInboxTasks(ctx context.Context, workspaceID uuid.UUI
 	if err != nil {
 		return nil, err
 	}
-
-	tasks := make([]*domainTask.Task, 0, len(rows))
-	for _, row := range rows {
-		tasks = append(tasks, mapTaskRowToDomain(row))
-	}
-	if err := loadSubtaskCountsForTasks(ctx, q, tasks); err != nil {
-		return nil, err
-	}
-	return tasks, nil
+	return mapTaskRowsToDomain(ctx, q, rows)
 }
 
 func (r *TaskRepository) GetByID(ctx context.Context, id, workspaceID uuid.UUID) (*domainTask.Task, error) {
@@ -92,15 +85,7 @@ func (r *TaskRepository) ListSubtasks(ctx context.Context, parentID uuid.UUID) (
 	if err != nil {
 		return nil, err
 	}
-
-	tasks := make([]*domainTask.Task, 0, len(rows))
-	for _, row := range rows {
-		tasks = append(tasks, mapTaskRowToDomain(row))
-	}
-	if err := loadSubtaskCountsForTasks(ctx, q, tasks); err != nil {
-		return nil, err
-	}
-	return tasks, nil
+	return mapTaskRowsToDomain(ctx, q, rows)
 }
 
 func (r *TaskRepository) Toggle(ctx context.Context, id, workspaceID uuid.UUID) (*domainTask.Task, error) {
@@ -147,15 +132,7 @@ func (r *TaskRepository) GetTodayTasks(ctx context.Context, workspaceID uuid.UUI
 	if err != nil {
 		return nil, err
 	}
-
-	tasks := make([]*domainTask.Task, 0, len(rows))
-	for _, row := range rows {
-		tasks = append(tasks, mapTaskRowToDomain(row))
-	}
-	if err := loadSubtaskCountsForTasks(ctx, q, tasks); err != nil {
-		return nil, err
-	}
-	return tasks, nil
+	return mapTaskRowsToDomain(ctx, q, rows)
 }
 
 func (r *TaskRepository) Update(ctx context.Context, t *domainTask.Task) error {
@@ -356,10 +333,56 @@ func (r *TaskRepository) SearchTasks(ctx context.Context, workspaceID uuid.UUID,
 	if err != nil {
 		return nil, err
 	}
+	return mapTaskRowsToDomain(ctx, q, rows)
+}
 
-	tasks := make([]*domainTask.Task, 0, len(rows))
-	for _, row := range rows {
-		tasks = append(tasks, mapTaskRowToDomain(row))
+func (r *TaskRepository) ListArchivedTasks(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Task, error) {
+	q := getQuerier(ctx, r.queries)
+	rows, err := q.ListArchivedTasks(ctx, sqlc.ListArchivedTasksParams{
+		WorkspaceID: uuidToPg(workspaceID),
+		ProjectID:   uuidPtrToPg(projectID),
+	})
+	if err != nil {
+		return nil, err
 	}
-	return tasks, nil
+	return mapTaskRowsToDomain(ctx, q, rows)
+}
+
+func (r *TaskRepository) CountArchivedTasks(ctx context.Context, workspaceID uuid.UUID) (int64, error) {
+	q := getQuerier(ctx, r.queries)
+	return q.CountArchivedTasks(ctx, uuidToPg(workspaceID))
+}
+
+func (r *TaskRepository) ArchiveCompletedTasksInColumn(ctx context.Context, columnID uuid.UUID) (int64, error) {
+	q := getQuerier(ctx, r.queries)
+	return q.ArchiveCompletedTasksInColumn(ctx, uuidToPg(columnID))
+}
+
+func (r *TaskRepository) UnarchiveTask(ctx context.Context, taskID, workspaceID, columnID uuid.UUID, projectID *uuid.UUID, position float64) (*domainTask.Task, error) {
+	q := getQuerier(ctx, r.queries)
+	row, err := q.UnarchiveTask(ctx, sqlc.UnarchiveTaskParams{
+		ID:          uuidToPg(taskID),
+		WorkspaceID: uuidToPg(workspaceID),
+		ColumnID:    uuidToPg(columnID),
+		ProjectID:   uuidPtrToPg(projectID),
+		Position:    position,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domainTask.ErrTaskNotFound
+		}
+		return nil, err
+	}
+	task := mapTaskRowToDomain(row)
+	_ = loadSubtaskCountsForTasks(ctx, q, []*domainTask.Task{task})
+	return task, nil
+}
+
+func (r *TaskRepository) ArchiveCompletedTasksBatchSQL(ctx context.Context, workspaceID, columnID uuid.UUID, olderThanHours float64) (int64, error) {
+	q := getQuerier(ctx, r.queries)
+	return q.ArchiveCompletedTasksBatchSQL(ctx, sqlc.ArchiveCompletedTasksBatchSQLParams{
+		WorkspaceID: uuidToPg(workspaceID),
+		ColumnID:    uuidToPg(columnID),
+		Column3:     fmt.Sprintf("%f", olderThanHours),
+	})
 }

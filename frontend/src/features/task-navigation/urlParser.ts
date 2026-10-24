@@ -56,6 +56,16 @@ export function parseUrl(pathname: string, search: string): ParsedRoute {
     };
   }
 
+  // 5. Match /archive
+  if (pathname === '/archive' || pathname.startsWith('/archive/')) {
+    return {
+      activeNav: 'archive',
+      selectedProjectId: null,
+      activeBoardId: null,
+      selectedTaskId,
+    };
+  }
+
   // 4. Default: /inbox or /
   return {
     activeNav: 'inbox',
@@ -87,6 +97,8 @@ export function buildUrl({
     pathname = '/today';
   } else if (activeNav === 'automations') {
     pathname = '/automations';
+  } else if (activeNav === 'archive') {
+    pathname = '/archive';
   } else {
     pathname = '/inbox';
   }

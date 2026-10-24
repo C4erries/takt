@@ -6,6 +6,7 @@ Task:
     - title
     - descriptionMarkdown
     - isCompleted
+    - isArchived
     - priority
     - position
     - createdAt
@@ -76,6 +77,15 @@ Task:
       type: array
       items:
         $ref: './tag.yaml#/Tag'
+    isArchived:
+      type: boolean
+      default: false
+      example: false
+    archivedAt:
+      type: string
+      format: date-time
+      nullable: true
+      example: null
     createdAt:
       type: string
       format: date-time
@@ -192,3 +202,18 @@ SetFocusRequest:
       type: integer
       nullable: true
       example: 1
+
+UnarchiveTaskRequest:
+  type: object
+  required:
+    - columnId
+  properties:
+    columnId:
+      type: string
+      format: uuid
+      example: "c0000000-0000-0000-0000-000000000001"
+    boardId:
+      type: string
+      format: uuid
+      nullable: true
+      example: "b0000000-0000-0000-0000-000000000001"

@@ -17,12 +17,7 @@ inbox:
               type: array
               items:
                 $ref: '../schemas/task.yaml#/Task'
-      '401':
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
   post:
     tags:
       - Tasks
@@ -45,18 +40,8 @@ inbox:
           application/json:
             schema:
               $ref: '../schemas/task.yaml#/Task'
-      '400':
-        description: Invalid request data
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '401':
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
 toggle:
   patch:
@@ -83,18 +68,8 @@ toggle:
           application/json:
             schema:
               $ref: '../schemas/task.yaml#/Task'
-      '401':
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '404':
-        description: Task not found in workspace
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task not found in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
 item:
   delete:
@@ -117,18 +92,8 @@ item:
     responses:
       '204':
         description: Task successfully deleted
-      '401':
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '404':
-        description: Task not found in workspace
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task not found in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
 today:
   get:
@@ -156,18 +121,43 @@ today:
               type: array
               items:
                 $ref: '../schemas/task.yaml#/Task'
-      '401':
-        description: Unauthorized
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+listArchivedTasks:
+  get:
+    tags:
+      - Tasks
+    summary: List archived tasks
+    description: Returns archived tasks for a workspace with optional project filter.
+    operationId: listArchivedTasks
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: project_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: List of archived tasks
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml'
-      '403':
-        description: Forbidden
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+              type: array
+              items:
+                $ref: '../schemas/task.yaml#/Task'
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
 workspaceTaskItem:
   patch:
@@ -205,30 +195,51 @@ workspaceTaskItem:
           application/json:
             schema:
               $ref: '../schemas/task.yaml#/Task'
-      '400':
-        description: Invalid request data
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task not found in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+
+unarchiveTask:
+  patch:
+    tags:
+      - Tasks
+    summary: Unarchive a task
+    description: Restores an archived task to a specified column and board.
+    operationId: unarchiveTask
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    parameters:
+      - name: workspace_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/task.yaml#/UnarchiveTaskRequest'
+    responses:
+      '200':
+        description: Task unarchived successfully
         content:
           application/json:
             schema:
-              $ref: '../schemas/error.yaml'
-      '401':
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '403':
-        description: Forbidden
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '404':
-        description: Task not found in workspace
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+              $ref: '../schemas/task.yaml#/Task'
+      '400': { description: Invalid request data, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task not found in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
 focus:
   post:
@@ -266,37 +277,17 @@ focus:
           application/json:
             schema:
               $ref: '../schemas/task.yaml#/Task'
-      '400':
-        description: Invalid request data
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '401':
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '403':
-        description: Forbidden
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '404':
-        description: Task not found in workspace
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+      '400': { description: Invalid focus order, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task not found in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
 subtasks:
   get:
     tags:
       - Tasks
-    summary: List subtasks of a task
-    description: Returns subtasks for the specified parent task ordered by position.
+    summary: List subtasks for a parent task
+    description: Returns subtasks belonging to the given parent task.
     operationId: listSubtasks
     security:
       - BearerAuth: []
@@ -323,24 +314,9 @@ subtasks:
               type: array
               items:
                 $ref: '../schemas/task.yaml#/Task'
-      '401':
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '403':
-        description: Forbidden
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '404':
-        description: Task not found in workspace
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task not found in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
 duplicateTask:
   post:
@@ -372,21 +348,6 @@ duplicateTask:
           application/json:
             schema:
               $ref: '../schemas/task.yaml#/Task'
-      '401':
-        description: Unauthorized
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '403':
-        description: Forbidden
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
-      '404':
-        description: Task not found in workspace
-        content:
-          application/json:
-            schema:
-              $ref: '../schemas/error.yaml'
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Task not found in workspace, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }

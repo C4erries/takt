@@ -292,4 +292,83 @@ func TestTask_Duplicate(t *testing.T) {
 	}
 }
 
+func TestTask_Archive_Unarchive(t *testing.T) {
+	wsID := uuid.New()
+	task, err := NewInboxTask(wsID, "Archive candidate", "desc", PriorityMedium, nil, 10)
+	require.NoError(t, err)
+	assert.False(t, task.IsArchived)
+	assert.Nil(t, task.ArchivedAt)
+
+	// Archive
+	task.Archive()
+	assert.True(t, task.IsArchived)
+	require.NotNil(t, task.ArchivedAt)
+
+	// Unarchive table-driven
+	colID := uuid.New()
+	projID := uuid.New()
+
+	tests := []struct {
+		name          string
+		colID         uuid.UUID
+		projID        uuid.UUID
+		pos           float64
+		expectedError error
+		check         func(t *testing.T, task *Task)
+	}{
+		{
+			name:          "invalid column returns error",
+			colID:         uuid.Nil,
+			projID:        projID,
+			pos:           1.0,
+			expectedError: ErrInvalidColumnID,
+		},
+		{
+			name:          "successful unarchive to column and project",
+			colID:         colID,
+			projID:        projID,
+			pos:           100.5,
+			expectedError: nil,
+			check: func(t *testing.T, task *Task) {
+				assert.False(t, task.IsArchived)
+				assert.Nil(t, task.ArchivedAt)
+				require.NotNil(t, task.ColumnID)
+				assert.Equal(t, colID, *task.ColumnID)
+				require.NotNil(t, task.ProjectID)
+				assert.Equal(t, projID, *task.ProjectID)
+				assert.Equal(t, 100, task.Position)
+			},
+		},
+		{
+			name:          "successful unarchive without project",
+			colID:         colID,
+			projID:        uuid.Nil,
+			pos:           50.0,
+			expectedError: nil,
+			check: func(t *testing.T, task *Task) {
+				assert.False(t, task.IsArchived)
+				assert.Nil(t, task.ArchivedAt)
+				require.NotNil(t, task.ColumnID)
+				assert.Equal(t, colID, *task.ColumnID)
+				assert.Nil(t, task.ProjectID)
+				assert.Equal(t, 50, task.Position)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := task.Unarchive(tt.colID, tt.projID, tt.pos)
+			if tt.expectedError != nil {
+				require.ErrorIs(t, err, tt.expectedError)
+			} else {
+				require.NoError(t, err)
+				if tt.check != nil {
+					tt.check(t, task)
+				}
+			}
+		})
+	}
+}
+
 

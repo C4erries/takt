@@ -7,14 +7,17 @@ import (
 
 	"github.com/google/uuid"
 	domainAutomation "takt/internal/domain/automation"
+	"takt/internal/domain/events"
 )
 
 // Worker runs background checks for SLA timers and scheduled sweeps.
 type Worker struct {
-	repo       AutomationRepository
-	taskReader TaskReader
-	evaluator  *Evaluator
-	interval   time.Duration
+	repo           AutomationRepository
+	taskReader     TaskReader
+	evaluator      *Evaluator
+	batchExecutor  BatchTaskExecutor
+	eventPublisher EventPublisher
+	interval       time.Duration
 
 	stopCh  chan struct{}
 	wg      sync.WaitGroup
@@ -39,6 +42,38 @@ func NewWorker(
 		interval:   interval,
 		stopCh:     make(chan struct{}),
 	}
+}
+
+// SetBatchExecutor injects a BatchTaskExecutor for fast-path batch executions (ADR-0008).
+func (w *Worker) SetBatchExecutor(executor BatchTaskExecutor) {
+	w.batchExecutor = executor
+}
+
+// SetEventPublisher sets event bus for publishing batch sweep completion events.
+func (w *Worker) SetEventPublisher(pub EventPublisher) {
+	w.eventPublisher = pub
+}
+
+// CanUseBatchPath returns true if the rule can be executed via a single batch SQL query (ADR-0008).
+func CanUseBatchPath(rule *domainAutomation.RuleDefinition) bool {
+	if rule == nil || len(rule.Actions) != 1 {
+		return false
+	}
+	if rule.Actions[0].Type != domainAutomation.ActionArchiveTask {
+		return false
+	}
+	for _, c := range rule.Conditions {
+		if c.Field != domainAutomation.ConditionFieldIsCompleted {
+			return false
+		}
+		if strVal, ok := c.Value.(string); ok && strVal != "true" {
+			return false
+		}
+		if boolVal, ok := c.Value.(bool); ok && !boolVal {
+			return false
+		}
+	}
+	return true
 }
 
 // Start begins periodic timer and schedule checks.
@@ -174,6 +209,21 @@ func (w *Worker) processSLATimerRule(ctx context.Context, rule *domainAutomation
 		durationHours = 24
 	}
 
+	// ADR-0008 Fast Path: execute single batch query if rule is simple archive sweep
+	if w.batchExecutor != nil && CanUseBatchPath(rule.RuleDefinition) {
+		affected, err := w.batchExecutor.ArchiveCompletedTasksBatchSQL(ctx, rule.WorkspaceID, colUUID, durationHours)
+		if err == nil && affected > 0 && w.eventPublisher != nil {
+			_ = w.eventPublisher.Publish(ctx, events.BatchSweepCompletedEvent{
+				WorkspaceIDVal: rule.WorkspaceID,
+				ColumnIDVal:    colUUID,
+				ActionVal:      domainAutomation.ActionArchiveTask,
+				AffectedCount:  affected,
+				OccurredAtVal:  time.Now().UTC(),
+			})
+		}
+		return
+	}
+
 	tasks, err := w.taskReader.ListTasksByColumn(ctx, rule.WorkspaceID, colUUID)
 	if err != nil {
 		return
@@ -207,6 +257,21 @@ func (w *Worker) processScheduledSweepRule(ctx context.Context, rule *domainAuto
 	}
 	colUUID, err := uuid.Parse(colIDStr)
 	if err != nil {
+		return
+	}
+
+	// ADR-0008 Fast Path: execute single batch query for scheduled sweep
+	if w.batchExecutor != nil && CanUseBatchPath(rule.RuleDefinition) {
+		affected, err := w.batchExecutor.ArchiveCompletedTasksBatchSQL(ctx, rule.WorkspaceID, colUUID, 0)
+		if err == nil && affected > 0 && w.eventPublisher != nil {
+			_ = w.eventPublisher.Publish(ctx, events.BatchSweepCompletedEvent{
+				WorkspaceIDVal: rule.WorkspaceID,
+				ColumnIDVal:    colUUID,
+				ActionVal:      domainAutomation.ActionArchiveTask,
+				AffectedCount:  affected,
+				OccurredAtVal:  time.Now().UTC(),
+			})
+		}
 		return
 	}
 

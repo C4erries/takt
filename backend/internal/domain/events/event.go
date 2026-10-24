@@ -16,10 +16,11 @@ type Event interface {
 
 // Event name constants
 const (
-	EventTaskCreated   = "task_created"
-	EventTaskUpdated   = "task_updated"
-	EventTaskCompleted = "task_completed"
-	EventTaskMoved     = "task_moved"
+	EventTaskCreated          = "task_created"
+	EventTaskUpdated          = "task_updated"
+	EventTaskCompleted        = "task_completed"
+	EventTaskMoved            = "task_moved"
+	EventBatchSweepCompleted  = "batch_sweep_completed"
 )
 
 // TaskCreatedEvent is emitted when a new task is created.
@@ -94,4 +95,20 @@ func (e TaskMovedEvent) EventName() string       { return EventTaskMoved }
 func (e TaskMovedEvent) OccurredAt() time.Time   { return e.OccurredAtVal }
 func (e TaskMovedEvent) WorkspaceID() uuid.UUID  { return e.WorkspaceIDVal }
 func (e TaskMovedEvent) IsFromAutomation() bool  { return e.FromAutomation }
+
+// BatchSweepCompletedEvent is emitted when a batch sweep operation or column flush affects multiple tasks.
+type BatchSweepCompletedEvent struct {
+	WorkspaceIDVal uuid.UUID
+	ColumnIDVal    uuid.UUID
+	ActionVal      string
+	AffectedCount  int64
+	OccurredAtVal  time.Time
+}
+
+func (e BatchSweepCompletedEvent) EventName() string       { return EventBatchSweepCompleted }
+func (e BatchSweepCompletedEvent) OccurredAt() time.Time   { return e.OccurredAtVal }
+func (e BatchSweepCompletedEvent) WorkspaceID() uuid.UUID  { return e.WorkspaceIDVal }
+func (e BatchSweepCompletedEvent) IsFromAutomation() bool  { return true }
+func (e BatchSweepCompletedEvent) ColumnID() uuid.UUID     { return e.ColumnIDVal }
+func (e BatchSweepCompletedEvent) Action() string          { return e.ActionVal }
 

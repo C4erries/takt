@@ -12,6 +12,7 @@ import (
 	appAutomation "takt/internal/application/automation"
 	appMocks "takt/internal/application/automation/mocks"
 	domainAutomation "takt/internal/domain/automation"
+	"takt/internal/domain/events"
 )
 
 type mockTaskReader struct {
@@ -194,3 +195,191 @@ func TestWorker_Tick(t *testing.T) {
 		worker.Stop()
 	})
 }
+
+func TestCanUseBatchPath(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		rule     *domainAutomation.RuleDefinition
+		expected bool
+	}{
+		{name: "nil rule returns false", rule: nil, expected: false},
+		{name: "no actions returns false", rule: &domainAutomation.RuleDefinition{Actions: []domainAutomation.Action{}}, expected: false},
+		{
+			name: "multiple actions returns false",
+			rule: &domainAutomation.RuleDefinition{
+				Actions: []domainAutomation.Action{
+					{Type: domainAutomation.ActionArchiveTask},
+					{Type: domainAutomation.ActionSetPriority},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "non-archive action returns false",
+			rule: &domainAutomation.RuleDefinition{
+				Actions: []domainAutomation.Action{{Type: domainAutomation.ActionMoveToColumn}},
+			},
+			expected: false,
+		},
+		{
+			name: "archive action with no conditions returns true",
+			rule: &domainAutomation.RuleDefinition{
+				Actions: []domainAutomation.Action{{Type: domainAutomation.ActionArchiveTask}},
+			},
+			expected: true,
+		},
+		{
+			name: "archive action with is_completed string true returns true",
+			rule: &domainAutomation.RuleDefinition{
+				Actions: []domainAutomation.Action{
+					{Type: domainAutomation.ActionArchiveTask},
+				},
+				Conditions: []domainAutomation.Condition{
+					{Field: domainAutomation.ConditionFieldIsCompleted, Operator: "==", Value: "true"},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "archive action with is_completed bool true returns true",
+			rule: &domainAutomation.RuleDefinition{
+				Actions: []domainAutomation.Action{
+					{Type: domainAutomation.ActionArchiveTask},
+				},
+				Conditions: []domainAutomation.Condition{
+					{Field: domainAutomation.ConditionFieldIsCompleted, Operator: "==", Value: true},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "archive action with is_completed false returns false",
+			rule: &domainAutomation.RuleDefinition{
+				Actions: []domainAutomation.Action{
+					{Type: domainAutomation.ActionArchiveTask},
+				},
+				Conditions: []domainAutomation.Condition{
+					{Field: domainAutomation.ConditionFieldIsCompleted, Operator: "==", Value: false},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "archive action with non-completion condition returns false",
+			rule: &domainAutomation.RuleDefinition{
+				Actions: []domainAutomation.Action{
+					{Type: domainAutomation.ActionArchiveTask},
+				},
+				Conditions: []domainAutomation.Condition{
+					{Field: "priority", Operator: "==", Value: "urgent"},
+				},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			actual := appAutomation.CanUseBatchPath(tc.rule)
+			require.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestWorker_Tick_FastPath(t *testing.T) {
+	t.Parallel()
+
+	wsID := uuid.New()
+	colID := uuid.New()
+
+	t.Run("column_sla_timer fast path executes batch SQL and publishes event", func(t *testing.T) {
+		mockRepo := new(appMocks.MockAutomationRepository)
+		mockBatch := new(appMocks.MockBatchTaskExecutor)
+		mockPub := new(appMocks.MockEventPublisher)
+		mockReader := new(mockTaskReader)
+		eval := appAutomation.NewEvaluator(nil, nil)
+
+		worker := appAutomation.NewWorker(mockRepo, mockReader, eval, 1*time.Minute)
+		worker.SetBatchExecutor(mockBatch)
+		worker.SetEventPublisher(mockPub)
+
+		ruleDef := &domainAutomation.RuleDefinition{
+			Trigger: domainAutomation.Trigger{
+				Type: domainAutomation.TriggerColumnSLATimer,
+				Params: map[string]interface{}{
+					"column_id":      colID.String(),
+					"duration_hours": 48,
+				},
+			},
+			Actions: []domainAutomation.Action{
+				{Type: domainAutomation.ActionArchiveTask},
+			},
+			Conditions: []domainAutomation.Condition{
+				{Field: domainAutomation.ConditionFieldIsCompleted, Operator: domainAutomation.OperatorEquals, Value: "true"},
+			},
+		}
+
+		autoRule, err := domainAutomation.NewRuleAutomation(wsID, nil, &colID, "Batch SLA", ruleDef, true)
+		require.NoError(t, err)
+
+		mockRepo.EXPECT().ListAllEnabledTimerAutomations(mock.Anything).Return([]*domainAutomation.Automation{autoRule}, nil).Once()
+		mockBatch.EXPECT().ArchiveCompletedTasksBatchSQL(mock.Anything, wsID, colID, 48.0).Return(int64(7), nil).Once()
+		mockPub.EXPECT().Publish(mock.Anything, mock.MatchedBy(func(e events.Event) bool {
+			ev, ok := e.(events.BatchSweepCompletedEvent)
+			return ok && ev.WorkspaceID() == wsID && ev.ColumnID() == colID && ev.AffectedCount == 7
+		})).Return(nil).Once()
+
+		err = worker.Tick(context.Background())
+		require.NoError(t, err)
+
+		mockRepo.AssertExpectations(t)
+		mockBatch.AssertExpectations(t)
+		mockPub.AssertExpectations(t)
+	})
+
+	t.Run("scheduled_sweep fast path executes batch SQL with 0 hours", func(t *testing.T) {
+		mockRepo := new(appMocks.MockAutomationRepository)
+		mockBatch := new(appMocks.MockBatchTaskExecutor)
+		mockPub := new(appMocks.MockEventPublisher)
+		mockReader := new(mockTaskReader)
+		eval := appAutomation.NewEvaluator(nil, nil)
+
+		worker := appAutomation.NewWorker(mockRepo, mockReader, eval, 1*time.Minute)
+		worker.SetBatchExecutor(mockBatch)
+		worker.SetEventPublisher(mockPub)
+
+		ruleDef := &domainAutomation.RuleDefinition{
+			Trigger: domainAutomation.Trigger{
+				Type: domainAutomation.TriggerScheduledSweep,
+				Params: map[string]interface{}{
+					"column_id": colID.String(),
+				},
+			},
+			Actions: []domainAutomation.Action{
+				{Type: domainAutomation.ActionArchiveTask},
+			},
+		}
+
+		autoRule, err := domainAutomation.NewRuleAutomation(wsID, nil, &colID, "Batch Sweep", ruleDef, true)
+		require.NoError(t, err)
+
+		mockRepo.EXPECT().ListAllEnabledTimerAutomations(mock.Anything).Return([]*domainAutomation.Automation{autoRule}, nil).Once()
+		mockBatch.EXPECT().ArchiveCompletedTasksBatchSQL(mock.Anything, wsID, colID, 0.0).Return(int64(3), nil).Once()
+		mockPub.EXPECT().Publish(mock.Anything, mock.MatchedBy(func(e events.Event) bool {
+			ev, ok := e.(events.BatchSweepCompletedEvent)
+			return ok && ev.WorkspaceID() == wsID && ev.ColumnID() == colID && ev.AffectedCount == 3
+		})).Return(nil).Once()
+
+		err = worker.Tick(context.Background())
+		require.NoError(t, err)
+
+		mockRepo.AssertExpectations(t)
+		mockBatch.AssertExpectations(t)
+		mockPub.AssertExpectations(t)
+	})
+}
+

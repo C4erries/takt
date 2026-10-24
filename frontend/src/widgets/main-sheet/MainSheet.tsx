@@ -12,6 +12,7 @@ import { InboxView } from './InboxView';
 import { TodayView } from './TodayView';
 import { ProjectView } from './ProjectView';
 import { AutomationsHub } from '@/features/automations';
+import { ArchiveView } from '@/features/archive';
 
 export interface MainSheetProps {
   tasks?: Task[];
@@ -119,6 +120,8 @@ export const MainSheet: React.FC<MainSheetProps> = ({
         />
       ) : activeNav === 'automations' ? (
         <AutomationsHub workspaceId={workspaceId} />
+      ) : activeNav === 'archive' ? (
+        <ArchiveView workspaceId={workspaceId} />
       ) : (
         <InboxView
           tasks={currentTasks}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	domainAutomation "takt/internal/domain/automation"
+	"takt/internal/domain/events"
 )
 
 // TaskInfo provides task state for automation evaluation and timer processing.
@@ -65,4 +66,18 @@ type TaskReader interface {
 type ProjectReader interface {
 	GetFirstTodoColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
 	GetDoneColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
+}
+
+// EventPublisher publishes domain events.
+type EventPublisher interface {
+	Publish(ctx context.Context, event events.Event) error
+}
+
+// BatchTaskExecutor executes batch actions on groups of tasks.
+type BatchTaskExecutor interface {
+	ArchiveCompletedTasksBatchSQL(
+		ctx context.Context,
+		workspaceID, columnID uuid.UUID,
+		olderThanHours float64,
+	) (int64, error)
 }

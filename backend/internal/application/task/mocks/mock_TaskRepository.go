@@ -48,6 +48,216 @@ func (_m *MockTaskRepository) EXPECT() *MockTaskRepository_Expecter {
 	return &MockTaskRepository_Expecter{mock: &_m.Mock}
 }
 
+// ArchiveCompletedTasksBatchSQL provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) ArchiveCompletedTasksBatchSQL(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID, olderThanHours float64) (int64, error) {
+	ret := _mock.Called(ctx, workspaceID, columnID, olderThanHours)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ArchiveCompletedTasksBatchSQL")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, float64) (int64, error)); ok {
+		return returnFunc(ctx, workspaceID, columnID, olderThanHours)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, float64) int64); ok {
+		r0 = returnFunc(ctx, workspaceID, columnID, olderThanHours)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, float64) error); ok {
+		r1 = returnFunc(ctx, workspaceID, columnID, olderThanHours)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ArchiveCompletedTasksBatchSQL'
+type MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call struct {
+	*mock.Call
+}
+
+// ArchiveCompletedTasksBatchSQL is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+//   - columnID uuid.UUID
+//   - olderThanHours float64
+func (_e *MockTaskRepository_Expecter) ArchiveCompletedTasksBatchSQL(ctx any, workspaceID any, columnID any, olderThanHours any) *MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call {
+	return &MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call{Call: _e.mock.On("ArchiveCompletedTasksBatchSQL", ctx, workspaceID, columnID, olderThanHours)}
+}
+
+func (_c *MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID, olderThanHours float64)) *MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 float64
+		if args[3] != nil {
+			arg3 = args[3].(float64)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call) Return(n int64, err error) *MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID, olderThanHours float64) (int64, error)) *MockTaskRepository_ArchiveCompletedTasksBatchSQL_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ArchiveCompletedTasksInColumn provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) ArchiveCompletedTasksInColumn(ctx context.Context, columnID uuid.UUID) (int64, error) {
+	ret := _mock.Called(ctx, columnID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ArchiveCompletedTasksInColumn")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (int64, error)); ok {
+		return returnFunc(ctx, columnID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) int64); ok {
+		r0 = returnFunc(ctx, columnID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, columnID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_ArchiveCompletedTasksInColumn_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ArchiveCompletedTasksInColumn'
+type MockTaskRepository_ArchiveCompletedTasksInColumn_Call struct {
+	*mock.Call
+}
+
+// ArchiveCompletedTasksInColumn is a helper method to define mock.On call
+//   - ctx context.Context
+//   - columnID uuid.UUID
+func (_e *MockTaskRepository_Expecter) ArchiveCompletedTasksInColumn(ctx any, columnID any) *MockTaskRepository_ArchiveCompletedTasksInColumn_Call {
+	return &MockTaskRepository_ArchiveCompletedTasksInColumn_Call{Call: _e.mock.On("ArchiveCompletedTasksInColumn", ctx, columnID)}
+}
+
+func (_c *MockTaskRepository_ArchiveCompletedTasksInColumn_Call) Run(run func(ctx context.Context, columnID uuid.UUID)) *MockTaskRepository_ArchiveCompletedTasksInColumn_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_ArchiveCompletedTasksInColumn_Call) Return(n int64, err error) *MockTaskRepository_ArchiveCompletedTasksInColumn_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_ArchiveCompletedTasksInColumn_Call) RunAndReturn(run func(ctx context.Context, columnID uuid.UUID) (int64, error)) *MockTaskRepository_ArchiveCompletedTasksInColumn_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// CountArchivedTasks provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) CountArchivedTasks(ctx context.Context, workspaceID uuid.UUID) (int64, error) {
+	ret := _mock.Called(ctx, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CountArchivedTasks")
+	}
+
+	var r0 int64
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) (int64, error)); ok {
+		return returnFunc(ctx, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) int64); ok {
+		r0 = returnFunc(ctx, workspaceID)
+	} else {
+		r0 = ret.Get(0).(int64)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_CountArchivedTasks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CountArchivedTasks'
+type MockTaskRepository_CountArchivedTasks_Call struct {
+	*mock.Call
+}
+
+// CountArchivedTasks is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+func (_e *MockTaskRepository_Expecter) CountArchivedTasks(ctx any, workspaceID any) *MockTaskRepository_CountArchivedTasks_Call {
+	return &MockTaskRepository_CountArchivedTasks_Call{Call: _e.mock.On("CountArchivedTasks", ctx, workspaceID)}
+}
+
+func (_c *MockTaskRepository_CountArchivedTasks_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockTaskRepository_CountArchivedTasks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_CountArchivedTasks_Call) Return(n int64, err error) *MockTaskRepository_CountArchivedTasks_Call {
+	_c.Call.Return(n, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_CountArchivedTasks_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) (int64, error)) *MockTaskRepository_CountArchivedTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Create provides a mock function for the type MockTaskRepository
 func (_mock *MockTaskRepository) Create(ctx context.Context, t *task.Task) error {
 	ret := _mock.Called(ctx, t)
@@ -444,6 +654,80 @@ func (_c *MockTaskRepository_GetTodayTasks_Call) RunAndReturn(run func(ctx conte
 	return _c
 }
 
+// ListArchivedTasks provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) ListArchivedTasks(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*task.Task, error) {
+	ret := _mock.Called(ctx, workspaceID, projectID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListArchivedTasks")
+	}
+
+	var r0 []*task.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *uuid.UUID) ([]*task.Task, error)); ok {
+		return returnFunc(ctx, workspaceID, projectID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *uuid.UUID) []*task.Task); ok {
+		r0 = returnFunc(ctx, workspaceID, projectID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*task.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID, projectID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_ListArchivedTasks_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListArchivedTasks'
+type MockTaskRepository_ListArchivedTasks_Call struct {
+	*mock.Call
+}
+
+// ListArchivedTasks is a helper method to define mock.On call
+//   - ctx context.Context
+//   - workspaceID uuid.UUID
+//   - projectID *uuid.UUID
+func (_e *MockTaskRepository_Expecter) ListArchivedTasks(ctx any, workspaceID any, projectID any) *MockTaskRepository_ListArchivedTasks_Call {
+	return &MockTaskRepository_ListArchivedTasks_Call{Call: _e.mock.On("ListArchivedTasks", ctx, workspaceID, projectID)}
+}
+
+func (_c *MockTaskRepository_ListArchivedTasks_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID)) *MockTaskRepository_ListArchivedTasks_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 *uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(*uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_ListArchivedTasks_Call) Return(tasks []*task.Task, err error) *MockTaskRepository_ListArchivedTasks_Call {
+	_c.Call.Return(tasks, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_ListArchivedTasks_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*task.Task, error)) *MockTaskRepository_ListArchivedTasks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListSubtasks provides a mock function for the type MockTaskRepository
 func (_mock *MockTaskRepository) ListSubtasks(ctx context.Context, parentID uuid.UUID) ([]*task.Task, error) {
 	ret := _mock.Called(ctx, parentID)
@@ -662,6 +946,98 @@ func (_c *MockTaskRepository_Toggle_Call) Return(task1 *task.Task, err error) *M
 }
 
 func (_c *MockTaskRepository_Toggle_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, workspaceID uuid.UUID) (*task.Task, error)) *MockTaskRepository_Toggle_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UnarchiveTask provides a mock function for the type MockTaskRepository
+func (_mock *MockTaskRepository) UnarchiveTask(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, columnID uuid.UUID, projectID *uuid.UUID, position float64) (*task.Task, error) {
+	ret := _mock.Called(ctx, taskID, workspaceID, columnID, projectID, position)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UnarchiveTask")
+	}
+
+	var r0 *task.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, *uuid.UUID, float64) (*task.Task, error)); ok {
+		return returnFunc(ctx, taskID, workspaceID, columnID, projectID, position)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, *uuid.UUID, float64) *task.Task); ok {
+		r0 = returnFunc(ctx, taskID, workspaceID, columnID, projectID, position)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*task.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, *uuid.UUID, float64) error); ok {
+		r1 = returnFunc(ctx, taskID, workspaceID, columnID, projectID, position)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskRepository_UnarchiveTask_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UnarchiveTask'
+type MockTaskRepository_UnarchiveTask_Call struct {
+	*mock.Call
+}
+
+// UnarchiveTask is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - workspaceID uuid.UUID
+//   - columnID uuid.UUID
+//   - projectID *uuid.UUID
+//   - position float64
+func (_e *MockTaskRepository_Expecter) UnarchiveTask(ctx any, taskID any, workspaceID any, columnID any, projectID any, position any) *MockTaskRepository_UnarchiveTask_Call {
+	return &MockTaskRepository_UnarchiveTask_Call{Call: _e.mock.On("UnarchiveTask", ctx, taskID, workspaceID, columnID, projectID, position)}
+}
+
+func (_c *MockTaskRepository_UnarchiveTask_Call) Run(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, columnID uuid.UUID, projectID *uuid.UUID, position float64)) *MockTaskRepository_UnarchiveTask_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		var arg3 uuid.UUID
+		if args[3] != nil {
+			arg3 = args[3].(uuid.UUID)
+		}
+		var arg4 *uuid.UUID
+		if args[4] != nil {
+			arg4 = args[4].(*uuid.UUID)
+		}
+		var arg5 float64
+		if args[5] != nil {
+			arg5 = args[5].(float64)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskRepository_UnarchiveTask_Call) Return(task1 *task.Task, err error) *MockTaskRepository_UnarchiveTask_Call {
+	_c.Call.Return(task1, err)
+	return _c
+}
+
+func (_c *MockTaskRepository_UnarchiveTask_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID, columnID uuid.UUID, projectID *uuid.UUID, position float64) (*task.Task, error)) *MockTaskRepository_UnarchiveTask_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -304,3 +304,27 @@ projectTasks:
       '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
       '404': { description: Project not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
 
+archiveCompletedColumnTasks:
+  post:
+    tags: [Tasks, Projects]
+    summary: Archive completed tasks in a column
+    description: Flushes all completed tasks in the column to archive.
+    operationId: archiveCompletedColumnTasks
+    security: [{ BearerAuth: [] }, { CookieAuth: [] }]
+    parameters:
+      - { name: workspace_id, in: path, required: true, schema: { type: string, format: uuid } }
+      - { name: column_id, in: path, required: true, schema: { type: string, format: uuid } }
+    responses:
+      '200':
+        description: Count of archived tasks
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [archivedCount]
+              properties:
+                archivedCount: { type: integer, example: 5 }
+      '401': { description: Unauthorized, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '403': { description: Forbidden, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+      '404': { description: Column not found, content: { application/json: { schema: { $ref: '../schemas/error.yaml' } } } }
+

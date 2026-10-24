@@ -90,6 +90,24 @@ func TestTaskEvents_Properties(t *testing.T) {
 		assert.Equal(t, wsID, e.WorkspaceID())
 		assert.True(t, e.IsFromAutomation())
 	})
+
+	t.Run("BatchSweepCompletedEvent", func(t *testing.T) {
+		e := events.BatchSweepCompletedEvent{
+			WorkspaceIDVal: wsID,
+			ColumnIDVal:    colID,
+			ActionVal:      "archive_task",
+			AffectedCount:  10,
+			OccurredAtVal:  now,
+		}
+
+		assert.Equal(t, events.EventBatchSweepCompleted, e.EventName())
+		assert.Equal(t, now, e.OccurredAt())
+		assert.Equal(t, wsID, e.WorkspaceID())
+		assert.Equal(t, colID, e.ColumnID())
+		assert.Equal(t, "archive_task", e.Action())
+		assert.Equal(t, int64(10), e.AffectedCount)
+		assert.True(t, e.IsFromAutomation())
+	})
 }
 
 func TestAutomationTriggerContext(t *testing.T) {

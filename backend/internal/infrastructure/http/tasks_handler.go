@@ -25,7 +25,8 @@ func respondTaskDomainError(c echo.Context, err error) error {
 		status, code = http.StatusNotFound, "NOT_FOUND"
 	case errors.Is(err, domainTask.ErrInvalidTaskTitle), errors.Is(err, domainTask.ErrInvalidPriority),
 		errors.Is(err, domainTask.ErrInvalidTagName), errors.Is(err, domainTask.ErrInvalidTagColor),
-		errors.Is(err, domainTask.ErrInvalidFocusOrder), errors.Is(err, domainTask.ErrSelfParenting):
+		errors.Is(err, domainTask.ErrInvalidFocusOrder), errors.Is(err, domainTask.ErrSelfParenting),
+		errors.Is(err, domainTask.ErrInvalidColumnID):
 		status, code = http.StatusBadRequest, "BAD_REQUEST"
 	case errors.Is(err, domainTask.ErrTagAlreadyAttached):
 		status, code = http.StatusConflict, "TAG_ALREADY_ATTACHED"
@@ -88,9 +89,19 @@ func mapDomainTaskToGenerated(t *domainTask.Task) generated.Task {
 		SubtasksCount:          subCount,
 		SubtasksCompletedCount: subDoneCount,
 		Tags:                   tags,
+		IsArchived:             t.IsArchived,
+		ArchivedAt:             t.ArchivedAt,
 		CreatedAt:              t.CreatedAt,
 		UpdatedAt:              t.UpdatedAt,
 	}
+}
+
+func mapDomainTasksToGenerated(tasks []*domainTask.Task) []generated.Task {
+	resp := make([]generated.Task, len(tasks))
+	for i, t := range tasks {
+		resp[i] = mapDomainTaskToGenerated(t)
+	}
+	return resp
 }
 
 func (h *Handler) GetInboxTasks(c echo.Context) error {
@@ -102,11 +113,7 @@ func (h *Handler) GetInboxTasks(c echo.Context) error {
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-	resp := make([]generated.Task, len(tasks))
-	for i, t := range tasks {
-		resp[i] = mapDomainTaskToGenerated(t)
-	}
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, mapDomainTasksToGenerated(tasks))
 }
 
 func (h *Handler) CreateInboxTask(c echo.Context) error {
@@ -183,11 +190,7 @@ func (h *Handler) GetTodayTasks(c echo.Context, workspaceId openapi_types.UUID) 
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-	resp := make([]generated.Task, len(tasks))
-	for i, t := range tasks {
-		resp[i] = mapDomainTaskToGenerated(t)
-	}
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, mapDomainTasksToGenerated(tasks))
 }
 
 func (h *Handler) ListSubtasks(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error {
@@ -195,11 +198,7 @@ func (h *Handler) ListSubtasks(c echo.Context, workspaceId openapi_types.UUID, t
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
-	resp := make([]generated.Task, len(tasks))
-	for i, t := range tasks {
-		resp[i] = mapDomainTaskToGenerated(t)
-	}
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, mapDomainTasksToGenerated(tasks))
 }
 
 func (h *Handler) UpdateTask(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error {
@@ -374,3 +373,24 @@ func (h *Handler) DuplicateTask(ctx echo.Context, workspaceId openapi_types.UUID
 	}
 	return ctx.JSON(http.StatusCreated, mapDomainTaskToGenerated(t))
 }
+
+func (h *Handler) ListArchivedTasks(c echo.Context, workspaceId openapi_types.UUID, params generated.ListArchivedTasksParams) error {
+	tasks, err := h.taskService.ListArchivedTasks(c.Request().Context(), workspaceId, params.ProjectId)
+	if err != nil {
+		return respondTaskDomainError(c, err)
+	}
+	return c.JSON(http.StatusOK, mapDomainTasksToGenerated(tasks))
+}
+
+func (h *Handler) UnarchiveTask(c echo.Context, workspaceId openapi_types.UUID, taskId openapi_types.UUID) error {
+	var req generated.UnarchiveTaskJSONRequestBody
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
+	}
+	task, err := h.taskService.UnarchiveTask(c.Request().Context(), workspaceId, taskId, req.ColumnId, req.BoardId)
+	if err != nil {
+		return respondTaskDomainError(c, err)
+	}
+	return c.JSON(http.StatusOK, mapDomainTaskToGenerated(task))
+}
+

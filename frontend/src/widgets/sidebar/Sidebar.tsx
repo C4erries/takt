@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Inbox, Zap, FolderClosed, Plus, LogOut, LogIn,
-  SlidersHorizontal, Layers, X, Sparkles, Search, PanelLeftClose, Palette, Tag,
+  SlidersHorizontal, Layers, X, Sparkles, Search, PanelLeftClose, Palette, Tag, Archive,
 } from 'lucide-react';
 import { Button, Badge, Input } from '@/shared/components/ui';
 import type { User, Workspace } from '@/shared/api';
@@ -13,6 +13,7 @@ import { TagManagerModal } from '@/features/tag-manager';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
 import { useTodayTasksQuery, useInboxTasks } from '@/entities/task';
 import { useAutomationsQuery } from '@/entities/automation';
+import { useArchivedTasksQuery } from '@/features/archive';
 
 export interface SidebarProps {
   user: User | null;
@@ -47,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { data: todayTasks = [] } = useTodayTasksQuery(workspace?.id);
   const { data: projects = [] } = useProjectsQuery(workspace?.id);
   const { data: automations = [] } = useAutomationsQuery(workspace?.id);
+  const { data: archivedTasks = [] } = useArchivedTasksQuery(workspace?.id);
   const createProjectMutation = useCreateProjectMutation(workspace?.id);
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -152,6 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             { id: 'inbox', label: 'Входящие', icon: Inbox, count: currentInboxCount, badgeVariant: 'subtle' as const },
             { id: 'today', label: 'Сегодня', icon: Zap, count: todayCount, badgeVariant: 'persimmon' as const },
             { id: 'automations', label: 'Автоматизации', icon: Sparkles, count: activeAutomationsCount, badgeVariant: 'subtle' as const, iconColor: 'text-accent-solid' },
+            { id: 'archive', label: 'Архив', icon: Archive, count: archivedTasks.length, badgeVariant: 'subtle' as const },
           ].map(({ id, label, icon: Icon, count, badgeVariant, iconColor }) => {
             const isSelected = currentNav === id && !showUiCatalog;
             return (

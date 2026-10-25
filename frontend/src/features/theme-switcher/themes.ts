@@ -200,7 +200,7 @@ export const THEMES: readonly ThemeDefinition[] = [
   // 3 Animated & Seasonal Themes (Анимированные и сезонные)
   {
     id: 'kyoto-snow',
-    name: 'Зимний Киото',
+    name: 'Winter Snow',
     category: 'light',
     description: 'Морозная сизая палитра, кристаллический снег и иней',
     ambientPreset: 'snow',
@@ -214,9 +214,9 @@ export const THEMES: readonly ThemeDefinition[] = [
   },
   {
     id: 'tsukimi',
-    name: 'Осенний Киото',
+    name: 'Autumn Fall',
     category: 'dark',
-    description: 'Листопад из листьев момидзи и гинкго, ковер у земли и вихрь от мыши',
+    description: 'Листопад, теплые янтарные тона и тихий вечерний воздух',
     ambientPreset: 'autumn',
     preview: {
       canvas: '#1C1A18',
@@ -228,7 +228,7 @@ export const THEMES: readonly ThemeDefinition[] = [
   },
   {
     id: 'celestial',
-    name: 'Celestial Atlas & Astrolabe',
+    name: 'Celestial Atlas',
     category: 'dark',
     description: 'Полуночные чернила, латунь и живой интерактивный атлас созвездий',
     ambientPreset: 'celestial',
@@ -242,7 +242,7 @@ export const THEMES: readonly ThemeDefinition[] = [
   },
   {
     id: 'frost-pine',
-    name: 'Хвойная метель',
+    name: 'Frost Pine',
     category: 'dark',
     description: 'Ночной хвойный бор, изумрудная латунь и стремительная метель',
     ambientPreset: 'blizzard',
@@ -256,7 +256,7 @@ export const THEMES: readonly ThemeDefinition[] = [
   },
   {
     id: 'ocean',
-    name: 'Морской дзен',
+    name: 'Deep Ocean',
     category: 'dark',
     description: 'Глубокий океанский сапфир, светящаяся лазурь, лучи света, жемчужные пузырьки и мирные тропические рыбки',
     ambientPreset: 'ocean',

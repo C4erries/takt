@@ -14,7 +14,7 @@ import (
 	httpDelivery "takt/internal/infrastructure/http"
 )
 
-const AppVersion = "0.3.1"
+const AppVersion = "1.0.0"
 
 // Run boots up the application server and listens for graceful shutdown.
 func Run(ctx context.Context, cfg *config.Config) error {

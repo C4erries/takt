@@ -16,24 +16,47 @@ Minimal task manager built around focus, automations, and keyboard-first navigat
 
 ## Features
 
-- **Kanban + Focus view** — Multiple boards per project, fractional indexing, daily "Today" horizon, and rapid inbox triage.
+- **Kanban + Focus view** — Multiple boards per project, fractional indexing reordering, daily "Today" horizon, and rapid inbox triage (`C`).
 - **Low-code automations** — Event-driven "WHEN → IF → THEN" rule engine with column triggers, multi-step actions, and recursive loop protection.
 - **Activity history & audit** — Granular per-task audit trail attributing actions to specific users or automation rules (`#A-XXXX`).
-- **Ambient themes** — 17 crafted palettes (light paper, evening brass, and live animated atmospheres: Winter Snow, Autumn Fall, Celestial Atlas, Frost Pine, Deep Ocean).
+- **Ambient visual themes** — 17 crafted palettes (light washi paper, evening brass, and live animated atmospheres with zero-overhead particle physics).
 - **Keyboard-first navigation** — Full keyboard traversal (`J`/`K`), quick capture (`C`), command palette (`⌘K`), and instant side drawer (`?task=:id`).
 - **Self-hosted & private** — Single Docker Compose stack with PostgreSQL and S3-compatible object storage (MinIO).
 
 ---
 
-## Gallery
+## Core Views
 
-| Task Inspector & Subtasks | Automation Rule Builder |
+| Task Inspector & Activity Audit | Automation Rule Builder |
 |:---:|:---:|
 | ![Task Drawer](docs/assets/takt_task_drawer.png) | ![Rule Builder](docs/assets/takt_rule_builder.png) |
+| **Task Inspector:** Markdown notes, subtasks checklist, attachments, and granular activity history with actor attribution. | **Low-Code Rule Builder:** Declarative condition and action chaining, column-level scopes, and automated execution. |
 
-| Today Focus Mode | Celestial Atlas Theme |
+| Today Focus Horizon | Washi Paper Kanban |
 |:---:|:---:|
-| ![Daily Focus](docs/assets/takt_daily_focus.png) | ![Celestial Atlas Theme](docs/assets/themes/takt_theme_celestial_atlas.png) |
+| ![Daily Focus](docs/assets/takt_daily_focus.png) | ![Kyoto Matcha Board](docs/assets/themes/takt_theme_kyoto_matcha.png) |
+| **Daily Focus (GTD):** Isolate 3–5 high-impact tasks for the day without getting lost in backlogs. | **Distraction-Free Canvas:** Calm typography, pastel tag tokens, and smooth drag-and-drop. |
+
+---
+
+## Ambient Themes Gallery
+
+Takt features **17 curated palettes** designed for extended focus sessions without visual fatigue. Dynamic themes run GPU-accelerated particle simulations on HTML5 canvas with zero React re-renders and minimal energy impact.
+
+| Celestial Atlas | Deep Ocean |
+|:---:|:---:|
+| ![Celestial Atlas](docs/assets/themes/takt_theme_celestial_atlas.png) | ![Deep Ocean](docs/assets/themes/takt_theme_deep_ocean.png) |
+| Interactive starfield, pulsing constellations & astrolabe lines | Deep sapphire waters, shimmering caustic light rays & marine life |
+
+| Winter Snow | Autumn Fall |
+|:---:|:---:|
+| ![Winter Snow](docs/assets/themes/takt_theme_winter_snow.png) | ![Autumn Fall](docs/assets/themes/takt_theme_autumn_fall.png) |
+| Gentle crystalline snowfall on icy paper with parallax depth | Drift of autumn foliage and interactive leaf whirlwind |
+
+| Frost Pine | Evening Espresso |
+|:---:|:---:|
+| ![Frost Pine](docs/assets/themes/takt_theme_frost_pine.png) | ![Evening Espresso](docs/assets/themes/takt_theme_evening_espresso.png) |
+| Nighttime evergreen blizzard with frosted vignettes | Matte brass, roasted walnut, and warm dark typography |
 
 ---
 

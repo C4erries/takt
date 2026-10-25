@@ -88,6 +88,10 @@ func (m *mockWorkspaceService) UploadUserAvatar(ctx context.Context, userID uuid
 	return nil, nil
 }
 
+func (m *mockWorkspaceService) GetAvatarContent(ctx context.Context, key string) (io.ReadCloser, string, error) {
+	return nil, "", nil
+}
+
 func TestJWTManager_GenerateAndParse(t *testing.T) {
 	jwtManager := NewJWTManager("super-secret-key-12345678901234567")
 	userID := uuid.New()

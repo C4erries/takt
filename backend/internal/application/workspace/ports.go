@@ -17,6 +17,7 @@ type Transactor interface {
 // AvatarStorage defines binary storage operations for user avatars.
 type AvatarStorage interface {
 	PutObject(ctx context.Context, key string, body io.Reader, size int64, contentType string) error
+	GetObject(ctx context.Context, key string) (io.ReadCloser, string, int64, error)
 }
 
 // PasswordHasher handles password hashing and verification.

@@ -2,8 +2,10 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -54,6 +56,7 @@ type UseCases interface {
 	AcceptInvite(ctx context.Context, userID uuid.UUID, token string) (*SwitchWorkspaceOutput, error)
 	UpdateUserProfile(ctx context.Context, userID uuid.UUID, displayName *string) (*domainWorkspace.User, error)
 	UploadUserAvatar(ctx context.Context, userID uuid.UUID, filename, contentType string, reader io.Reader, size int64) (*domainWorkspace.User, error)
+	GetAvatarContent(ctx context.Context, key string) (io.ReadCloser, string, error)
 }
 
 type Service struct {
@@ -310,3 +313,16 @@ func (s *Service) UploadUserAvatar(
 
 	return s.userRepo.UpdateProfile(ctx, userID, nil, user.AvatarURL)
 }
+
+func (s *Service) GetAvatarContent(ctx context.Context, key string) (io.ReadCloser, string, error) {
+	if s.avatarStorage == nil {
+		return nil, "", errors.New("avatar storage not configured")
+	}
+	cleanKey := path.Clean(strings.TrimPrefix(key, "/"))
+	body, contentType, _, err := s.avatarStorage.GetObject(ctx, cleanKey)
+	if err != nil {
+		return nil, "", err
+	}
+	return body, contentType, nil
+}
+

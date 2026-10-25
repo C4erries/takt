@@ -121,3 +121,47 @@ func (_c *MockAvatarStorage_PutObject_Call) RunAndReturn(run func(ctx context.Co
 	_c.Call.Return(run)
 	return _c
 }
+
+// GetObject provides a mock function for the type MockAvatarStorage
+func (_mock *MockAvatarStorage) GetObject(ctx context.Context, key string) (io.ReadCloser, string, int64, error) {
+	ret := _mock.Called(ctx, key)
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(context.Context, string) io.ReadCloser); ok {
+		r0 = rf(ctx, key)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(io.ReadCloser)
+	}
+	var r1 string
+	if rf, ok := ret.Get(1).(func(context.Context, string) string); ok {
+		r1 = rf(ctx, key)
+	} else {
+		r1 = ret.String(1)
+	}
+	var r2 int64
+	if rf, ok := ret.Get(2).(func(context.Context, string) int64); ok {
+		r2 = rf(ctx, key)
+	} else {
+		r2 = ret.Get(2).(int64)
+	}
+	var r3 error
+	if rf, ok := ret.Get(3).(func(context.Context, string) error); ok {
+		r3 = rf(ctx, key)
+	} else {
+		r3 = ret.Error(3)
+	}
+	return r0, r1, r2, r3
+}
+
+type MockAvatarStorage_GetObject_Call struct {
+	*mock.Call
+}
+
+func (_e *MockAvatarStorage_Expecter) GetObject(ctx any, key any) *MockAvatarStorage_GetObject_Call {
+	return &MockAvatarStorage_GetObject_Call{Call: _e.mock.On("GetObject", ctx, key)}
+}
+
+func (_c *MockAvatarStorage_GetObject_Call) Return(r0 io.ReadCloser, r1 string, r2 int64, r3 error) *MockAvatarStorage_GetObject_Call {
+	_c.Call.Return(r0, r1, r2, r3)
+	return _c
+}
+

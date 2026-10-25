@@ -3,6 +3,8 @@ package http
 import (
 	"errors"
 	"net/http"
+	"path"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -332,3 +334,32 @@ func (h *Handler) UploadUserAvatar(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, mapUserToGenerated(user))
 }
+
+// GetUserAvatar streams avatar binary content by object path.
+func (h *Handler) GetUserAvatar(c echo.Context) error {
+	wildcard := c.Param("*")
+	if wildcard == "" {
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Avatar path is required",
+		})
+	}
+
+	cleanKey := path.Clean(strings.TrimPrefix(wildcard, "/"))
+	if !strings.HasPrefix(cleanKey, "avatars/") {
+		cleanKey = "avatars/" + cleanKey
+	}
+
+	body, contentType, err := h.workspaceService.GetAvatarContent(c.Request().Context(), cleanKey)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, generated.Error{
+			Code:    "NOT_FOUND",
+			Message: "Avatar not found",
+		})
+	}
+	defer body.Close()
+
+	c.Response().Header().Set("Cache-Control", "public, max-age=86400")
+	return c.Stream(http.StatusOK, contentType, body)
+}
+

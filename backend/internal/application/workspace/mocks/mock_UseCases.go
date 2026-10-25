@@ -1080,3 +1080,41 @@ func (_c *MockUseCases_UploadUserAvatar_Call) RunAndReturn(run func(ctx context.
 	_c.Call.Return(run)
 	return _c
 }
+
+// GetAvatarContent provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) GetAvatarContent(ctx context.Context, key string) (io.ReadCloser, string, error) {
+	ret := _mock.Called(ctx, key)
+	var r0 io.ReadCloser
+	if rf, ok := ret.Get(0).(func(context.Context, string) io.ReadCloser); ok {
+		r0 = rf(ctx, key)
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(io.ReadCloser)
+	}
+	var r1 string
+	if rf, ok := ret.Get(1).(func(context.Context, string) string); ok {
+		r1 = rf(ctx, key)
+	} else {
+		r1 = ret.String(1)
+	}
+	var r2 error
+	if rf, ok := ret.Get(2).(func(context.Context, string) error); ok {
+		r2 = rf(ctx, key)
+	} else {
+		r2 = ret.Error(2)
+	}
+	return r0, r1, r2
+}
+
+type MockUseCases_GetAvatarContent_Call struct {
+	*mock.Call
+}
+
+func (_e *MockUseCases_Expecter) GetAvatarContent(ctx any, key any) *MockUseCases_GetAvatarContent_Call {
+	return &MockUseCases_GetAvatarContent_Call{Call: _e.mock.On("GetAvatarContent", ctx, key)}
+}
+
+func (_c *MockUseCases_GetAvatarContent_Call) Return(r0 io.ReadCloser, r1 string, r2 error) *MockUseCases_GetAvatarContent_Call {
+	_c.Call.Return(r0, r1, r2)
+	return _c
+}
+

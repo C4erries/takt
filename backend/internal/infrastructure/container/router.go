@@ -1,6 +1,7 @@
 package container
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -32,8 +33,14 @@ func setupRouter(e *echo.Echo, h *httpDelivery.Handler) {
 			strings.HasSuffix(reqPath, "/auth/register") ||
 			strings.HasSuffix(reqPath, "/auth/logout") ||
 			strings.HasSuffix(reqPath, "/health") ||
-			(c.Request().Method == "GET" && (strings.Contains(p, "/invites/") || strings.Contains(reqPath, "/invites/")))
+			(c.Request().Method == http.MethodGet && (strings.Contains(p, "/invites/") || strings.Contains(reqPath, "/invites/"))) ||
+			((c.Request().Method == http.MethodGet || c.Request().Method == http.MethodHead) && (strings.Contains(p, "/avatar") || strings.Contains(reqPath, "/avatar")))
 	}))
 
 	generated.RegisterHandlers(v1, h)
+
+	// User avatar binary download routes
+	v1.Match([]string{http.MethodGet, http.MethodHead}, "/users/me/avatar/*", h.GetUserAvatar)
+	v1.Match([]string{http.MethodGet, http.MethodHead}, "/users/avatar/*", h.GetUserAvatar)
 }
+

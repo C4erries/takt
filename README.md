@@ -1,10 +1,9 @@
-# 🎋 Takt
+# Takt
 
-> **Скоростной таск-трекер и GTD-воркспейс с канбан-досками и low-code автоматизациями.**  
-> Спроектирован на стыке клавиатурной скорости (*Superhuman / Linear*), визуальных досок (*WEEEK*) и спокойной эстетики японской канцелярии (*Midori MD / Hobonichi*).
+Minimal task manager built around focus, automations, and keyboard-first navigation.
 
 [![Go 1.23+](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat&logo=go)](https://go.dev/)
-[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react)](https://react.dev/)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat&logo=postgresql)](https://www.postgresql.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-566B44.svg)](LICENSE)
@@ -15,248 +14,107 @@
 
 ---
 
-## 💡 О проекте
+## Features
 
-Большинство таск-трекеров скатываются в одну из двух крайностей: либо перегруженные корпоративные монстры с бесконечными выпадающими списками, либо сверхминималистичные plain-text списки без наглядного пайплайна движения задач.
-
-**Takt** объединяет оба подхода:
-1. **Быстрый захват и разбор**: Мгновенный сброс мыслей во «Входящие» (`C`), J/K-навигация без мыши и ежедневный горизонт «Сегодня».
-2. **Визуальный канбан-пайплайн**: Мульти-доски в проектах, плавный Drag-and-Drop с fractional indexing и навигационная панель досок.
-3. **Low-Code автоматизации**: Фоновый движок правил «КОГДА $\rightarrow$ ЕСЛИ $\rightarrow$ ТО», избавляющий от ручного перекладывания карточек и смены статусов.
-4. **Анти-шум интерфейс**: Никаких кислотных баннеров и навязчивых уведомлений — палитра японской бумаги Washi (`#F7F5EE`), акцент чая матча (`#566B44`) и книжная антиква Newsreader.
-
----
-
-## 🌟 Ключевые возможности
-
-### 1. Канбан-доски и мульти-навигация
-* **Мульти-доски в проектах**: Каждая инициатива может содержать несколько независимых досок (например, *Бэкенд*, *Фронтенд*, *Маркетинг*).
-* **Суб-навигационный рейл (Boards Rail)**: Компактная боковая панель с быстрым переключением между досками, счетчиками задач и возможностью сворачивания в 1 клик.
-* **Управление структурой**: Быстрое создание, переименование и удаление досок и колонок с защитой от случайных действий и безопасным переносом задач во «Входящие».
-* **Fractional Indexing**: Мгновенная сортировка колонок и карточек с вычислением промежуточных позиций без массовых блокировок базы данных.
-* **Скролл колесиком мыши (Middle-Click Pan)**: Зажмите колесико мыши в любой точке полотна для плавного перемещения по широким доскам.
-* **Динамические фильтры**: Фильтрация задач по приоритетам, срокам и тегам с мгновенным откликом без перезагрузки страницы.
+- **Kanban + Focus view** — Multiple boards per project, fractional indexing, daily "Today" horizon, and rapid inbox triage.
+- **Low-code automations** — Event-driven "WHEN → IF → THEN" rule engine with column triggers, multi-step actions, and recursive loop protection.
+- **Activity history & audit** — Granular per-task audit trail attributing actions to specific users or automation rules (`#A-XXXX`).
+- **Ambient themes** — 17 crafted palettes (light paper, evening brass, and live animated atmospheres: Winter Snow, Autumn Fall, Celestial Atlas, Frost Pine, Deep Ocean).
+- **Keyboard-first navigation** — Full keyboard traversal (`J`/`K`), quick capture (`C`), command palette (`⌘K`), and instant side drawer (`?task=:id`).
+- **Self-hosted & private** — Single Docker Compose stack with PostgreSQL and S3-compatible object storage (MinIO).
 
 ---
 
-### 2. Инспектор задач (Task Drawer)
+## Gallery
 
-![Takt Task Drawer](docs/assets/takt_task_drawer.png)
+| Task Inspector & Subtasks | Automation Rule Builder |
+|:---:|:---:|
+| ![Task Drawer](docs/assets/takt_task_drawer.png) | ![Rule Builder](docs/assets/takt_rule_builder.png) |
 
-* **Мгновенный слайд-овер (560px)**: Открывается сбоку без потери контекста доски. Синхронизируется с адресной строкой (`?task=:id`) — ссылкой на задачу можно делиться напрямую.
-* **Пастельная палитра тегов**: Система меток с автодополнением и мягкими токенами без режущих глаз цветов и лишних символов (`#`).
-* **Контекстные приоритеты**: `Обычный`, `Низкий`, `Средний`, `Высокий`, `В ожидании` — активные бейджи окрашиваются в семантический цвет приоритета.
-* **Заметки в Markdown**: Встроенный редактор заметок с поддержкой списков, чекбоксов и кода.
-* **Фокус дня в 1 клик**: Кнопка «В фокус дня» сразу выводит задачу в ежедневный горизонт «Сегодня».
-
----
-
-### 3. Визуальный Low-Code конструктор правил
-
-![Takt Low-Code Rule Builder](docs/assets/takt_rule_builder.png)
-
-* **Sentence Builder «КОГДА $\rightarrow$ ЕСЛИ $\rightarrow$ ТО»**: Понятная декларативная модель сборки автоматизаций.
-* **Триггеры**: Попадание задачи в колонку, завершение задачи, изменение полей, SLA-таймеры нахождения в колонке, периодические проверки.
-* **Гибкие условия**: Логические цепочки `AND` / `OR`, предикатные операторы (`равно`, `содержит`, `дедлайн просрочен`, `в пределах N дней`).
-* **Действия**: Смена колонки, выставление приоритета, навешивание/снятие тегов, авто-архивация, назначение сроков.
-* **Защита от зацикливания**: Движок событий отслеживает цепочки вызовов и предотвращает бесконечные рекурсивные петли.
-* **Колоночные пресеты**: Быстрое подключение автоматизаций напрямую из контекстного меню колонки (`...`).
+| Today Focus Mode | Celestial Atlas Theme |
+|:---:|:---:|
+| ![Daily Focus](docs/assets/takt_daily_focus.png) | ![Celestial Atlas Theme](docs/assets/themes/takt_theme_celestial_atlas.png) |
 
 ---
 
-### 4. Горизонт «Сегодня» и GTD-ритуал
+## Tech Stack
 
-![Takt Daily Focus](docs/assets/takt_daily_focus.png)
-
-* **Четкое разделение горизонтов**:
-  * `Входящие` (Inbox) — свалка входящих мыслей и неотсортированных задач.
-  * `Сегодня` (Today) — 3–5 ключевых фокусных задач на текущий день.
-  * `Проекты` (Projects) — структурированные канбан-пайплайны.
-* **Клавиатурная скорость**:
-  * `C` — Быстрый захват задачи (Quick Capture) из любой точки приложения.
-  * `J` / `K` — Перемещение по списку задач вверх/вниз.
-  * `Space` — Завершение / снятие задачи.
-  * `⌘K` / `Ctrl+K` — Командная палитра для поиска задач, проектов и действий.
-  * `[` — Быстрое сворачивание/разворачивание левого сайдбара.
+- **Backend:** Go 1.23 · Echo · sqlc · pgx · OpenAPI 3.1
+- **Frontend:** React 18 · TypeScript · Vite · Tailwind CSS · TanStack Query · dnd-kit
+- **Storage:** PostgreSQL 16 · MinIO (S3-compatible attachment storage)
+- **Infrastructure:** Docker Compose · Nginx · golang-migrate
 
 ---
 
-### 5. Кинетический Ambient-движок и 16 тем оформления
+## Self-Hosting
 
-Takt предлагает глубокую кастомизацию рабочего пространства: **16 авторских палитр** (11 светлых оттенков японской бумаги и керамики, 2 вечерние темы чернил и латуни, и 5 живых анимированных тем).
+### Using Docker Compose
 
-#### 🌊 Морской дзен (Ocean Sanctuary)
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/c4erries/takt.git
+   cd takt
+   ```
 
-![Takt Theme Ocean Sanctuary](docs/assets/themes/takt_theme_ocean_sanctuary.png)
+2. Start all services:
+   ```bash
+   docker compose up -d --build
+   ```
 
-* **Медитативная бездна океана**: Глубокий сапфировый холст (`#0A141E`), темные карточки и мягкое биолюминесцентное лазурное свечение (`#2DD4BF`).
-* **Каустические лучи и пузырьки**: Живые световые лучи пробивают толщу воды, а со дна плавно поднимаются жемчужные пузырьки воздуха с бликами.
-* **Физика ламинарии и многослойный риф**: Сегментные водоросли колышутся по законам физики от подводных течений и реагируют на курсор мыши; на дне расположены детализированные векторные кораллы и ракушки.
-* **Интерактивный рифовый краб (State Machine)**: Живой DOM-краб гуляет по песчаному дну между рифами с дискретными состояниями `idle`, `walking`, `spooked` и `fleeing` с нулевыми React-ререндерами на 60 FPS.
-
----
-
-#### 🍁 Осенний Киото (Tsukimi Autumn)
-
-![Takt Theme Tsukimi Autumn](docs/assets/themes/takt_theme_tsukimi_autumn.png)
-
-* **Листопад момидзи и гинкго**: Векторные контуры листьев японского клена и веерного гинкго мягко планируют на экран.
-* **Ковер у земли**: Опавшие листья собираются в естественный ковер у нижнего края экрана с жизненным циклом и плавным растворением.
-* **Вихрь от курсора**: Движение мыши поднимает опавшие листья в кинетический вихрь.
+3. Open the application:
+   - Web UI: [http://localhost:5173](http://localhost:5173) (or [http://localhost:80](http://localhost:80) via Nginx)
+   - API Health: [http://localhost:8080/api/health](http://localhost:8080/api/health)
 
 ---
 
-#### ❄️ Зимний Киото (Kyoto Snow)
+## Development
 
-![Takt Theme Kyoto Snow](docs/assets/themes/takt_theme_kyoto_snow.png)
+### Prerequisites
 
-* **Морозная светлая элегантность**: Сизая бумага Washi (`#CFDDEB`), нежный иней и ледяная лазурь.
-* **Кристаллические снежинки**: Медленно кружащийся тихий снегопад с мягкой турбулентностью и параллаксом глубины.
+- Go 1.23+
+- Node.js 20+
+- PostgreSQL 16 & MinIO (or run `docker compose up -d postgres minio`)
 
----
-
-#### 🌌 Звездный атлас (Celestial Atlas) & 🌲 Хвойная метель (Frost Pine)
-
-| Celestial Atlas & Astrolabe | Хвойная метель (Frost Pine) |
-|---|---|
-| ![Celestial Atlas](docs/assets/themes/takt_theme_celestial_atlas.png) | ![Frost Pine](docs/assets/themes/takt_theme_frost_pine.png) |
-| Живые интерактивные созвездия, пульсирующие звезды и соединительные линии астролябии. | Закручивающаяся метель, летящая сосновая хвоя и морозная виньетка по периметру экрана. |
-
----
-
-### ⚡ Zero-Overhead производительность и адаптивный фавикон
-* **Режимы Subtle vs Vivid**: В деликатном режиме (`subtle`) рендерер фиксирует `dpr = 1.0`, снижая нагрузку на GPU на Retina/4K-экранах на 75% и оптимизируя количество частиц для экономии батареи ноутбука.
-* **Аппаратные радиальные тени**: Никаких программных `ctx.filter = blur()` — 100% отрисовка через GPU-акселерированные радиальные градиенты.
-* **Динамический фавикон**: Иконка вкладки в браузере реактивно меняет свой цвет под акцент активной темы (лазурный в Ocean, матча в Kyoto, терракотовый в Claude, золотой в Tsukimi).
-* **Информативный title**: Вкладка браузера всегда отображает текущий контекст: `<Название доски> | Takt` либо `Входящие | Takt`.
-
----
-
-## 🏗️ Архитектура и Инженерные стандарты
-
-Проект построен по принципам **Clean Architecture** и строгой модульности с автоматическим контролем целостности.
-
-```
-takt/
-├── api/openapi/               # Контракты OpenAPI 3.0 (Contract-First)
-│   ├── paths/                 # REST-эндпоинты
-│   └── schemas/               # DTO-схемы данных
-├── backend/                   # Бэкенд на Go 1.23+
-│   ├── cmd/server/            # Тонкая точка входа (< 50 строк)
-│   ├── internal/
-│   │   ├── domain/            # Чистый домен: сущности, инварианты, ошибки
-│   │   │   ├── task/
-│   │   │   ├── project/
-│   │   │   └── automation/
-│   │   ├── application/       # Use Cases, оркестрация транзакций, порты
-│   │   └── infrastructure/    # Реализации: Echo HTTP, pgx/sqlc, EventBus, Container
-│   ├── migrations/            # SQL-миграции (golang-migrate)
-│   └── queries/               # Исходные SQL-запросы для sqlc
-├── frontend/                  # Клиент на React 19 + TypeScript + Vite
-│   └── src/
-│       ├── app/               # Composition root, провайдеры
-│       ├── entities/          # TanStack Query модели (task, project, automation)
-│       ├── features/          # Изолированные фичи (kanban-board, automations, board-filters)
-│       ├── widgets/           # Композитные блоки (sidebar, main-sheet, task-drawer)
-│       └── shared/            # Дизайн-система Washi (Button, Badge, Input, Modal)
-└── docs/                      # Архитектурный паспорт, ADR и спецификации спринтов
-```
-
-### Ключевые технические решения:
-* **Contract-First API**: Любое изменение API начинается со спецификации OpenAPI 3.0 (`api/openapi/*`). Из неё через `oapi-codegen` генерируются серверные интерфейсы и TypeScript-типы.
-* **100% типобезопасный SQL**: Никаких тяжелых ORM. `sqlc` компилирует чистые PostgreSQL-запросы в производительный Go-код.
-* **Архитектурный гейткипер (`make check-arch`)**: Автоматический линтер, встроенный в CI/CD:
-  * Не более 350–400 строк в файле.
-  * Не более 5–7 файлов в одном пакете/модуле.
-  * Запрет прямых циклических импортов между доменными модулями.
-  * Запрет использования сырых цветов в коде UI (только семантические токены Washi/Matcha).
-
----
-
-## 🚀 Быстрый старт
-
-### Требования
-* **Docker** и **Docker Compose**
-* **Make**
-
-### Запуск через Docker Compose (рекомендуется)
+### Running Locally
 
 ```bash
-# Клонирование репозитория
-git clone https://github.com/c4erries/takt.git
-cd takt
+# 1. Start backing services
+docker compose up -d postgres minio
 
-# Запуск всего стека (PostgreSQL 16 + Backend API + Frontend SPA + Nginx)
-docker compose up -d --build
+# 2. Run backend
+cd backend
+go run ./cmd/server
+
+# 3. Run frontend (in another terminal)
+cd frontend
+npm install
+npm run dev
 ```
 
-Приложение будет доступно по адресу:
-* **Веб-интерфейс**: `http://localhost:5173` (или `http://localhost:80` при запуске через Nginx)
-* **Backend API Health**: `http://localhost:8080/api/health`
-* **PostgreSQL**: `localhost:5432` (`takt_user` / `takt_password`, база `takt_db`)
-
----
-
-### Локальная разработка (без Docker для сервисов приложения)
-
-1. **Поднимите базу данных**:
-   ```bash
-   docker compose up -d postgres
-   ```
-
-2. **Запустите бэкенд**:
-   ```bash
-   cd backend
-   go run cmd/server/main.go
-   ```
-
-3. **Запустите фронтенд**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
----
-
-## 🛠️ Основные команды разработки
-
-Все рутинные операции автоматизированы через корневой `Makefile`:
+### Verification & Quality Gates
 
 ```bash
-# Проверка архитектурных лимитов и дизайн-паспорта
+# Architecture checks (file size limits, package bounds, color tokens)
 make check-arch
 
-# Запуск модульных тестов бэкенда (с race detector)
+# Backend unit & integration tests
 make test
 
-# Запуск E2E-тестов (Python/pytest)
-make test-e2e
-
-# Полная кодогенерация (OpenAPI -> Go & TS, sqlc -> Go)
-make generate
-
-# Применение миграций БД
-make migrate-up
+# Frontend lint & production build
+cd frontend && npm run lint && npm run build
 ```
 
 ---
 
-## 📚 Документация проекта
+## Documentation
 
-Подробная документация и история архитектурных решений находятся в каталоге `docs/`:
-
-* 🎯 **[PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md)** — Продуктовый паспорт, ER-диаграмма сущностей и актуальная Карта Пакетов (Package Map).
-* 📐 **[Инженерные конвенции](docs/conventions/README.md)** — [Backend-конвенции](docs/conventions/backend.md) и [Frontend-конвенции](docs/conventions/frontend.md).
-* 🏛️ **[Реестр архитектурных решений (ADR)](docs/decisions/README.md)** — Журнал ключевых архитектурных выборов:
-  * [ADR-0001: Архитектурный стек и Clean Architecture](docs/decisions/0001-initial-architecture-and-stack.md)
-  * [ADR-0004: Движок Low-Code автоматизаций и DSL](docs/decisions/0004-low-code-automations-dsl.md)
-* 🗺️ **[ROADMAP.md](docs/ROADMAP.md)** — Стратегический план развития проекта по фазам (до MVP 1.0 и далее).
-* ⚡ **[CURRENT_SPRINT.md](docs/CURRENT_SPRINT.md)** — Оперативный статус текущего спринта разработки.
-* 🧭 **[AGENTS.md](AGENTS.md)** — Регламент и системный протокол работы AI-агентов.
+- [Project Context & Package Map](docs/PROJECT_CONTEXT.md)
+- [Engineering Conventions](docs/conventions/README.md)
+- [Architecture Decision Records (ADRs)](docs/decisions/README.md)
+- [Sprint History & Roadmap](docs/sprints/README.md)
 
 ---
 
-## 📄 Лицензия
+## License
 
-Проект распространяется под лицензией [MIT](LICENSE).
+[MIT](LICENSE)

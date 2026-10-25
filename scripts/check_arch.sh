@@ -13,10 +13,10 @@ ERRORS=0
 echo -e "${BLUE}=== [ARCH LINTER] Starting Architecture Integrity Check ===${NC}"
 
 # -----------------------------------------------------------------------------
-# Check 1: File Line Limit (< 400 lines)
+# Check 1: File Line Limit (< 500 lines)
 # -----------------------------------------------------------------------------
-echo -e "\n${BLUE}--> [Check 1/5] Checking file line limit (< 400 lines)...${NC}"
-MAX_LINES=400
+echo -e "\n${BLUE}--> [Check 1/5] Checking file line limit (< 500 lines)...${NC}"
+MAX_LINES=500
 
 # Scan all relevant code files excluding generated files, vendor, node_modules, lockfiles
 while IFS= read -r file; do

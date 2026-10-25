@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type {
   Automation,
   AutomationAction,
@@ -27,6 +27,7 @@ export interface UseRuleBuilderParams {
   mode?: 'create' | 'edit';
   initialRule?: Automation | null;
   taskId?: string | null;
+  isOpen?: boolean;
   onSuccess?: (saved: Automation) => void;
   onClose: () => void;
 }
@@ -180,6 +181,54 @@ export function formatActionLabel(
   return ACTION_TYPES.find((a) => a.type === action.type)?.label || String(action.type);
 }
 
+export function formatAutomationScope(
+  automation: Automation,
+  options?: {
+    allColumns?: { id: string; name: string; boardId?: string }[];
+    allBoards?: { id: string; name: string; projectId?: string; projectName?: string }[];
+    boardColumnGroups?: { boardName: string; projectName?: string; columns: { id: string; name: string }[] }[];
+    columnName?: string;
+  }
+): string {
+  const { allColumns = [], allBoards = [], boardColumnGroups = [], columnName } = options || {};
+
+  if (automation.columnId) {
+    for (const group of boardColumnGroups) {
+      const foundCol = group.columns.find((c) => c.id === automation.columnId);
+      if (foundCol) {
+        return group.projectName
+          ? `${group.projectName} → ${group.boardName} → ${foundCol.name}`
+          : `${group.boardName} → ${foundCol.name}`;
+      }
+    }
+    const col = allColumns.find((c) => c.id === automation.columnId);
+    const colName = col?.name || columnName || 'Колонка';
+    const effectiveBoardId = automation.boardId || col?.boardId;
+    const board = allBoards.find((b) => b.id === effectiveBoardId);
+    if (board) {
+      return board.projectName
+        ? `${board.projectName} → ${board.name} → ${colName}`
+        : `${board.name} → ${colName}`;
+    }
+    return colName;
+  }
+
+  if (automation.boardId) {
+    const board = allBoards.find((b) => b.id === automation.boardId);
+    if (board) {
+      return board.projectName ? `${board.projectName} → ${board.name}` : board.name;
+    }
+    for (const group of boardColumnGroups) {
+      if (group.boardName && allBoards.some((b) => b.id === automation.boardId && b.name === group.boardName)) {
+        return group.projectName ? `${group.projectName} → ${group.boardName}` : group.boardName;
+      }
+    }
+    return 'Доска';
+  }
+
+  return 'Глобально';
+}
+
 export function useRuleBuilder({
   workspaceId,
   prefilledBoardId,
@@ -189,6 +238,7 @@ export function useRuleBuilder({
   mode = 'create',
   initialRule,
   taskId,
+  isOpen,
   onSuccess,
   onClose,
 }: UseRuleBuilderParams) {
@@ -218,65 +268,118 @@ export function useRuleBuilder({
     { type: 'set_priority', params: { priority: 'high' } },
   ]);
 
+  const initializedRef = useRef<string | null>(null);
+  const wasOpenRef = useRef<boolean>(false);
+  const activeRuleId = initialRule?.id ? `edit_${initialRule.id}` : 'create';
+
+  const propsRef = useRef({
+    initialRule,
+    taskId,
+    prefilledColumnId,
+    prefilledBoardId,
+    allBoards,
+    allColumns,
+  });
+  propsRef.current = {
+    initialRule,
+    taskId,
+    prefilledColumnId,
+    prefilledBoardId,
+    allBoards,
+    allColumns,
+  };
+
   useEffect(() => {
-    if (initialRule) {
-      setRuleName(initialRule.name);
+    const isOpening = isOpen !== undefined && Boolean(isOpen) && !wasOpenRef.current;
+    if (isOpen !== undefined) {
+      wasOpenRef.current = Boolean(isOpen);
+      if (!isOpen) {
+        initializedRef.current = null;
+        return;
+      }
+    }
+
+    if (initializedRef.current === activeRuleId && !isOpening) {
+      return;
+    }
+    initializedRef.current = activeRuleId;
+
+    const {
+      initialRule: currentRule,
+      taskId: currentTaskId,
+      prefilledColumnId: currentColId,
+      prefilledBoardId: currentBoardId,
+      allBoards: currentBoards,
+      allColumns: currentCols,
+    } = propsRef.current;
+
+    if (currentRule) {
+      setRuleName(currentRule.name);
       setIsCustomName(true);
-      if (initialRule.columnId) {
+      if (currentRule.columnId) {
         setScope('column');
-        if (initialRule.boardId) setSelectedBoardId(initialRule.boardId);
-      } else if (initialRule.boardId) {
+        if (currentRule.boardId) setSelectedBoardId(currentRule.boardId);
+      } else if (currentRule.boardId) {
         setScope('board');
-        setSelectedBoardId(initialRule.boardId);
+        setSelectedBoardId(currentRule.boardId);
       } else {
         setScope('global');
       }
-      const trig = initialRule.ruleDefinition?.trigger;
-      const trigType = (trig?.type || initialRule.triggerType || 'task_entered_column') as AutomationTriggerType;
+      const trig = currentRule.ruleDefinition?.trigger;
+      const trigType = (trig?.type || currentRule.triggerType || 'task_entered_column') as AutomationTriggerType;
       setTriggerType(trigType);
-      const colId = (trig?.params?.column_id as string) || initialRule.columnId || prefilledColumnId || '';
+      const colId = (trig?.params?.column_id as string) || currentRule.columnId || currentColId || '';
       setTriggerColumnId(colId);
       const sla = Number(trig?.params?.duration_hours);
       if (sla) setTriggerSlaHours(sla);
       const fld = trig?.params?.field as string;
       if (fld) setTriggerField(fld);
-      const conds =
-        initialRule.ruleDefinition?.conditions ||
-        ((initialRule.conditionsJson as { conditions?: AutomationCondition[] })?.conditions) ||
-        [];
+      const conds = currentRule.ruleDefinition?.conditions || ((currentRule.conditionsJson as { conditions?: AutomationCondition[] })?.conditions) || [];
       setConditions(conds);
-      const op =
-        initialRule.ruleDefinition?.logicalOperator ||
-        ((initialRule.conditionsJson as { logical_operator?: 'and' | 'or' })?.logical_operator) ||
-        'and';
+      const op = currentRule.ruleDefinition?.logicalOperator || ((currentRule.conditionsJson as { logical_operator?: 'and' | 'or' })?.logical_operator) || 'and';
       setLogicalOperator(op);
-      const acts =
-        initialRule.ruleDefinition?.actions ||
-        ((initialRule.actionsJson as { actions?: AutomationAction[] })?.actions) ||
-        [];
+      const acts = currentRule.ruleDefinition?.actions || ((currentRule.actionsJson as { actions?: AutomationAction[] })?.actions) || [];
       setActions(acts.length > 0 ? acts : [{ type: 'set_priority', params: { priority: 'high' } }]);
-    } else if (taskId) {
-      setTriggerType('task_timer');
-    } else if (prefilledColumnId) {
-      setTriggerColumnId(prefilledColumnId);
-      setScope('column');
-      setTriggerType('task_entered_column');
-    } else if (prefilledBoardId) {
-      setSelectedBoardId(prefilledBoardId);
-      setScope('board');
-    } else if (allBoards.length > 0 && !selectedBoardId) {
-      setSelectedBoardId(allBoards[0].id);
-    } else if (allColumns.length > 0 && !triggerColumnId) {
-      setTriggerColumnId(allColumns[0].id);
+    } else {
+      setIsCustomName(false);
+      setConditions([]);
+      setLogicalOperator('and');
+      setActions([{ type: 'set_priority', params: { priority: 'high' } }]);
+      if (currentTaskId) {
+        setTriggerType('task_timer');
+        if (currentColId) setTriggerColumnId(currentColId);
+      } else if (currentColId) {
+        setTriggerColumnId(currentColId);
+        setScope('column');
+        setTriggerType('task_entered_column');
+        if (currentBoardId) setSelectedBoardId(currentBoardId);
+      } else if (currentBoardId) {
+        setSelectedBoardId(currentBoardId);
+        setScope('board');
+        setTriggerType('task_entered_column');
+        if (currentCols.length > 0) setTriggerColumnId(currentCols[0].id);
+      } else {
+        setScope('board');
+        setTriggerType('task_entered_column');
+        if (currentBoards.length > 0) setSelectedBoardId(currentBoards[0].id);
+        if (currentCols.length > 0) setTriggerColumnId(currentCols[0].id);
+      }
     }
-  }, [initialRule, prefilledColumnId, prefilledBoardId, allColumns, allBoards, taskId]);
+  }, [activeRuleId, isOpen]);
+
+  useEffect(() => {
+    if (!triggerColumnId && allColumns.length > 0 && !initialRule && scope === 'column') setTriggerColumnId(allColumns[0].id);
+  }, [allColumns, triggerColumnId, initialRule, scope]);
+
+  useEffect(() => {
+    if (!selectedBoardId && allBoards.length > 0 && !initialRule && scope === 'board') setSelectedBoardId(allBoards[0].id);
+  }, [allBoards, selectedBoardId, initialRule, scope]);
 
   useEffect(() => {
     if (!isCustomName) {
       const triggerLabel = TRIGGER_OPTIONS.find((t) => t.type === triggerType)?.label ?? triggerType;
       const actionLabel = ACTION_TYPES.find((a) => a.type === actions[0]?.type)?.label ?? 'Действие';
-      const name = `${triggerLabel} → ${actionLabel}`;
-      setRuleName(name);
+      setRuleName(`${triggerLabel} → ${actionLabel}`);
     }
   }, [triggerType, actions, isCustomName]);
 
@@ -292,9 +395,7 @@ export function useRuleBuilder({
         const updated = { ...c, ...patch };
         if (patch.field && patch.field !== c.field) {
           const validOps = FIELD_OPERATORS_MAP[patch.field as AutomationConditionField] || ['equals'];
-          if (!validOps.includes(updated.operator as AutomationConditionOperator)) {
-            updated.operator = validOps[0];
-          }
+          if (!validOps.includes(updated.operator as AutomationConditionOperator)) updated.operator = validOps[0];
         }
         return updated;
       })
@@ -325,16 +426,9 @@ export function useRuleBuilder({
     }
 
     const triggerParams: Record<string, unknown> = {};
-    if (
-      triggerType === 'task_entered_column' ||
-      triggerType === 'task_completed_in_column' ||
-      triggerType === 'scheduled_sweep'
-    ) {
-      if (effectiveColumnId) {
-        triggerParams.column_id = effectiveColumnId;
-      } else if (scope === 'board' && triggerType === 'scheduled_sweep' && triggerColumnId) {
-        triggerParams.column_id = triggerColumnId;
-      }
+    if (triggerType === 'task_entered_column' || triggerType === 'task_completed_in_column' || triggerType === 'scheduled_sweep') {
+      if (effectiveColumnId) triggerParams.column_id = effectiveColumnId;
+      else if (scope === 'board' && triggerType === 'scheduled_sweep' && triggerColumnId) triggerParams.column_id = triggerColumnId;
     } else if (triggerType === 'column_sla_timer' || triggerType === 'task_timer') {
       if (effectiveColumnId) triggerParams.column_id = effectiveColumnId;
       triggerParams.duration_hours = Number(triggerSlaHours) || 24;
@@ -344,34 +438,28 @@ export function useRuleBuilder({
 
     const trigger: AutomationTrigger = { type: triggerType, params: triggerParams };
     const ruleDefinition: RuleDefinition = { trigger, conditions, logicalOperator, actions };
+    const payload = {
+      name: ruleName.trim(),
+      triggerType,
+      boardId: effectiveBoardId,
+      columnId: effectiveColumnId,
+      conditionsJson: { conditions, logical_operator: logicalOperator },
+      actionsJson: { actions },
+      ruleDefinition,
+    };
 
     try {
       if (mode === 'edit' && initialRule?.id) {
         const updated = await updateMutation.mutateAsync({
           automationId: initialRule.id,
-          data: {
-            name: ruleName.trim(),
-            triggerType,
-            boardId: effectiveBoardId,
-            columnId: effectiveColumnId,
-            taskId: initialRule.taskId ?? taskId ?? null,
-            conditionsJson: { conditions, logical_operator: logicalOperator },
-            actionsJson: { actions },
-            ruleDefinition,
-          },
+          data: { ...payload, taskId: initialRule.taskId ?? taskId ?? null },
         });
         if (onSuccess) onSuccess(updated);
       } else {
         const created = await createMutation.mutateAsync({
-          name: ruleName.trim(),
-          triggerType,
-          boardId: effectiveBoardId,
-          columnId: effectiveColumnId,
+          ...payload,
           taskId: taskId ?? null,
-          conditionsJson: { conditions, logical_operator: logicalOperator },
-          actionsJson: { actions },
           isEnabled: true,
-          ruleDefinition,
         });
         if (onSuccess) onSuccess(created);
       }

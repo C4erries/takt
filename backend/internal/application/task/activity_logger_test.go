@@ -40,6 +40,7 @@ func TestActivityLogger_HandleTaskMoved(t *testing.T) {
 	prevCol := uuid.New()
 	toCol := uuid.New()
 	userID := uuid.New()
+	autoID := uuid.New()
 
 	testCases := []struct {
 		name       string
@@ -49,12 +50,14 @@ func TestActivityLogger_HandleTaskMoved(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name: "successful column moved with actor",
+			name: "successful column moved with actor and column names",
 			event: events.TaskMovedEvent{
 				TaskID:           taskID,
 				WorkspaceIDVal:   wsID,
 				ColumnID:         &toCol,
 				PreviousColumnID: &prevCol,
+				FromColumnName:   "В работе",
+				ToColumnName:     "Готово",
 				OccurredAtVal:    time.Now().UTC(),
 			},
 			ctx: context.WithValue(context.Background(), "userID", userID),
@@ -64,7 +67,39 @@ func TestActivityLogger_HandleTaskMoved(t *testing.T) {
 						act.UserID != nil && *act.UserID == userID &&
 						act.ActivityType == domainTask.ActivityColumnMoved &&
 						act.Payload["from_column_id"] == prevCol.String() &&
-						act.Payload["to_column_id"] == toCol.String()
+						act.Payload["to_column_id"] == toCol.String() &&
+						act.Payload["from_column"] == "В работе" &&
+						act.Payload["to_column"] == "Готово"
+				})).Return(nil).Once()
+			},
+			wantErr: false,
+		},
+		{
+			name: "successful column moved from automation with metadata",
+			event: events.TaskMovedEvent{
+				TaskID:           taskID,
+				WorkspaceIDVal:   wsID,
+				ColumnID:         &toCol,
+				PreviousColumnID: &prevCol,
+				FromColumnName:   "Входящие",
+				ToColumnName:     "Спринт",
+				FromAutomation:   true,
+				AutomationID:     &autoID,
+				AutomationName:   "Авто-сортировка",
+				OccurredAtVal:    time.Now().UTC(),
+			},
+			ctx: context.Background(),
+			setupRepo: func(m *mocks.MockTaskRepository) {
+				m.EXPECT().CreateActivity(mock.Anything, mock.MatchedBy(func(act *domainTask.TaskActivity) bool {
+					return act.TaskID == taskID &&
+						act.UserID == nil &&
+						act.ActivityType == domainTask.ActivityColumnMoved &&
+						act.Payload["from_column_id"] == prevCol.String() &&
+						act.Payload["to_column_id"] == toCol.String() &&
+						act.Payload["from_column"] == "Входящие" &&
+						act.Payload["to_column"] == "Спринт" &&
+						act.Payload["automation_id"] == autoID.String() &&
+						act.Payload["automation_name"] == "Авто-сортировка"
 				})).Return(nil).Once()
 			},
 			wantErr: false,

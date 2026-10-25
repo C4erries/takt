@@ -45,6 +45,7 @@ type ColumnRepository interface {
 }
 
 type TaskMoveRepository interface {
+	GetTaskByID(ctx context.Context, taskID, workspaceID uuid.UUID) (*domainTask.Task, error)
 	MoveTaskToColumnAndPosition(ctx context.Context, taskID, workspaceID uuid.UUID, columnID, projectID *uuid.UUID, position float64) (*domainTask.Task, error)
 	ResetProjectTasksToInbox(ctx context.Context, projectID, workspaceID uuid.UUID) error
 	ResetBoardTasksToInbox(ctx context.Context, boardID, workspaceID uuid.UUID) error

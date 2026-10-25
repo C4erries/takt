@@ -86,6 +86,10 @@ type TaskMovedEvent struct {
 	ProjectID        *uuid.UUID
 	ColumnID         *uuid.UUID
 	PreviousColumnID *uuid.UUID
+	FromColumnName   string
+	ToColumnName     string
+	AutomationID     *uuid.UUID
+	AutomationName   string
 	Position         float64
 	OccurredAtVal    time.Time
 	FromAutomation   bool

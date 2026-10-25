@@ -7,6 +7,7 @@ import {
   formatTriggerLabel,
   formatConditionLabel,
   formatActionLabel,
+  formatAutomationScope,
 } from './useRuleBuilder';
 
 export interface AutomationCardProps {
@@ -18,7 +19,9 @@ export interface AutomationCardProps {
   onEdit?: (automation: Automation) => void;
   onDuplicate?: (automation: Automation) => void;
   columnName?: string;
-  allColumns?: { id: string; name: string }[];
+  allColumns?: { id: string; name: string; boardId?: string }[];
+  allBoards?: { id: string; name: string; projectId?: string; projectName?: string }[];
+  boardColumnGroups?: { boardName: string; projectName?: string; columns: { id: string; name: string }[] }[];
   isDeletable?: boolean;
 }
 
@@ -32,6 +35,8 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
   onDuplicate,
   columnName,
   allColumns = [],
+  allBoards = [],
+  boardColumnGroups,
   isDeletable = true,
 }) => {
   const triggerType = automation.triggerType;
@@ -43,6 +48,13 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
     allColumns.length > 0 ? allColumns : columnName ? [{ id: automation.columnId || '', name: columnName }] : [],
     automation.ruleDefinition?.trigger?.params
   );
+
+  const scopeBreadcrumb = formatAutomationScope(automation, {
+    allColumns,
+    allBoards,
+    boardColumnGroups,
+    columnName,
+  });
 
   const conditions = automation.ruleDefinition?.conditions ?? [];
   const actions = automation.ruleDefinition?.actions ?? [];
@@ -85,6 +97,14 @@ export const AutomationCard: React.FC<AutomationCardProps> = ({
               >
                 {automation.name}
               </h4>
+              <Badge
+                variant="subtle"
+                size="sm"
+                className="text-[10px] font-mono text-muted max-w-[240px] truncate"
+                title={scopeBreadcrumb}
+              >
+                {scopeBreadcrumb}
+              </Badge>
               <Badge
                 variant={automation.isEnabled ? 'matcha' : 'subtle'}
                 size="sm"

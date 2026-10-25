@@ -13,6 +13,7 @@ import (
 
 	projectapp "takt/internal/application/project"
 	"takt/internal/application/project/mocks"
+	"takt/internal/domain/events"
 	domainProject "takt/internal/domain/project"
 	domainTask "takt/internal/domain/task"
 )
@@ -273,12 +274,23 @@ func TestService_MoveTask(t *testing.T) {
 	wsID := uuid.New()
 	projID := uuid.New()
 	boardID := uuid.New()
+	fromColID := uuid.New()
 	colID := uuid.New()
 	taskID := uuid.New()
 
 	existingProj := &domainProject.Project{ID: projID, WorkspaceID: wsID, Name: "Проект"}
 	existingBoard := &domainProject.Board{ID: boardID, ProjectID: projID, Name: "Основная"}
+	fromCol := &domainProject.Column{ID: fromColID, BoardID: boardID, Name: "Входящие", Position: 1000.0}
 	existingCol := &domainProject.Column{ID: colID, BoardID: boardID, Name: "В работе", Position: 2000.0}
+
+	currentTask := &domainTask.Task{
+		ID:          taskID,
+		WorkspaceID: wsID,
+		ProjectID:   &projID,
+		ColumnID:    &fromColID,
+		Title:       "Сделать DND",
+		Position:    1000.0,
+	}
 
 	movedTask := &domainTask.Task{
 		ID:          taskID,
@@ -289,11 +301,14 @@ func TestService_MoveTask(t *testing.T) {
 		Position:    1500.0,
 	}
 
-	t.Run("успешное перемещение задачи между позициями", func(t *testing.T) {
+	t.Run("успешное перемещение задачи с заполнением названий колонок и публикацией события", func(t *testing.T) {
 		deps := newMockDeps(t)
+		mockPub := mocks.NewMockEventPublisher(t)
 		deps.columnRepo.EXPECT().GetByID(mock.Anything, colID).Return(existingCol, nil).Once()
 		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID).Return(existingBoard, nil).Once()
 		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		deps.taskRepo.EXPECT().GetTaskByID(mock.Anything, taskID, wsID).Return(currentTask, nil).Once()
+		deps.columnRepo.EXPECT().GetByID(mock.Anything, fromColID).Return(fromCol, nil).Once()
 		deps.taskRepo.EXPECT().MoveTaskToColumnAndPosition(
 			mock.Anything,
 			taskID,
@@ -303,7 +318,20 @@ func TestService_MoveTask(t *testing.T) {
 			1500.0,
 		).Return(movedTask, nil).Once()
 
+		mockPub.EXPECT().Publish(mock.Anything, mock.MatchedBy(func(evt events.Event) bool {
+			e, ok := evt.(events.TaskMovedEvent)
+			if !ok {
+				return false
+			}
+			return e.TaskID == taskID &&
+				e.FromColumnName == "Входящие" &&
+				e.ToColumnName == "В работе" &&
+				e.PreviousColumnID != nil && *e.PreviousColumnID == fromColID &&
+				e.ColumnID != nil && *e.ColumnID == colID
+		})).Return(nil).Once()
+
 		svc := deps.newService()
+		svc.SetEventPublisher(mockPub)
 		res, err := svc.MoveTask(context.Background(), projectapp.MoveTaskInput{
 			WorkspaceID: wsID,
 			TaskID:      taskID,
@@ -313,6 +341,70 @@ func TestService_MoveTask(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, movedTask.Position, res.Position)
 		assert.Equal(t, &colID, res.ColumnID)
+	})
+
+	t.Run("успешное перемещение задачи без предыдущей колонки", func(t *testing.T) {
+		deps := newMockDeps(t)
+		mockPub := mocks.NewMockEventPublisher(t)
+		deps.columnRepo.EXPECT().GetByID(mock.Anything, colID).Return(existingCol, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID).Return(existingBoard, nil).Once()
+		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		taskWithoutCol := &domainTask.Task{
+			ID:          taskID,
+			WorkspaceID: wsID,
+			ProjectID:   &projID,
+			ColumnID:    nil,
+			Position:    1000.0,
+		}
+		deps.taskRepo.EXPECT().GetTaskByID(mock.Anything, taskID, wsID).Return(taskWithoutCol, nil).Once()
+		deps.taskRepo.EXPECT().MoveTaskToColumnAndPosition(
+			mock.Anything,
+			taskID,
+			wsID,
+			&colID,
+			&projID,
+			1500.0,
+		).Return(movedTask, nil).Once()
+
+		mockPub.EXPECT().Publish(mock.Anything, mock.MatchedBy(func(evt events.Event) bool {
+			e, ok := evt.(events.TaskMovedEvent)
+			if !ok {
+				return false
+			}
+			return e.TaskID == taskID &&
+				e.FromColumnName == "" &&
+				e.ToColumnName == "В работе" &&
+				e.PreviousColumnID == nil &&
+				e.ColumnID != nil && *e.ColumnID == colID
+		})).Return(nil).Once()
+
+		svc := deps.newService()
+		svc.SetEventPublisher(mockPub)
+		res, err := svc.MoveTask(context.Background(), projectapp.MoveTaskInput{
+			WorkspaceID: wsID,
+			TaskID:      taskID,
+			ColumnID:    colID,
+			Position:    1500.0,
+		})
+		require.NoError(t, err)
+		assert.Equal(t, movedTask.Position, res.Position)
+	})
+
+	t.Run("ошибка если задача не найдена в репозитории", func(t *testing.T) {
+		deps := newMockDeps(t)
+		deps.columnRepo.EXPECT().GetByID(mock.Anything, colID).Return(existingCol, nil).Once()
+		deps.boardRepo.EXPECT().GetByID(mock.Anything, boardID).Return(existingBoard, nil).Once()
+		deps.projectRepo.EXPECT().GetByID(mock.Anything, projID, wsID).Return(existingProj, nil).Once()
+		deps.taskRepo.EXPECT().GetTaskByID(mock.Anything, taskID, wsID).Return(nil, domainTask.ErrTaskNotFound).Once()
+
+		svc := deps.newService()
+		_, err := svc.MoveTask(context.Background(), projectapp.MoveTaskInput{
+			WorkspaceID: wsID,
+			TaskID:      taskID,
+			ColumnID:    colID,
+			Position:    1500.0,
+		})
+		require.ErrorIs(t, err, domainTask.ErrTaskNotFound)
 	})
 }
 

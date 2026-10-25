@@ -49,6 +49,20 @@ func (l *ActivityLogger) HandleTaskMoved(ctx context.Context, event events.Event
 	if e.ColumnID != nil {
 		payload["to_column_id"] = e.ColumnID.String()
 	}
+	if e.FromColumnName != "" {
+		payload["from_column"] = e.FromColumnName
+	}
+	if e.ToColumnName != "" {
+		payload["to_column"] = e.ToColumnName
+	}
+	if e.FromAutomation {
+		if e.AutomationID != nil {
+			payload["automation_id"] = e.AutomationID.String()
+		}
+		if e.AutomationName != "" {
+			payload["automation_name"] = e.AutomationName
+		}
+	}
 
 	actorID := getActorIDFromContext(ctx)
 	activity, err := domainTask.NewTaskActivity(e.TaskID, actorID, domainTask.ActivityColumnMoved, payload)

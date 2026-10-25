@@ -8,6 +8,7 @@ import {
   formatTriggerLabel,
   formatConditionLabel,
   formatActionLabel,
+  formatAutomationScope,
 } from './useRuleBuilder';
 import {
   TriggerSection,
@@ -57,7 +58,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
     actions, handleAddAction, handleRemoveAction, handleUpdateAction,
     handleSave, isSubmitting,
   } = useRuleBuilder({
-    workspaceId, prefilledBoardId, prefilledColumnId, prefilledColumnName,
+    isOpen, workspaceId, prefilledBoardId, prefilledColumnId, prefilledColumnName,
     allColumns, allBoards, mode, initialRule, taskId, onSuccess, onClose,
   });
 
@@ -151,7 +152,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
               </select>
             </div>
           )}
-          {scope === 'column' && allColumns.length > 0 && (
+          {scope === 'column' && (allColumns.length > 0 || (boardColumnGroups && boardColumnGroups.length > 0)) && (
             <div className="space-y-1 pt-1">
               <label className="text-[10px] font-mono text-muted">Целевая колонка:</label>
               <select
@@ -159,9 +160,17 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
                 onChange={(e) => setTriggerColumnId(e.target.value)}
                 className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid"
               >
-                {allColumns.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {boardColumnGroups && boardColumnGroups.length > 0
+                  ? boardColumnGroups.map((g) => (
+                      <optgroup key={`${g.projectName || ''}-${g.boardName}`} label={g.projectName ? `${g.projectName} → ${g.boardName}` : g.boardName}>
+                        {g.columns.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </optgroup>
+                    ))
+                  : allColumns.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
               </select>
             </div>
           )}
@@ -178,6 +187,7 @@ export const RuleBuilderModal: React.FC<RuleBuilderModalProps> = ({
           triggerField={triggerField}
           setTriggerField={setTriggerField}
           allColumns={allColumns}
+          boardColumnGroups={boardColumnGroups}
           scope={scope}
         />
 
@@ -228,14 +238,16 @@ export interface RuleDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   rule: Automation | null;
-  allColumns?: { id: string; name: string }[];
+  allColumns?: { id: string; name: string; boardId?: string }[];
+  allBoards?: { id: string; name: string; projectId?: string; projectName?: string }[];
+  boardColumnGroups?: { boardName: string; projectName?: string; columns: { id: string; name: string }[] }[];
   onEdit?: (rule: Automation) => void;
   onDuplicate?: (rule: Automation) => void;
   onBind?: (rule: Automation) => void;
 }
 
 export const RuleDetailModal: React.FC<RuleDetailModalProps> = ({
-  isOpen, onClose, rule, allColumns = [], onEdit, onDuplicate, onBind,
+  isOpen, onClose, rule, allColumns = [], allBoards = [], boardColumnGroups, onEdit, onDuplicate, onBind,
 }) => {
   if (!rule) return null;
   const isTimeTrigger = rule.triggerType === 'column_sla_timer' || rule.triggerType === 'scheduled_sweep' || rule.triggerType === 'task_timer';
@@ -243,6 +255,7 @@ export const RuleDetailModal: React.FC<RuleDetailModalProps> = ({
   const conditions: AutomationCondition[] = rule.ruleDefinition?.conditions || ((rule.conditionsJson as { conditions?: AutomationCondition[] })?.conditions) || [];
   const logicalOp = rule.ruleDefinition?.logicalOperator || ((rule.conditionsJson as { logical_operator?: 'and' | 'or' })?.logical_operator) || 'and';
   const actions: AutomationAction[] = rule.ruleDefinition?.actions || ((rule.actionsJson as { actions?: AutomationAction[] })?.actions) || [];
+  const scopeBreadcrumb = formatAutomationScope(rule, { allColumns, allBoards, boardColumnGroups });
 
   return (
     <Modal
@@ -259,7 +272,9 @@ export const RuleDetailModal: React.FC<RuleDetailModalProps> = ({
             <h3 className="font-serif text-base font-normal text-primary break-words">{rule.name}</h3>
           </div>
           <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-            <Badge variant="subtle" size="sm">{rule.columnId ? 'Колонка' : rule.boardId ? 'Доска' : 'Глобально'}</Badge>
+            <Badge variant="subtle" size="sm" className="text-[11px] font-mono" title={scopeBreadcrumb}>
+              {scopeBreadcrumb}
+            </Badge>
             <Badge variant={rule.isEnabled ? 'matcha' : 'subtle'} size="sm" dot>{rule.isEnabled ? 'Активно' : 'Отключено'}</Badge>
           </div>
         </div>

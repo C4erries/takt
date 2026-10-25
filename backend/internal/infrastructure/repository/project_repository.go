@@ -106,6 +106,17 @@ func (r *ProjectRepository) ColumnExists(ctx context.Context, columnID uuid.UUID
 	return true, nil
 }
 
+func (r *ProjectRepository) GetColumnName(ctx context.Context, columnID uuid.UUID) (string, error) {
+	col, err := getQuerier(ctx, r.queries).GetColumnByID(ctx, uuidToPg(columnID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	return col.Name, nil
+}
+
 func (r *ProjectRepository) GetInboxColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error) {
 	boards, err := getQuerier(ctx, r.queries).ListBoardsByProject(ctx, uuidToPg(projectID))
 	if err != nil || len(boards) == 0 {
@@ -332,6 +343,21 @@ func (r *TaskMoveRepository) MoveTaskToColumnAndPosition(
 		return nil, err
 	}
 
+	return mapTaskRowToDomain(row), nil
+}
+
+func (r *TaskMoveRepository) GetTaskByID(ctx context.Context, taskID, workspaceID uuid.UUID) (*domainTask.Task, error) {
+	q := getQuerier(ctx, r.queries)
+	row, err := q.GetTaskByID(ctx, sqlc.GetTaskByIDParams{
+		ID:          uuidToPg(taskID),
+		WorkspaceID: uuidToPg(workspaceID),
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domainTask.ErrTaskNotFound
+		}
+		return nil, err
+	}
 	return mapTaskRowToDomain(row), nil
 }
 

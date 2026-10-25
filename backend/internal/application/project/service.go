@@ -287,6 +287,19 @@ func (s *Service) MoveTask(ctx context.Context, input MoveTaskInput) (*domainTas
 		return nil, err
 	}
 
+	var prevColID *uuid.UUID
+	var fromColumnName string
+	currentTask, err := s.taskRepo.GetTaskByID(ctx, input.TaskID, input.WorkspaceID)
+	if err != nil {
+		return nil, err
+	}
+	if currentTask != nil && currentTask.ColumnID != nil {
+		prevColID = currentTask.ColumnID
+		if prevCol, err := s.columnRepo.GetByID(ctx, *prevColID); err == nil && prevCol != nil {
+			fromColumnName = prevCol.Name
+		}
+	}
+
 	projID := b.ProjectID
 	moved, err := s.taskRepo.MoveTaskToColumnAndPosition(
 		ctx,
@@ -302,13 +315,16 @@ func (s *Service) MoveTask(ctx context.Context, input MoveTaskInput) (*domainTas
 
 	if s.eventBus != nil {
 		_ = s.eventBus.Publish(ctx, events.TaskMovedEvent{
-			TaskID:         moved.ID,
-			WorkspaceIDVal: moved.WorkspaceID,
-			ProjectID:      moved.ProjectID,
-			ColumnID:       moved.ColumnID,
-			Position:       float64(moved.Position),
-			OccurredAtVal:  time.Now().UTC(),
-			FromAutomation: events.IsAutomationTriggered(ctx),
+			TaskID:           moved.ID,
+			WorkspaceIDVal:   moved.WorkspaceID,
+			ProjectID:        moved.ProjectID,
+			ColumnID:         moved.ColumnID,
+			PreviousColumnID: prevColID,
+			FromColumnName:   fromColumnName,
+			ToColumnName:     col.Name,
+			Position:         float64(moved.Position),
+			OccurredAtVal:    time.Now().UTC(),
+			FromAutomation:   events.IsAutomationTriggered(ctx),
 		})
 	}
 

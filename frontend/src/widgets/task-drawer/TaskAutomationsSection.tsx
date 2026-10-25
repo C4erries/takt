@@ -25,6 +25,7 @@ export interface TaskAutomationsSectionProps {
 export const TaskAutomationsSection: React.FC<TaskAutomationsSectionProps> = ({
   taskId,
   columnId,
+  boardId,
   workspaceId,
   allColumns = [],
   boardColumnGroups,
@@ -183,6 +184,7 @@ export const TaskAutomationsSection: React.FC<TaskAutomationsSectionProps> = ({
           }}
           workspaceId={workspaceId}
           taskId={taskId}
+          prefilledBoardId={boardId ?? undefined}
           prefilledColumnId={columnId ?? undefined}
           allColumns={allColumns}
           boardColumnGroups={boardColumnGroups}

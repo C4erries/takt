@@ -12,6 +12,7 @@ import {
   Clock,
   Bot,
   User,
+  Zap,
 } from 'lucide-react';
 import { Skeleton, ErrorBanner, EmptyState } from '@/shared/components/ui';
 import type { TaskActivity } from '@/entities/task';
@@ -92,16 +93,22 @@ function renderActivityDescription(activity: TaskActivity) {
   const p = activity.payload || {};
 
   switch (activity.activityType) {
-    case 'column_moved':
-      if (p.from_column && p.to_column) {
+    case 'column_moved': {
+      const fromName = p.from_column || p.from_column_id;
+      const toName = p.to_column || p.to_column_id;
+      if (fromName && toName) {
         return (
           <span>
-            Перенесена из колонки <span className="font-medium text-primary">«{String(p.from_column)}»</span> в{' '}
-            <span className="font-medium text-primary">«{String(p.to_column)}»</span>
+            Перенесена из колонки <span className="font-medium text-primary">«{String(fromName)}»</span> в{' '}
+            <span className="font-medium text-primary">«{String(toName)}»</span>
           </span>
         );
       }
-      return <span>Перемещена в колонку <span className="font-medium text-primary">«{String(p.to_column || '')}»</span></span>;
+      if (toName) {
+        return <span>Перемещена в колонку <span className="font-medium text-primary">«{String(toName)}»</span></span>;
+      }
+      return <span>Перемещена между колонками</span>;
+    }
 
     case 'status_changed':
       return p.is_completed ? (
@@ -248,10 +255,22 @@ export const TaskActivityTab: React.FC<TaskActivityTabProps> = ({
                 {renderActivityDescription(act)}
               </div>
 
+              {Boolean(act.payload?.automation_name || act.payload?.automation_id) && (
+                <div className="pt-0.5">
+                  <span
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-accent-surface/50 border border-subtle text-accent-solid"
+                    title={act.payload?.automation_id ? `ID: ${String(act.payload.automation_id)}` : undefined}
+                  >
+                    <Zap className="w-2.5 h-2.5 shrink-0" />
+                    <span>Автоматизация: {String(act.payload?.automation_name || 'Правило')}</span>
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted">
                 <span className="inline-flex items-center gap-1">
-                  {isSystem ? <Bot className="w-3 h-3 text-muted/80" /> : <User className="w-3 h-3 text-muted/80" />}
-                  <span>{author}</span>
+                  {act.payload?.automation_id || isSystem ? <Bot className="w-3 h-3 text-muted/80" /> : <User className="w-3 h-3 text-muted/80" />}
+                  <span>{act.payload?.automation_name ? 'Автоматизация' : author}</span>
                 </span>
                 <span>•</span>
                 <span>{formatRelativeTime(act.createdAt)}</span>

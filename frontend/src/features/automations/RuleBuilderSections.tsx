@@ -22,12 +22,13 @@ export interface TriggerSectionProps {
   triggerField: string;
   setTriggerField: (f: string) => void;
   allColumns: { id: string; name: string }[];
+  boardColumnGroups?: { boardName: string; projectName?: string; columns: { id: string; name: string }[] }[];
   scope?: string;
 }
 
 export const TriggerSection: React.FC<TriggerSectionProps> = ({
   triggerType, setTriggerType, triggerColumnId, setTriggerColumnId,
-  triggerSlaHours, setTriggerSlaHours, triggerField, setTriggerField, allColumns, scope,
+  triggerSlaHours, setTriggerSlaHours, triggerField, setTriggerField, allColumns, boardColumnGroups, scope,
 }) => (
   <div className="p-3 rounded-xl border border-subtle bg-surface/60 space-y-2.5">
     <div className="flex items-center gap-2">
@@ -45,8 +46,14 @@ export const TriggerSection: React.FC<TriggerSectionProps> = ({
         <div className="space-y-1">
           <label className="text-[10px] font-mono text-muted">В колонке:</label>
           <select value={triggerColumnId} onChange={(e) => setTriggerColumnId(e.target.value)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
-            {triggerType === 'scheduled_sweep' && scope === 'board' ? <option value="">Все колонки доски (по умолчанию)</option> : allColumns.length === 0 ? <option value="">Любая колонка</option> : null}
-            {allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+            {triggerType === 'scheduled_sweep' && scope === 'board' ? <option value="">Все колонки доски (по умолчанию)</option> : allColumns.length === 0 && (!boardColumnGroups || boardColumnGroups.length === 0) ? <option value="">Любая колонка</option> : null}
+            {boardColumnGroups && boardColumnGroups.length > 0
+              ? boardColumnGroups.map((g) => (
+                  <optgroup key={`${g.projectName || ''}-${g.boardName}`} label={g.projectName ? `${g.projectName} → ${g.boardName}` : g.boardName}>
+                    {g.columns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                  </optgroup>
+                ))
+              : allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
           </select>
         </div>
       )}

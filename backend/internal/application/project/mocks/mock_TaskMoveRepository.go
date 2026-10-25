@@ -48,6 +48,80 @@ func (_m *MockTaskMoveRepository) EXPECT() *MockTaskMoveRepository_Expecter {
 	return &MockTaskMoveRepository_Expecter{mock: &_m.Mock}
 }
 
+// GetTaskByID provides a mock function for the type MockTaskMoveRepository
+func (_mock *MockTaskMoveRepository) GetTaskByID(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID) (*task.Task, error) {
+	ret := _mock.Called(ctx, taskID, workspaceID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTaskByID")
+	}
+
+	var r0 *task.Task
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) (*task.Task, error)); ok {
+		return returnFunc(ctx, taskID, workspaceID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, uuid.UUID) *task.Task); ok {
+		r0 = returnFunc(ctx, taskID, workspaceID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*task.Task)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID, workspaceID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskMoveRepository_GetTaskByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTaskByID'
+type MockTaskMoveRepository_GetTaskByID_Call struct {
+	*mock.Call
+}
+
+// GetTaskByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+//   - workspaceID uuid.UUID
+func (_e *MockTaskMoveRepository_Expecter) GetTaskByID(ctx any, taskID any, workspaceID any) *MockTaskMoveRepository_GetTaskByID_Call {
+	return &MockTaskMoveRepository_GetTaskByID_Call{Call: _e.mock.On("GetTaskByID", ctx, taskID, workspaceID)}
+}
+
+func (_c *MockTaskMoveRepository_GetTaskByID_Call) Run(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID)) *MockTaskMoveRepository_GetTaskByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskMoveRepository_GetTaskByID_Call) Return(task1 *task.Task, err error) *MockTaskMoveRepository_GetTaskByID_Call {
+	_c.Call.Return(task1, err)
+	return _c
+}
+
+func (_c *MockTaskMoveRepository_GetTaskByID_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID, workspaceID uuid.UUID) (*task.Task, error)) *MockTaskMoveRepository_GetTaskByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListTasksByColumn provides a mock function for the type MockTaskMoveRepository
 func (_mock *MockTaskMoveRepository) ListTasksByColumn(ctx context.Context, columnID uuid.UUID, workspaceID uuid.UUID) ([]*task.Task, error) {
 	ret := _mock.Called(ctx, columnID, workspaceID)

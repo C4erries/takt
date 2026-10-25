@@ -4,70 +4,67 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.9.7 — «Automations Suite & Профиль пользователя» ✅ ЗАВЕРШЕН
+## Текущий спринт: Спринт 0.9.8 — «Automations UX, Column Scopes & Activity Audit» ✅ ЗАВЕРШЕН
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Штаб)
 
-* **Бизнес-цель**: Реализация продвинутого комплекса правил автоматизации (возврат в предыдущую колонку, триггеры смены статуса выполнения задачи, автоматизация каскада подзадач) и персонализация пользователя (редактирование имени и загрузка аватара в S3-хранилище).
+* **Бизнес-цель**: Устранение UX-проблем автоматизаций (структурированные селекторы колонок с вложенностью по проектам и доскам, устранение бага сброса инпутов в модалке колонки), фикс отображения названий колонок и авторства автоматизаций в истории задачи, безопасное клонирование колоночных правил из каталога и визуальное отображение скоупа (Проект → Доска → Колонка) на карточках правил.
 
-* **Связь с бэклогом**: [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B20, TASK-B21, TASK-B01, TASK-B09).
+* **Связь с бэклогом**: [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B24, TASK-B25, TASK-B26, TASK-B27, TASK-B28).
 
 * **Принятые микро-решения**:
 
-  1. **TASK-B20 (Возврат в предыдущую колонку при отмене выполнения)**:
-     - Новое действие в DSL автоматизаций: `ActionReturnToPreviousColumn = "return_to_previous_column"`.
-     - Алгоритм: из таблицы `task_activities` считывается последнее событие перемещения задачи между колонками (`activity_type = 'column_moved'`), откуда извлекается `from_column_id`.
-     - **Fallback стратегия (утверждена пользователем)**:
-       1) Если колонка `from_column_id` существует и не удалена — задача перемещается туда.
-       2) Если колонка не найдена или перемещений не было — перемещение в колонку Inbox текущей доски (`is_inbox = true` на доске задачи).
-       3) Если у доски нет колонки Inbox — сброс в общие Входящие воркспейса (`column_id = NULL`).
-     - Поддержка в UI конструктора правил (`RuleBuilderSections.tsx`).
+  1. **TASK-B24 (Иерархические селекторы колонок Проект → Доска → Колонка)**:
+     - В `RuleBuilderSections.tsx` (`TriggerSection`) и `RuleBuilderModal.tsx` (выбор целевой колонки при скоупе «Конкретная колонка») проброшен `boardColumnGroups`.
+     - Колонки сгруппированы по `<optgroup label="Проект → Доска">`.
 
-  2. **TASK-B21 (Расширенный триггер статуса выполнения задачи)**:
-     - Новые/уточненные триггеры в DSL:
-       - `TriggerTaskCompleted = "task_completed"` (по умолчанию).
-       - `TriggerTaskUncompleted = "task_uncompleted"` (снятие отметки выполнения).
-     - В конструкторе UI: триггер «Смена статуса выполнения» с подвыбором статуса (`Выполнена` / `Отменено выполнение`).
-     - В `EventListener`: подписка на события смены `is_completed` с проверкой флага и вызовом правил.
+  2. **TASK-B25 (Фикс сброса инпутов при создании правила из колонки)**:
+     - В `useRuleBuilder.ts`: устранен цикл сброса формы из-за нестабильных ссылок на массивы в зависимостях `useEffect`.
+     - Инициализация дефолтных значений производится строго один раз при маунте / изменении ID правила (`initializedRef`).
 
-  3. **TASK-B01 (Автоматизация подзадач / Subtasks Automation Suite)**:
-     - Новые триггеры: `TriggerAllSubtasksCompleted = "all_subtasks_completed"`, `TriggerAnySubtaskCompleted = "any_subtask_completed"`, `TriggerSubtaskCreated = "subtask_created"`.
-     - Новые условия: `subtasks_all_completed` (bool), `subtasks_count` (int, операторы `>`, `==`, `0`).
-     - Новые действия: `complete_all_subtasks`, `reopen_all_subtasks`.
-     - Защита от бесконечных циклов (`Cycle Guard`) и запрет создания подзадач глубже 1 уровня.
+  3. **TASK-B26 (Аудит истории задачи: названия колонок и авторство автоматизаций)**:
+     - Бэкенд:
+       - В `events.TaskMovedEvent`: добавлены поля `FromColumnName string`, `ToColumnName string`, `AutomationID *uuid.UUID`, `AutomationName string`.
+       - В `ActivityLogger`: в `payload` записываются `from_column`, `to_column`, а при перемещении автоматизацией — `automation_id`, `automation_name`.
+       - В `automation.Evaluator`: при перемещении задачи публикуется `TaskMovedEvent` с метаданными сработавшего правила.
+     - Фронтенд (`TaskActivityTab.tsx`):
+       - Отображение названий колонок: `Перенесена из колонки «...» в «...»`.
+       - Если перемещение совершено автоматизацией — бейдж с иконкой `Zap`: `Автоматизация: «Название правила»`.
 
-  4. **TASK-B09 (Профиль пользователя: имя и аватар)**:
-     - Миграция `000017_user_profile.up.sql`: добавление полей `display_name VARCHAR(100)` и `avatar_url TEXT` в таблицу `users`.
-     - OpenAPI контракт:
-       - `PATCH /users/me`: обновление `displayName`.
-       - `POST /users/me/avatar`: загрузка изображения (multipart/form-data), валидация размера (< 5MB) и MIME-типа (image/jpeg, png, webp). Сохранение в MinIO S3 и генерация постоянного URL.
-       - Поля `displayName` и `avatarUrl` в объекте `User`.
-     - Фронтенд: компонент `UserProfileModal` при клике на плашку пользователя в сайдбаре (`Sidebar`), превью аватара, загрузка файла с обрезкой/индикатором и редактирование имени.
+  4. **TASK-B27 (Контекст правила на карточках и в «Подробнее»)**:
+     - В `AutomationCard.tsx` и `RuleDetailModal.tsx`:
+       - Для правил на колонку: `Проект → Доска → Колонка`.
+       - Для правил на всю доску: `Проект → Доска`.
+       - Для глобальных: нейтральный бейдж `Глобально`.
+
+  5. **TASK-B28 (Каталог правил колонки: клонирование и группировка)**:
+     - В `ColumnAutomationsModal.tsx`:
+       - При привязке существующего колоночного правила создается копия (`createMutation` с `columnId = currentColumn.id`), не отбирая правило у другой колонки.
+       - Фильтр каталога: чипсы `[Все | Глобальные | На этой доске | Из других колонок]` и группировка по доскам/проектам.
 
 ---
 
-## 📋 2. Таблица задач спринта 0.9.7
+## 📋 2. Таблица задач спринта 0.9.8
 
 | # | Задача | Статус | Приоритет | Ответственный | Файлы |
 |---|--------|--------|-----------|---------------|-------|
-| 1 | **[Step 1 Backend] Schema, OpenAPI & Domain**: миграция 000017 (user profile), queries `users.sql`, `api/openapi/*` (users/me, avatar, triggers/actions), domain models & invariant tests | ✅ Завершено | Высокий | `backend_developer` | `migrations/`, `queries/`, `api/openapi/`, `internal/domain/automation/`, `internal/domain/workspace/` |
-| 2 | **[Step 2 Backend] Automation Suite Evaluator & User Profile**: реализация `return_to_previous_column` с fallback, subtask triggers/actions, upload avatar to S3, HTTP handlers, тесты | ✅ Завершено | Высокий | `backend_developer` | `application/automation/`, `application/workspace/`, `infrastructure/repository/`, `infrastructure/http/` |
-| 3 | **[Step 2 Frontend] Automations UI & User Profile Modal**: поддержка новых триггеров и действий в RuleBuilder, UserProfileModal в сайдбаре, загрузка аватара и отображение в UI | ✅ Завершено | Высокий | `frontend_developer` | `RuleBuilderSections.tsx`, `useRuleBuilder.ts`, `UserProfileModal.tsx`, `Sidebar.tsx` |
+| 1 | **[TASK-B26 Backend] Activity Audit & Automation Metadata**: обогащение `TaskMovedEvent` именами колонок и метаданными автоматизации, фикс события в Evaluator | ✅ Завершено | Высокий | `backend_developer` | `backend/internal/application/task/`, `backend/internal/application/automation/`, `backend/internal/domain/events/` |
+| 2 | **[TASK-B24, B25 Frontend] Form Stability & Hierarchical Column Pickers**: фикс сброса формы в `useRuleBuilder.ts`, иерархия `optgroup` в `RuleBuilderSections.tsx` и `RuleBuilderModal.tsx` | ✅ Завершено | Высокий | `frontend_developer` | `frontend/src/features/automations/` |
+| 3 | **[TASK-B26, B27, B28 Frontend] Activity UI, Scope Badges & Column Catalog**: тултипы автоматизаций и имена колонок в `TaskActivityTab.tsx`, бейджи скоупов в `AutomationCard.tsx`/`RuleDetailModal.tsx`, клонирование в `ColumnAutomationsModal.tsx` | ✅ Завершено | Высокий | `frontend_developer` | `TaskActivityTab.tsx`, `AutomationCard.tsx`, `ColumnAutomationsModal.tsx` |
 | 4 | **[Verification]**: `make check-arch`, `make test`, `npm run build`, `docker compose up -d --build`, `pytest tests/`, коммит | ✅ Завершено | Критический | Lead Orchestrator | — |
 
 ---
 
 ## 🎯 3. Definition of Done (DoD)
 
-- [x] Создана и применена миграция `000017_user_profile` (`display_name`, `avatar_url`).
-- [x] В OpenAPI описаны эндпоинты `PATCH /users/me` и `POST /users/me/avatar`.
-- [x] Действие `return_to_previous_column` корректно находит прошлую колонку по `task_activities`, а при отсутствии откатывается на `is_inbox = true` доски или общее Inbox воркспейса.
-- [x] Поддерживаются триггеры `task_uncompleted`, `all_subtasks_completed`, `any_subtask_completed`, `subtask_created`.
-- [x] Поддерживаются действия `complete_all_subtasks`, `reopen_all_subtasks`.
-- [x] Пользователь может изменить имя и загрузить аватарку в модальном окне профиля.
-- [x] `make check-arch` — 0 ошибок (файлы < 500 строк, папки <= 7 файлов, семантические токены).
+- [x] В селекторах колонок (триггер «В колонке», целевая колонка правила) есть группировка `<optgroup>` по проекту и доске.
+- [x] При создании правила из модалки колонки инпуты стабильны, не моргают и не сбрасываются на дефолт.
+- [x] В истории задачи отображаются имена колонок (`Перемещена в колонку «...»`), а для перемещений автоматизацией указано название сработавшего правила.
+- [x] На карточках автоматизаций и в окне «Подробнее» отображаются хлебные крошки `Проект → Доска → Колонка` (или `Проект → Доска`).
+- [x] При выборе колоночного правила из каталога в `ColumnAutomationsModal` создается его копия, не отбирая правило у другой колонки.
+- [x] `make check-arch` — 0 ошибок (файлы < 500 строк, папки <= 7 файлов, семантические токены дизайна).
 - [x] `npm run build && npm run lint` — 0 ошибок.
 - [x] `make test` — все тесты зелёные.
 - [x] `uv run pytest tests/` — 100% PASS.

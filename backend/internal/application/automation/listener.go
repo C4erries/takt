@@ -52,6 +52,13 @@ func (l *EventListener) SetTaskReader(tr TaskReader) {
 	}
 }
 
+// SetEventPublisher sets the event publisher on the DSL evaluator.
+func (l *EventListener) SetEventPublisher(pub EventPublisher) {
+	if l.dslEvaluator != nil {
+		l.dslEvaluator.SetEventPublisher(pub)
+	}
+}
+
 // Register subscribes the listener to domain events on the provided EventBus.
 func (l *EventListener) Register(bus events.EventBus) error {
 	if bus == nil {
@@ -381,6 +388,12 @@ func (l *EventListener) evaluateAndExecute(
 	}
 
 	if rule.RuleDefinition != nil {
+		if rule.RuleDefinition.ID == nil {
+			rule.RuleDefinition.ID = &rule.ID
+		}
+		if rule.RuleDefinition.Name == "" {
+			rule.RuleDefinition.Name = rule.Name
+		}
 		_ = l.dslEvaluator.ExecuteRule(ctx, rule.RuleDefinition, taskInfo)
 		return
 	}

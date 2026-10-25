@@ -88,6 +88,13 @@ func NewService(repo AutomationRepository, optional ...interface{}) *Service {
 	return s
 }
 
+// SetEventPublisher sets the event publisher on the evaluator.
+func (s *Service) SetEventPublisher(pub EventPublisher) {
+	if s.evaluator != nil {
+		s.evaluator.SetEventPublisher(pub)
+	}
+}
+
 // SetExecutionDeps configures task reading and rule evaluation for manual execution.
 func (s *Service) SetExecutionDeps(taskReader TaskReader, evaluator *Evaluator) {
 	s.taskReader = taskReader
@@ -245,6 +252,14 @@ func (s *Service) ExecuteTaskAutomation(ctx context.Context, workspaceID, taskID
 	}
 	if task == nil {
 		return domainAutomation.ErrAutomationNotFound
+	}
+	if rule.RuleDefinition != nil {
+		if rule.RuleDefinition.ID == nil {
+			rule.RuleDefinition.ID = &rule.ID
+		}
+		if rule.RuleDefinition.Name == "" {
+			rule.RuleDefinition.Name = rule.Name
+		}
 	}
 	return s.evaluator.ExecuteRule(ctx, rule.RuleDefinition, task)
 }

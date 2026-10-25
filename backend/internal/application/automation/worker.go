@@ -164,8 +164,14 @@ func (w *Worker) Tick(ctx context.Context) error {
 }
 
 func (w *Worker) processTaskTimerRule(ctx context.Context, rule *domainAutomation.Automation) {
-	if rule.TaskID == nil {
+	if rule.TaskID == nil || rule.RuleDefinition == nil {
 		return
+	}
+	if rule.RuleDefinition.ID == nil {
+		rule.RuleDefinition.ID = &rule.ID
+	}
+	if rule.RuleDefinition.Name == "" {
+		rule.RuleDefinition.Name = rule.Name
 	}
 
 	task, err := w.taskReader.GetTaskByID(ctx, *rule.TaskID, rule.WorkspaceID)
@@ -206,6 +212,15 @@ func (w *Worker) processTaskTimerRule(ctx context.Context, rule *domainAutomatio
 }
 
 func (w *Worker) processSLATimerRule(ctx context.Context, rule *domainAutomation.Automation) {
+	if rule.RuleDefinition == nil {
+		return
+	}
+	if rule.RuleDefinition.ID == nil {
+		rule.RuleDefinition.ID = &rule.ID
+	}
+	if rule.RuleDefinition.Name == "" {
+		rule.RuleDefinition.Name = rule.Name
+	}
 	colIDStr := extractStringParam(rule.RuleDefinition.Trigger.Params, "column_id", "columnId")
 	if colIDStr == "" && rule.ColumnID != nil {
 		colIDStr = rule.ColumnID.String()
@@ -287,6 +302,16 @@ func (w *Worker) processScheduledSweepRule(ctx context.Context, rule *domainAuto
 }
 
 func (w *Worker) sweepColumn(ctx context.Context, rule *domainAutomation.Automation, colUUID uuid.UUID) {
+	if rule.RuleDefinition == nil {
+		return
+	}
+	if rule.RuleDefinition.ID == nil {
+		rule.RuleDefinition.ID = &rule.ID
+	}
+	if rule.RuleDefinition.Name == "" {
+		rule.RuleDefinition.Name = rule.Name
+	}
+
 	// ADR-0008 Fast Path: execute single batch query for scheduled sweep
 	if w.batchExecutor != nil && CanUseBatchPath(rule.RuleDefinition) {
 		affected, err := w.batchExecutor.ArchiveCompletedTasksBatchSQL(ctx, rule.WorkspaceID, colUUID, 0)

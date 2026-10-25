@@ -2,6 +2,8 @@ package automation
 
 import (
 	"encoding/json"
+
+	"github.com/google/uuid"
 )
 
 // DSL limits defined in ADR-0004
@@ -152,6 +154,8 @@ type Action struct {
 
 // RuleDefinition represents the full Trigger-Condition-Action (TCA) specification of an automation.
 type RuleDefinition struct {
+	ID              *uuid.UUID  `json:"id,omitempty"`
+	Name            string      `json:"name,omitempty"`
 	Trigger         Trigger     `json:"trigger"`
 	LogicalOperator string      `json:"logical_operator,omitempty"`
 	Conditions      []Condition `json:"conditions"`

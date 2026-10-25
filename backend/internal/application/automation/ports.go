@@ -78,6 +78,7 @@ type ProjectReader interface {
 	GetDoneColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
 	GetInboxColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
 	ColumnExists(ctx context.Context, columnID uuid.UUID) (bool, error)
+	GetColumnName(ctx context.Context, columnID uuid.UUID) (string, error)
 	ListColumnIDsByBoard(ctx context.Context, boardID uuid.UUID) ([]uuid.UUID, error)
 }
 

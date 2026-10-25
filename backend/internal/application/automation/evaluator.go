@@ -12,9 +12,10 @@ import (
 
 // Evaluator evaluates conditions and executes actions for Low-Code rules.
 type Evaluator struct {
-	taskModifier  TaskModifier
-	projectReader ProjectReader
-	taskReader    TaskReader
+	taskModifier   TaskModifier
+	projectReader  ProjectReader
+	taskReader     TaskReader
+	eventPublisher EventPublisher
 }
 
 // NewEvaluator creates a new Evaluator.
@@ -35,6 +36,11 @@ func NewEvaluator(taskModifier TaskModifier, projectReader ProjectReader, taskRe
 // SetTaskReader assigns the task reader used for subtasks and activity history.
 func (e *Evaluator) SetTaskReader(tr TaskReader) {
 	e.taskReader = tr
+}
+
+// SetEventPublisher sets the event publisher for publishing domain events.
+func (e *Evaluator) SetEventPublisher(pub EventPublisher) {
+	e.eventPublisher = pub
 }
 
 // EvaluateConditions evaluates conditions using the specified logical operator ("and" or "or").
@@ -104,12 +110,17 @@ func (e *Evaluator) ExecuteRule(ctx context.Context, rule *domainAutomation.Rule
 
 	autoCtx := events.WithAutomationTrigger(ctx)
 	for _, action := range rule.Actions {
-		_ = e.executeAction(autoCtx, action, task)
+		_ = e.executeAction(autoCtx, action, task, rule)
 	}
 	return nil
 }
 
-func (e *Evaluator) executeAction(ctx context.Context, action domainAutomation.Action, task *TaskInfo) error {
+func (e *Evaluator) executeAction(
+	ctx context.Context,
+	action domainAutomation.Action,
+	task *TaskInfo,
+	rule *domainAutomation.RuleDefinition,
+) error {
 	if e.taskModifier == nil {
 		return nil
 	}
@@ -119,12 +130,12 @@ func (e *Evaluator) executeAction(ctx context.Context, action domainAutomation.A
 		targetColIDStr := extractStringParam(action.Params, "target_column_id", "targetColumnId")
 		if targetColIDStr != "" {
 			if targetColUUID, err := uuid.Parse(targetColIDStr); err == nil && targetColUUID != uuid.Nil {
-				return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, &targetColUUID, task.ProjectID, 1000.0)
+				return e.moveTaskWithEvent(ctx, task, &targetColUUID, rule)
 			}
 		}
 
 	case domainAutomation.ActionReturnToPreviousColumn:
-		return e.executeReturnToPreviousColumn(ctx, task)
+		return e.executeReturnToPreviousColumn(ctx, task, rule)
 
 	case domainAutomation.ActionCompleteAllSubtasks:
 		if e.taskReader == nil {
@@ -206,7 +217,11 @@ func (e *Evaluator) executeAction(ctx context.Context, action domainAutomation.A
 	return nil
 }
 
-func (e *Evaluator) executeReturnToPreviousColumn(ctx context.Context, task *TaskInfo) error {
+func (e *Evaluator) executeReturnToPreviousColumn(
+	ctx context.Context,
+	task *TaskInfo,
+	rule *domainAutomation.RuleDefinition,
+) error {
 	var targetColID *uuid.UUID
 
 	if e.taskReader != nil {
@@ -238,17 +253,67 @@ func (e *Evaluator) executeReturnToPreviousColumn(ctx context.Context, task *Tas
 	}
 
 	if targetColID != nil {
-		return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, targetColID, task.ProjectID, 1000.0)
+		return e.moveTaskWithEvent(ctx, task, targetColID, rule)
 	}
 
 	// Fallback 1: Inbox column of project
 	if task.ProjectID != nil && e.projectReader != nil {
 		inboxCol, err := e.projectReader.GetInboxColumn(ctx, *task.ProjectID, task.WorkspaceID)
 		if err == nil && inboxCol != nil {
-			return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, inboxCol, task.ProjectID, 1000.0)
+			return e.moveTaskWithEvent(ctx, task, inboxCol, rule)
 		}
 	}
 
 	// Fallback 2: Inbox of workspace (columnID = nil)
-	return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, nil, task.ProjectID, 1000.0)
+	return e.moveTaskWithEvent(ctx, task, nil, rule)
+}
+
+func (e *Evaluator) moveTaskWithEvent(
+	ctx context.Context,
+	task *TaskInfo,
+	targetColID *uuid.UUID,
+	rule *domainAutomation.RuleDefinition,
+) error {
+	if err := e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, targetColID, task.ProjectID, 1000.0); err != nil {
+		return err
+	}
+
+	prevColID := task.ColumnID
+	var fromColName, toColName string
+	if e.projectReader != nil {
+		if prevColID != nil {
+			fromColName, _ = e.projectReader.GetColumnName(ctx, *prevColID)
+		}
+		if targetColID != nil {
+			toColName, _ = e.projectReader.GetColumnName(ctx, *targetColID)
+		}
+	}
+
+	var autoID *uuid.UUID
+	var autoName string
+	if rule != nil {
+		autoID = rule.ID
+		autoName = rule.Name
+	}
+
+	if e.eventPublisher != nil {
+		_ = e.eventPublisher.Publish(ctx, events.TaskMovedEvent{
+			TaskID:           task.ID,
+			WorkspaceIDVal:   task.WorkspaceID,
+			ProjectID:        task.ProjectID,
+			ColumnID:         targetColID,
+			PreviousColumnID: prevColID,
+			FromColumnName:   fromColName,
+			ToColumnName:     toColName,
+			Position:         1000.0,
+			OccurredAtVal:    time.Now().UTC(),
+			FromAutomation:   true,
+			AutomationID:     autoID,
+			AutomationName:   autoName,
+		})
+	}
+
+	task.PreviousColumnID = prevColID
+	task.ColumnID = targetColID
+	return nil
 }

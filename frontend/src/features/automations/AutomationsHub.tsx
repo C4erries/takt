@@ -273,6 +273,8 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
                 onDuplicate={handleDuplicate}
                 columnName={col?.name}
                 allColumns={allColumns}
+                allBoards={allBoards}
+                boardColumnGroups={boardColumnGroups}
               />
             );
           })}
@@ -300,6 +302,8 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
         onClose={() => setDetailRule(null)}
         rule={detailRule}
         allColumns={allColumns}
+        allBoards={allBoards}
+        boardColumnGroups={boardColumnGroups}
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}
       />

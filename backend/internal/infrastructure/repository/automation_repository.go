@@ -36,6 +36,11 @@ func toDomainAutomation(m sqlc.Automation) *domainAutomation.Automation {
 	var ruleDef *domainAutomation.RuleDefinition
 	if len(m.RuleDefinition) > 0 {
 		ruleDef, _ = domainAutomation.RuleDefinitionFromJSON(m.RuleDefinition)
+		if ruleDef != nil {
+			id := pgToUUID(m.ID)
+			ruleDef.ID = &id
+			ruleDef.Name = m.Name
+		}
 	}
 	return &domainAutomation.Automation{
 		ID:             pgToUUID(m.ID),
@@ -372,6 +377,17 @@ func (r *AutomationRepository) ColumnExists(ctx context.Context, columnID uuid.U
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *AutomationRepository) GetColumnName(ctx context.Context, columnID uuid.UUID) (string, error) {
+	col, err := getQuerier(ctx, r.queries).GetColumnByID(ctx, uuidToPg(columnID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", err
+	}
+	return col.Name, nil
 }
 
 func (r *AutomationRepository) ListColumnIDsByBoard(ctx context.Context, boardID uuid.UUID) ([]uuid.UUID, error) {

@@ -4,6 +4,7 @@ import type { User, Workspace, LoginRequest, RegisterRequest } from '@/shared/ap
 
 export interface UseAuthReturn {
   user: User | null;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   workspace: Workspace | null;
   setWorkspace: React.Dispatch<React.SetStateAction<Workspace | null>>;
   isLoading: boolean;
@@ -87,6 +88,7 @@ export const useAuth = (): UseAuthReturn => {
 
   return {
     user,
+    setUser,
     workspace,
     setWorkspace,
     isLoading,

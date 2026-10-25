@@ -5,10 +5,14 @@ export type AutomationTriggerType =
   | 'column_sla_timer'
   | 'scheduled_sweep'
   | 'task_completed'
+  | 'task_uncompleted'
   | 'task_updated'
   | 'task_created'
   | 'due_date_reached'
-  | 'task_timer';
+  | 'task_timer'
+  | 'all_subtasks_completed'
+  | 'any_subtask_completed'
+  | 'subtask_created';
 
 export interface AutomationTrigger {
   type: AutomationTriggerType | string;
@@ -21,7 +25,9 @@ export type AutomationConditionField =
   | 'due_date'
   | 'time_in_column_hours'
   | 'tags'
-  | 'due_date_status';
+  | 'due_date_status'
+  | 'subtasks_all_completed'
+  | 'subtasks_count';
 
 export type AutomationConditionOperator =
   | 'equals'
@@ -50,7 +56,10 @@ export type AutomationActionType =
   | 'archive_task'
   | 'mark_completed'
   | 'mark_uncompleted'
-  | 'clear_due_date';
+  | 'clear_due_date'
+  | 'return_to_previous_column'
+  | 'complete_all_subtasks'
+  | 'reopen_all_subtasks';
 
 export interface AutomationAction {
   type: AutomationActionType | string;

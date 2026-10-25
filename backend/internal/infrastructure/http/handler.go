@@ -125,10 +125,15 @@ func (h *Handler) HealthCheck(c echo.Context) error {
 // --- Auth handlers ---
 
 func mapUserToGenerated(u *domainWorkspace.User) generated.User {
+	var displayName *string
+	if u.DisplayName != "" {
+		displayName = &u.DisplayName
+	}
 	return generated.User{
 		Id:          u.ID,
 		Email:       openapi_types.Email(u.Email),
-		DisplayName: u.DisplayName,
+		DisplayName: displayName,
+		AvatarUrl:   u.AvatarURL,
 		CreatedAt:   u.CreatedAt,
 	}
 }

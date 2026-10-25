@@ -2,22 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button, Input, Badge } from '@/shared/components/ui';
 import type {
-  AutomationAction,
-  AutomationActionType,
-  AutomationCondition,
-  AutomationConditionField,
-  AutomationConditionOperator,
-  AutomationTriggerType,
+  AutomationAction, AutomationActionType, AutomationCondition,
+  AutomationConditionField, AutomationConditionOperator, AutomationTriggerType,
 } from '@/entities/automation';
 import {
-  TRIGGER_OPTIONS,
-  CONDITION_FIELDS,
-  CONDITION_OPERATORS,
-  ACTION_TYPES,
-  PRIORITIES,
-  PRIORITY_ACTIVE_STYLES,
-  DUE_DATE_STATUS_OPTIONS,
-  FIELD_OPERATORS_MAP,
+  TRIGGER_OPTIONS, CONDITION_FIELDS, CONDITION_OPERATORS, ACTION_TYPES,
+  PRIORITIES, PRIORITY_ACTIVE_STYLES, DUE_DATE_STATUS_OPTIONS, FIELD_OPERATORS_MAP,
 } from './useRuleBuilder';
 import { useWorkspaceTagsQuery } from '@/entities/task';
 import { cn } from '@/shared/lib/cn';
@@ -55,11 +45,7 @@ export const TriggerSection: React.FC<TriggerSectionProps> = ({
         <div className="space-y-1">
           <label className="text-[10px] font-mono text-muted">В колонке:</label>
           <select value={triggerColumnId} onChange={(e) => setTriggerColumnId(e.target.value)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
-            {triggerType === 'scheduled_sweep' && scope === 'board' ? (
-              <option value="">Все колонки доски (по умолчанию)</option>
-            ) : allColumns.length === 0 ? (
-              <option value="">Любая колонка</option>
-            ) : null}
+            {triggerType === 'scheduled_sweep' && scope === 'board' ? <option value="">Все колонки доски (по умолчанию)</option> : allColumns.length === 0 ? <option value="">Любая колонка</option> : null}
             {allColumns.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
           </select>
         </div>
@@ -79,6 +65,11 @@ export const TriggerSection: React.FC<TriggerSectionProps> = ({
           <select value={triggerField} onChange={(e) => setTriggerField(e.target.value)} className="w-full text-xs bg-surface border border-subtle rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-accent-solid">
             <option value="priority">Приоритет</option><option value="due_date">Дедлайн</option><option value="status">Статус</option>
           </select>
+        </div>
+      )}
+      {['task_completed', 'task_uncompleted', 'all_subtasks_completed', 'any_subtask_completed', 'subtask_created'].includes(triggerType) && (
+        <div className="space-y-1 flex flex-col justify-end">
+          <span className="text-[11px] text-muted italic py-1 px-1">Триггер срабатывает на уровне карточки задачи</span>
         </div>
       )}
     </div>
@@ -131,9 +122,7 @@ const TagAutocomplete: React.FC<{
           ))}
           {filtered.length === 0 && !allowCreate && <p className="px-2 py-1 text-[11px] text-muted italic">Теги не найдены</p>}
           {allowCreate && query.trim() && !exact && (
-            <button type="button" onClick={() => { onChange(query.trim()); setIsOpen(false); }} className="w-full text-left px-2 py-1 rounded hover:bg-canvas text-accent-solid font-medium transition-colors">
-              ✨ Создать тег «{query.trim()}»
-            </button>
+            <button type="button" onClick={() => { onChange(query.trim()); setIsOpen(false); }} className="w-full text-left px-2 py-1 rounded hover:bg-canvas text-accent-solid font-medium transition-colors">✨ Создать тег «{query.trim()}»</button>
           )}
         </div>
       )}
@@ -166,12 +155,24 @@ const ConditionValuePicker: React.FC<{
 }> = ({ cond, onUpdate, workspaceId }) => {
   if (cond.operator === 'is_empty' || cond.operator === 'is_not_empty') return null;
 
-  if (cond.field === 'is_completed') {
+  if (cond.field === 'is_completed' || cond.field === 'subtasks_all_completed') {
     const isDone = cond.value === true || cond.value === 'true';
+    const labelYes = cond.field === 'is_completed' ? 'Да (выполнена)' : 'Да (выполнены)';
+    const labelNo = cond.field === 'is_completed' ? 'Нет (в работе)' : 'Нет (не завершены)';
     return (
       <div className="flex items-center gap-1.5 flex-1">
-        <button type="button" onClick={() => onUpdate({ value: true })} className={cn('px-2 py-1 rounded text-xs border transition-colors', isDone ? 'bg-accent-solid text-white border-accent-solid font-medium' : 'bg-canvas/50 border-subtle text-muted hover:text-primary')}>Да (выполнена)</button>
-        <button type="button" onClick={() => onUpdate({ value: false })} className={cn('px-2 py-1 rounded text-xs border transition-colors', !isDone ? 'bg-accent-solid text-white border-accent-solid font-medium' : 'bg-canvas/50 border-subtle text-muted hover:text-primary')}>Нет (в работе)</button>
+        <button type="button" onClick={() => onUpdate({ value: true })} className={cn('px-2 py-1 rounded text-xs border transition-colors', isDone ? 'bg-accent-solid text-white border-accent-solid font-medium' : 'bg-canvas/50 border-subtle text-muted hover:text-primary')}>{labelYes}</button>
+        <button type="button" onClick={() => onUpdate({ value: false })} className={cn('px-2 py-1 rounded text-xs border transition-colors', !isDone ? 'bg-accent-solid text-white border-accent-solid font-medium' : 'bg-canvas/50 border-subtle text-muted hover:text-primary')}>{labelNo}</button>
+      </div>
+    );
+  }
+
+  if (cond.field === 'subtasks_count') {
+    const count = Number(cond.value) || 0;
+    return (
+      <div className="flex items-center gap-1.5 flex-1">
+        <input type="number" min={0} max={100} value={count} onChange={(e) => onUpdate({ value: Math.max(0, Number(e.target.value) || 0) })} className="w-16 bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary" />
+        <span className="text-[11px] text-muted">подзадач</span>
       </div>
     );
   }
@@ -191,9 +192,7 @@ const ConditionValuePicker: React.FC<{
       return (
         <div className="flex items-center gap-1 flex-wrap flex-1">
           {PRIORITIES.map((p) => (
-            <button key={p.value} type="button" onClick={() => toggle(p.value)} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', selected.includes(p.value) ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle bg-canvas text-muted hover:text-primary')}>
-              {selected.includes(p.value) ? `✓ ${p.label}` : p.label}
-            </button>
+            <button key={p.value} type="button" onClick={() => toggle(p.value)} className={cn('px-1.5 py-0.5 rounded text-[10px] border transition-all', selected.includes(p.value) ? `${PRIORITY_ACTIVE_STYLES[p.value]} font-medium shadow-washi-sm` : 'border-subtle bg-canvas text-muted hover:text-primary')}>{selected.includes(p.value) ? `✓ ${p.label}` : p.label}</button>
           ))}
         </div>
       );
@@ -229,8 +228,7 @@ const ConditionValuePicker: React.FC<{
     );
   }
   if (cond.field === 'tags') {
-    if (cond.operator === 'in') return <MultiTagAutocomplete value={cond.value as string[] | string} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} />;
-    return <TagAutocomplete value={String(cond.value || '')} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} placeholder="Тег..." />;
+    return cond.operator === 'in' ? <MultiTagAutocomplete value={cond.value as string[] | string} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} /> : <TagAutocomplete value={String(cond.value || '')} onChange={(val) => onUpdate({ value: val })} workspaceId={workspaceId} placeholder="Тег..." />;
   }
   return <input type="text" value={String(cond.value || '')} onChange={(e) => onUpdate({ value: e.target.value })} placeholder="Значение..." className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1 focus:outline-none" />;
 };
@@ -262,9 +260,7 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
             <button type="button" onClick={() => onLogicalOperatorChange('or')} className={cn('px-2 py-0.5 rounded text-[10px] font-medium transition-colors', logicalOperator === 'or' ? 'bg-accent-solid text-white' : 'text-muted hover:text-primary')}>Хотя бы одно (ИЛИ)</button>
           </div>
         )}
-        {conditions.length < 5 && (
-          <Button type="button" variant="ghost" size="sm" onClick={onAdd} leftIcon={<Plus className="w-3.5 h-3.5" />} className="text-[11px] h-7 px-2">Добавить</Button>
-        )}
+        {conditions.length < 5 && <Button type="button" variant="ghost" size="sm" onClick={onAdd} leftIcon={<Plus className="w-3.5 h-3.5" />} className="text-[11px] h-7 px-2">Добавить</Button>}
       </div>
     </div>
 
@@ -292,7 +288,11 @@ export const ConditionsSection: React.FC<ConditionsSectionProps> = ({
                 onChange={(e) => {
                   const f = e.target.value as AutomationConditionField;
                   const nextOp = (FIELD_OPERATORS_MAP[f] || ['equals']).includes(cond.operator as AutomationConditionOperator) ? cond.operator : (FIELD_OPERATORS_MAP[f] || ['equals'])[0];
-                  const defVal = f === 'is_completed' ? true : f === 'due_date_status' ? 'overdue' : f === 'priority' ? 'high' : '';
+                  let defVal: unknown = '';
+                  if (f === 'is_completed' || f === 'subtasks_all_completed') defVal = true;
+                  else if (f === 'subtasks_count') defVal = 0;
+                  else if (f === 'due_date_status') defVal = 'overdue';
+                  else if (f === 'priority') defVal = 'high';
                   onUpdate(index, { field: f, operator: nextOp, value: defVal });
                 }}
                 className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary"
@@ -335,9 +335,7 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
         <span className="text-xs font-semibold uppercase tracking-wider text-primary">ТО (Последовательность действий)</span>
         <Badge variant="subtle" size="sm" className="font-mono text-[10px]">{actions.length}/5</Badge>
       </div>
-      {actions.length < 5 && (
-        <Button type="button" variant="ghost" size="sm" onClick={onAdd} leftIcon={<Plus className="w-3.5 h-3.5" />} className="text-[11px] h-7 px-2">Добавить действие</Button>
-      )}
+      {actions.length < 5 && <Button type="button" variant="ghost" size="sm" onClick={onAdd} leftIcon={<Plus className="w-3.5 h-3.5" />} className="text-[11px] h-7 px-2">Добавить действие</Button>}
     </div>
     <div className="space-y-2">
       {actions.map((act, index) => (
@@ -364,15 +362,19 @@ export const ActionsSection: React.FC<ActionsSectionProps> = ({
               {PRIORITIES.map((p) => (<option key={p.value} value={p.value}>{p.label}</option>))}
             </select>
           )}
-          {act.type === 'add_tag' && (<TagAutocomplete value={String(act.params?.name || '')} onChange={(val) => onUpdate(index, { params: { ...act.params, name: val } })} workspaceId={workspaceId} placeholder="Имя тега (напр. @бэкенд)" allowCreate />)}
-          {act.type === 'remove_tag' && (<TagAutocomplete value={String(act.params?.name || '')} onChange={(val) => onUpdate(index, { params: { ...act.params, name: val } })} workspaceId={workspaceId} placeholder="Выберите тег для снятия" allowCreate={false} />)}
+          {act.type === 'add_tag' && <TagAutocomplete value={String(act.params?.name || '')} onChange={(val) => onUpdate(index, { params: { ...act.params, name: val } })} workspaceId={workspaceId} placeholder="Имя тега (напр. @бэкенд)" allowCreate />}
+          {act.type === 'remove_tag' && <TagAutocomplete value={String(act.params?.name || '')} onChange={(val) => onUpdate(index, { params: { ...act.params, name: val } })} workspaceId={workspaceId} placeholder="Выберите тег для снятия" allowCreate={false} />}
           {act.type === 'set_due_date' && (
             <select value={String(act.params?.preset || 'today')} onChange={(e) => onUpdate(index, { params: { ...act.params, preset: e.target.value } })} className="bg-surface border border-subtle rounded px-2 py-1 text-xs text-primary flex-1">
               <option value="today">Сегодня</option><option value="tomorrow">Завтра</option><option value="clear">Очистить срок</option>
             </select>
           )}
 
-          {['mark_completed', 'mark_uncompleted', 'clear_due_date', 'archive_task'].includes(act.type) && (
+          {act.type === 'return_to_previous_column' && (
+            <span className="text-[11px] text-muted italic flex-1 px-1">Возврат по истории перемещений (fallback: Входящие)</span>
+          )}
+
+          {['mark_completed', 'mark_uncompleted', 'clear_due_date', 'archive_task', 'complete_all_subtasks', 'reopen_all_subtasks'].includes(act.type) && (
             <span className="text-[11px] text-muted italic flex-1 px-1">Параметры не требуются</span>
           )}
 

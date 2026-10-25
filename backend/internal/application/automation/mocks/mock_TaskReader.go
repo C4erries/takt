@@ -190,6 +190,74 @@ func (_c *MockTaskReader_ListSubtasks_Call) RunAndReturn(run func(ctx context.Co
 	return _c
 }
 
+// ListTaskActivities provides a mock function for the type MockTaskReader
+func (_mock *MockTaskReader) ListTaskActivities(ctx context.Context, taskID uuid.UUID) ([]*automation.TaskActivityInfo, error) {
+	ret := _mock.Called(ctx, taskID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListTaskActivities")
+	}
+
+	var r0 []*automation.TaskActivityInfo
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*automation.TaskActivityInfo, error)); ok {
+		return returnFunc(ctx, taskID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*automation.TaskActivityInfo); ok {
+		r0 = returnFunc(ctx, taskID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*automation.TaskActivityInfo)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, taskID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskReader_ListTaskActivities_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListTaskActivities'
+type MockTaskReader_ListTaskActivities_Call struct {
+	*mock.Call
+}
+
+// ListTaskActivities is a helper method to define mock.On call
+//   - ctx context.Context
+//   - taskID uuid.UUID
+func (_e *MockTaskReader_Expecter) ListTaskActivities(ctx any, taskID any) *MockTaskReader_ListTaskActivities_Call {
+	return &MockTaskReader_ListTaskActivities_Call{Call: _e.mock.On("ListTaskActivities", ctx, taskID)}
+}
+
+func (_c *MockTaskReader_ListTaskActivities_Call) Run(run func(ctx context.Context, taskID uuid.UUID)) *MockTaskReader_ListTaskActivities_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskReader_ListTaskActivities_Call) Return(taskActivityInfos []*automation.TaskActivityInfo, err error) *MockTaskReader_ListTaskActivities_Call {
+	_c.Call.Return(taskActivityInfos, err)
+	return _c
+}
+
+func (_c *MockTaskReader_ListTaskActivities_Call) RunAndReturn(run func(ctx context.Context, taskID uuid.UUID) ([]*automation.TaskActivityInfo, error)) *MockTaskReader_ListTaskActivities_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // ListTasksByColumn provides a mock function for the type MockTaskReader
 func (_mock *MockTaskReader) ListTasksByColumn(ctx context.Context, workspaceID uuid.UUID, columnID uuid.UUID) ([]*automation.TaskInfo, error) {
 	ret := _mock.Called(ctx, workspaceID, columnID)

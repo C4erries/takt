@@ -125,6 +125,10 @@ func initServices(repos *Repositories, cfg *config.Config) *Services {
 		)
 	}
 
+	if workspaceService != nil && s3Storage != nil {
+		workspaceService.SetAvatarStorage(s3Storage)
+	}
+
 	var searchService *searchApp.Service
 	if repos.TaskRepo != nil && repos.ProjectRepo != nil && repos.WorkspaceRepo != nil {
 		searchService = searchApp.NewService(

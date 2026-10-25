@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,11 @@ import (
 // Transactor executes database operations within an atomic transaction.
 type Transactor interface {
 	WithinTx(ctx context.Context, fn func(txCtx context.Context) error) error
+}
+
+// AvatarStorage defines binary storage operations for user avatars.
+type AvatarStorage interface {
+	PutObject(ctx context.Context, key string, body io.Reader, size int64, contentType string) error
 }
 
 // PasswordHasher handles password hashing and verification.

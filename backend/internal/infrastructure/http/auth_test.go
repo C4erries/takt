@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -76,6 +77,14 @@ func (m *mockWorkspaceService) GetInvitePreview(ctx context.Context, token strin
 }
 
 func (m *mockWorkspaceService) AcceptInvite(ctx context.Context, userID uuid.UUID, token string) (*workspaceApp.SwitchWorkspaceOutput, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) UpdateUserProfile(ctx context.Context, userID uuid.UUID, displayName *string) (*domainWorkspace.User, error) {
+	return nil, nil
+}
+
+func (m *mockWorkspaceService) UploadUserAvatar(ctx context.Context, userID uuid.UUID, filename, contentType string, reader io.Reader, size int64) (*domainWorkspace.User, error) {
 	return nil, nil
 }
 

@@ -2,6 +2,9 @@ package workspace
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
@@ -49,16 +52,24 @@ type UseCases interface {
 	CreateInvite(ctx context.Context, actorID, workspaceID uuid.UUID) (*domainWorkspace.WorkspaceInvite, error)
 	GetInvitePreview(ctx context.Context, token string) (*InvitePreviewInfo, error)
 	AcceptInvite(ctx context.Context, userID uuid.UUID, token string) (*SwitchWorkspaceOutput, error)
+	UpdateUserProfile(ctx context.Context, userID uuid.UUID, displayName *string) (*domainWorkspace.User, error)
+	UploadUserAvatar(ctx context.Context, userID uuid.UUID, filename, contentType string, reader io.Reader, size int64) (*domainWorkspace.User, error)
 }
 
 type Service struct {
-	userRepo     UserRepository
-	wsRepo       WorkspaceRepository
-	hasher       PasswordHasher
-	tokenGen     TokenGenerator
+	userRepo         UserRepository
+	wsRepo           WorkspaceRepository
+	hasher           PasswordHasher
+	tokenGen         TokenGenerator
 	tasksCreator     InitialTasksCreator
 	transactor       Transactor
 	automationSeeder AutomationSeeder
+	avatarStorage    AvatarStorage
+}
+
+// SetAvatarStorage sets the optional avatar storage service.
+func (s *Service) SetAvatarStorage(storage AvatarStorage) {
+	s.avatarStorage = storage
 }
 
 func NewService(
@@ -233,4 +244,69 @@ func (s *Service) GetMe(ctx context.Context, userID, workspaceID uuid.UUID) (*Ge
 		User:      user,
 		Workspace: userWs,
 	}, nil
+}
+
+func (s *Service) UpdateUserProfile(ctx context.Context, userID uuid.UUID, displayName *string) (*domainWorkspace.User, error) {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil, domainWorkspace.ErrUserNotFound
+	}
+
+	if err := user.UpdateProfile(displayName); err != nil {
+		return nil, err
+	}
+
+	return s.userRepo.UpdateProfile(ctx, userID, &user.DisplayName, nil)
+}
+
+func (s *Service) UploadUserAvatar(
+	ctx context.Context,
+	userID uuid.UUID,
+	filename, contentType string,
+	reader io.Reader,
+	size int64,
+) (*domainWorkspace.User, error) {
+	if size > 5*1024*1024 {
+		return nil, domainWorkspace.ErrAvatarTooLarge
+	}
+
+	cType := strings.ToLower(strings.TrimSpace(contentType))
+	var ext string
+	switch {
+	case strings.Contains(cType, "jpeg") || strings.Contains(cType, "jpg"):
+		ext = ".jpg"
+	case strings.Contains(cType, "png"):
+		ext = ".png"
+	case strings.Contains(cType, "webp"):
+		ext = ".webp"
+	default:
+		// Fallback check on filename extension
+		fExt := strings.ToLower(filepath.Ext(filename))
+		if fExt == ".jpg" || fExt == ".jpeg" {
+			ext = ".jpg"
+		} else if fExt == ".png" {
+			ext = ".png"
+		} else if fExt == ".webp" {
+			ext = ".webp"
+		} else {
+			return nil, domainWorkspace.ErrInvalidAvatarFormat
+		}
+	}
+
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil || user == nil {
+		return nil, domainWorkspace.ErrUserNotFound
+	}
+
+	key := fmt.Sprintf("avatars/%s/%s%s", userID.String(), uuid.New().String(), ext)
+	if s.avatarStorage != nil {
+		if err := s.avatarStorage.PutObject(ctx, key, reader, size, contentType); err != nil {
+			return nil, fmt.Errorf("failed to store avatar: %w", err)
+		}
+	}
+
+	avatarURL := fmt.Sprintf("/api/v1/users/me/avatar/%s", key)
+	user.SetAvatar(avatarURL)
+
+	return s.userRepo.UpdateProfile(ctx, userID, nil, user.AvatarURL)
 }

@@ -6,6 +6,7 @@ package mocks
 
 import (
 	"context"
+	"io"
 	"takt/internal/application/workspace"
 	workspace0 "takt/internal/domain/workspace"
 
@@ -834,6 +835,80 @@ func (_c *MockUseCases_SwitchWorkspace_Call) RunAndReturn(run func(ctx context.C
 	return _c
 }
 
+// UpdateUserProfile provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) UpdateUserProfile(ctx context.Context, userID uuid.UUID, displayName *string) (*workspace0.User, error) {
+	ret := _mock.Called(ctx, userID, displayName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateUserProfile")
+	}
+
+	var r0 *workspace0.User
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *string) (*workspace0.User, error)); ok {
+		return returnFunc(ctx, userID, displayName)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *string) *workspace0.User); ok {
+		r0 = returnFunc(ctx, userID, displayName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace0.User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *string) error); ok {
+		r1 = returnFunc(ctx, userID, displayName)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_UpdateUserProfile_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateUserProfile'
+type MockUseCases_UpdateUserProfile_Call struct {
+	*mock.Call
+}
+
+// UpdateUserProfile is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - displayName *string
+func (_e *MockUseCases_Expecter) UpdateUserProfile(ctx any, userID any, displayName any) *MockUseCases_UpdateUserProfile_Call {
+	return &MockUseCases_UpdateUserProfile_Call{Call: _e.mock.On("UpdateUserProfile", ctx, userID, displayName)}
+}
+
+func (_c *MockUseCases_UpdateUserProfile_Call) Run(run func(ctx context.Context, userID uuid.UUID, displayName *string)) *MockUseCases_UpdateUserProfile_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 *string
+		if args[2] != nil {
+			arg2 = args[2].(*string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_UpdateUserProfile_Call) Return(user *workspace0.User, err error) *MockUseCases_UpdateUserProfile_Call {
+	_c.Call.Return(user, err)
+	return _c
+}
+
+func (_c *MockUseCases_UpdateUserProfile_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, displayName *string) (*workspace0.User, error)) *MockUseCases_UpdateUserProfile_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateWorkspace provides a mock function for the type MockUseCases
 func (_mock *MockUseCases) UpdateWorkspace(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, name string) (*workspace0.UserWorkspace, error) {
 	ret := _mock.Called(ctx, userID, workspaceID, name)
@@ -910,6 +985,98 @@ func (_c *MockUseCases_UpdateWorkspace_Call) Return(userWorkspace *workspace0.Us
 }
 
 func (_c *MockUseCases_UpdateWorkspace_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, workspaceID uuid.UUID, name string) (*workspace0.UserWorkspace, error)) *MockUseCases_UpdateWorkspace_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UploadUserAvatar provides a mock function for the type MockUseCases
+func (_mock *MockUseCases) UploadUserAvatar(ctx context.Context, userID uuid.UUID, filename string, contentType string, reader io.Reader, size int64) (*workspace0.User, error) {
+	ret := _mock.Called(ctx, userID, filename, contentType, reader, size)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UploadUserAvatar")
+	}
+
+	var r0 *workspace0.User
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, io.Reader, int64) (*workspace0.User, error)); ok {
+		return returnFunc(ctx, userID, filename, contentType, reader, size)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, string, string, io.Reader, int64) *workspace0.User); ok {
+		r0 = returnFunc(ctx, userID, filename, contentType, reader, size)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*workspace0.User)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, string, string, io.Reader, int64) error); ok {
+		r1 = returnFunc(ctx, userID, filename, contentType, reader, size)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockUseCases_UploadUserAvatar_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UploadUserAvatar'
+type MockUseCases_UploadUserAvatar_Call struct {
+	*mock.Call
+}
+
+// UploadUserAvatar is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - filename string
+//   - contentType string
+//   - reader io.Reader
+//   - size int64
+func (_e *MockUseCases_Expecter) UploadUserAvatar(ctx any, userID any, filename any, contentType any, reader any, size any) *MockUseCases_UploadUserAvatar_Call {
+	return &MockUseCases_UploadUserAvatar_Call{Call: _e.mock.On("UploadUserAvatar", ctx, userID, filename, contentType, reader, size)}
+}
+
+func (_c *MockUseCases_UploadUserAvatar_Call) Run(run func(ctx context.Context, userID uuid.UUID, filename string, contentType string, reader io.Reader, size int64)) *MockUseCases_UploadUserAvatar_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 string
+		if args[3] != nil {
+			arg3 = args[3].(string)
+		}
+		var arg4 io.Reader
+		if args[4] != nil {
+			arg4 = args[4].(io.Reader)
+		}
+		var arg5 int64
+		if args[5] != nil {
+			arg5 = args[5].(int64)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+		)
+	})
+	return _c
+}
+
+func (_c *MockUseCases_UploadUserAvatar_Call) Return(user *workspace0.User, err error) *MockUseCases_UploadUserAvatar_Call {
+	_c.Call.Return(user, err)
+	return _c
+}
+
+func (_c *MockUseCases_UploadUserAvatar_Call) RunAndReturn(run func(ctx context.Context, userID uuid.UUID, filename string, contentType string, reader io.Reader, size int64) (*workspace0.User, error)) *MockUseCases_UploadUserAvatar_Call {
 	_c.Call.Return(run)
 	return _c
 }

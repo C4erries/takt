@@ -54,15 +54,6 @@ func toDomainAutomation(m sqlc.Automation) *domainAutomation.Automation {
 	}
 }
 
-func getRuleBytes(r *domainAutomation.RuleDefinition) []byte {
-	if r != nil {
-		if b, err := r.ToJSON(); err == nil {
-			return b
-		}
-	}
-	return []byte("{}")
-}
-
 func toDomainAutomations(rows []sqlc.Automation) []*domainAutomation.Automation {
 	res := make([]*domainAutomation.Automation, len(rows))
 	for i, row := range rows {
@@ -308,6 +299,18 @@ func (r *AutomationRepository) ListSubtasks(ctx context.Context, parentID uuid.U
 	return res, nil
 }
 
+func (r *AutomationRepository) ListTaskActivities(ctx context.Context, taskID uuid.UUID) ([]*appAutomation.TaskActivityInfo, error) {
+	rows, err := getQuerier(ctx, r.queries).ListTaskActivitiesByTaskID(ctx, uuidToPg(taskID))
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*appAutomation.TaskActivityInfo, len(rows))
+	for i, row := range rows {
+		res[i] = mapTaskActivityInfo(row)
+	}
+	return res, nil
+}
+
 // ProjectReader implementation
 
 func (r *AutomationRepository) getBoardColumns(ctx context.Context, prjID uuid.UUID) ([]sqlc.Column, error) {
@@ -344,6 +347,31 @@ func (r *AutomationRepository) GetFirstTodoColumn(ctx context.Context, prjID, ws
 func (r *AutomationRepository) GetDoneColumn(ctx context.Context, prjID, wsID uuid.UUID) (*uuid.UUID, error) {
 	id, _, err := r.findColumnByCategory(ctx, prjID, "done")
 	return id, err
+}
+
+func (r *AutomationRepository) GetInboxColumn(ctx context.Context, prjID, wsID uuid.UUID) (*uuid.UUID, error) {
+	cols, err := r.getBoardColumns(ctx, prjID)
+	if err != nil || len(cols) == 0 {
+		return nil, err
+	}
+	for _, c := range cols {
+		if c.IsInbox {
+			id := pgToUUID(c.ID)
+			return &id, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *AutomationRepository) ColumnExists(ctx context.Context, columnID uuid.UUID) (bool, error) {
+	_, err := getQuerier(ctx, r.queries).GetColumnByID(ctx, uuidToPg(columnID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (r *AutomationRepository) ListColumnIDsByBoard(ctx context.Context, boardID uuid.UUID) ([]uuid.UUID, error) {

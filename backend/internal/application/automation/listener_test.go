@@ -126,6 +126,11 @@ func TestEventListener_AutoFocus(t *testing.T) {
 		wsID,
 		domainAutomation.TriggerTaskUpdated,
 	).Return([]*domainAutomation.Automation{rule}, nil).Once()
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskUncompleted,
+	).Return(nil, nil).Maybe()
 
 	modifier.EXPECT().SetTaskFocus(
 		mock.MatchedBy(func(ctx context.Context) bool {
@@ -177,6 +182,11 @@ func TestEventListener_InboxZero(t *testing.T) {
 		wsID,
 		domainAutomation.TriggerTaskUpdated,
 	).Return([]*domainAutomation.Automation{rule}, nil).Once()
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskUncompleted,
+	).Return(nil, nil).Maybe()
 
 	reader.EXPECT().GetFirstTodoColumn(
 		mock.MatchedBy(func(ctx context.Context) bool {

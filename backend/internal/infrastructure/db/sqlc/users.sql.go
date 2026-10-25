@@ -19,7 +19,7 @@ INSERT INTO users (
 ) VALUES (
     $1, $2, $3
 )
-RETURNING id, email, password_hash, display_name, created_at
+RETURNING id, email, password_hash, display_name, created_at, avatar_url
 `
 
 type CreateUserParams struct {
@@ -37,12 +37,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordHash,
 		&i.DisplayName,
 		&i.CreatedAt,
+		&i.AvatarUrl,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, display_name, created_at FROM users
+SELECT id, email, password_hash, display_name, created_at, avatar_url FROM users
 WHERE email = $1
 `
 
@@ -55,12 +56,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.PasswordHash,
 		&i.DisplayName,
 		&i.CreatedAt,
+		&i.AvatarUrl,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, display_name, created_at FROM users
+SELECT id, email, password_hash, display_name, created_at, avatar_url FROM users
 WHERE id = $1
 `
 
@@ -73,6 +75,35 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.PasswordHash,
 		&i.DisplayName,
 		&i.CreatedAt,
+		&i.AvatarUrl,
+	)
+	return i, err
+}
+
+const updateUserProfile = `-- name: UpdateUserProfile :one
+UPDATE users
+SET display_name = COALESCE($2, display_name),
+    avatar_url = COALESCE($3, avatar_url)
+WHERE id = $1
+RETURNING id, email, password_hash, display_name, created_at, avatar_url
+`
+
+type UpdateUserProfileParams struct {
+	ID          pgtype.UUID `json:"id"`
+	DisplayName pgtype.Text `json:"display_name"`
+	AvatarUrl   pgtype.Text `json:"avatar_url"`
+}
+
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserProfile, arg.ID, arg.DisplayName, arg.AvatarUrl)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.CreatedAt,
+		&i.AvatarUrl,
 	)
 	return i, err
 }

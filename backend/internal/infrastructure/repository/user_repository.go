@@ -31,6 +31,7 @@ func (r *UserRepository) Create(ctx context.Context, u *domainWorkspace.User) er
 
 	u.ID = pgToUUID(row.ID)
 	u.CreatedAt = pgToTime(row.CreatedAt)
+	u.AvatarURL = pgToTextPtr(row.AvatarUrl)
 	return nil
 }
 
@@ -49,6 +50,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domainW
 		Email:        row.Email,
 		PasswordHash: row.PasswordHash,
 		DisplayName:  row.DisplayName,
+		AvatarURL:    pgToTextPtr(row.AvatarUrl),
 		CreatedAt:    pgToTime(row.CreatedAt),
 	}, nil
 }
@@ -68,6 +70,31 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*domainWork
 		Email:        row.Email,
 		PasswordHash: row.PasswordHash,
 		DisplayName:  row.DisplayName,
+		AvatarURL:    pgToTextPtr(row.AvatarUrl),
+		CreatedAt:    pgToTime(row.CreatedAt),
+	}, nil
+}
+
+func (r *UserRepository) UpdateProfile(ctx context.Context, id uuid.UUID, displayName *string, avatarURL *string) (*domainWorkspace.User, error) {
+	q := getQuerier(ctx, r.queries)
+	row, err := q.UpdateUserProfile(ctx, sqlc.UpdateUserProfileParams{
+		ID:          uuidToPg(id),
+		DisplayName: textPtrToPg(displayName),
+		AvatarUrl:   textPtrToPg(avatarURL),
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domainWorkspace.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return &domainWorkspace.User{
+		ID:           pgToUUID(row.ID),
+		Email:        row.Email,
+		PasswordHash: row.PasswordHash,
+		DisplayName:  row.DisplayName,
+		AvatarURL:    pgToTextPtr(row.AvatarUrl),
 		CreatedAt:    pgToTime(row.CreatedAt),
 	}, nil
 }

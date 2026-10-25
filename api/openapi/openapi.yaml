@@ -28,6 +28,8 @@ tags:
     description: Task attachments and media storage
   - name: Search
     description: Workspace search and command palette
+  - name: Users
+    description: User profile and preferences
 
 paths:
   /health:
@@ -120,6 +122,10 @@ paths:
     $ref: './paths/attachments.yaml#/attachmentItem'
   /workspaces/{workspace_id}/search:
     $ref: './paths/search.yaml#/search'
+  /users/me:
+    $ref: './paths/users.yaml#/updateProfile'
+  /users/me/avatar:
+    $ref: './paths/users.yaml#/uploadAvatar'
 
 components:
   securitySchemes:
@@ -138,6 +144,8 @@ components:
       $ref: './schemas/error.yaml'
     User:
       $ref: './schemas/user.yaml#/User'
+    UpdateUserProfileRequest:
+      $ref: './schemas/user.yaml#/UpdateUserProfileRequest'
     Workspace:
       $ref: './schemas/workspace.yaml#/Workspace'
     CreateWorkspaceRequest:

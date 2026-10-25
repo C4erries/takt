@@ -15,15 +15,18 @@ import (
 
 // Defines values for ActionType.
 const (
-	AddTag          ActionType = "add_tag"
-	ArchiveTask     ActionType = "archive_task"
-	ClearDueDate    ActionType = "clear_due_date"
-	MarkCompleted   ActionType = "mark_completed"
-	MarkUncompleted ActionType = "mark_uncompleted"
-	MoveToColumn    ActionType = "move_to_column"
-	RemoveTag       ActionType = "remove_tag"
-	SetDueDate      ActionType = "set_due_date"
-	SetPriority     ActionType = "set_priority"
+	AddTag                 ActionType = "add_tag"
+	ArchiveTask            ActionType = "archive_task"
+	ClearDueDate           ActionType = "clear_due_date"
+	CompleteAllSubtasks    ActionType = "complete_all_subtasks"
+	MarkCompleted          ActionType = "mark_completed"
+	MarkUncompleted        ActionType = "mark_uncompleted"
+	MoveToColumn           ActionType = "move_to_column"
+	RemoveTag              ActionType = "remove_tag"
+	ReopenAllSubtasks      ActionType = "reopen_all_subtasks"
+	ReturnToPreviousColumn ActionType = "return_to_previous_column"
+	SetDueDate             ActionType = "set_due_date"
+	SetPriority            ActionType = "set_priority"
 )
 
 // Valid indicates whether the value is a known member of the ActionType enum.
@@ -35,6 +38,8 @@ func (e ActionType) Valid() bool {
 		return true
 	case ClearDueDate:
 		return true
+	case CompleteAllSubtasks:
+		return true
 	case MarkCompleted:
 		return true
 	case MarkUncompleted:
@@ -42,6 +47,10 @@ func (e ActionType) Valid() bool {
 	case MoveToColumn:
 		return true
 	case RemoveTag:
+		return true
+	case ReopenAllSubtasks:
+		return true
+	case ReturnToPreviousColumn:
 		return true
 	case SetDueDate:
 		return true
@@ -54,26 +63,36 @@ func (e ActionType) Valid() bool {
 
 // Defines values for AutomationTriggerType.
 const (
+	AutomationTriggerTypeAllSubtasksCompleted  AutomationTriggerType = "all_subtasks_completed"
+	AutomationTriggerTypeAnySubtaskCompleted   AutomationTriggerType = "any_subtask_completed"
 	AutomationTriggerTypeColumnSlaTimer        AutomationTriggerType = "column_sla_timer"
 	AutomationTriggerTypeDueDateReached        AutomationTriggerType = "due_date_reached"
 	AutomationTriggerTypeScheduledSweep        AutomationTriggerType = "scheduled_sweep"
+	AutomationTriggerTypeSubtaskCreated        AutomationTriggerType = "subtask_created"
 	AutomationTriggerTypeTaskCompleted         AutomationTriggerType = "task_completed"
 	AutomationTriggerTypeTaskCompletedInColumn AutomationTriggerType = "task_completed_in_column"
 	AutomationTriggerTypeTaskCreated           AutomationTriggerType = "task_created"
 	AutomationTriggerTypeTaskEnteredColumn     AutomationTriggerType = "task_entered_column"
 	AutomationTriggerTypeTaskFieldChanged      AutomationTriggerType = "task_field_changed"
 	AutomationTriggerTypeTaskTimer             AutomationTriggerType = "task_timer"
+	AutomationTriggerTypeTaskUncompleted       AutomationTriggerType = "task_uncompleted"
 	AutomationTriggerTypeTaskUpdated           AutomationTriggerType = "task_updated"
 )
 
 // Valid indicates whether the value is a known member of the AutomationTriggerType enum.
 func (e AutomationTriggerType) Valid() bool {
 	switch e {
+	case AutomationTriggerTypeAllSubtasksCompleted:
+		return true
+	case AutomationTriggerTypeAnySubtaskCompleted:
+		return true
 	case AutomationTriggerTypeColumnSlaTimer:
 		return true
 	case AutomationTriggerTypeDueDateReached:
 		return true
 	case AutomationTriggerTypeScheduledSweep:
+		return true
+	case AutomationTriggerTypeSubtaskCreated:
 		return true
 	case AutomationTriggerTypeTaskCompleted:
 		return true
@@ -86,6 +105,8 @@ func (e AutomationTriggerType) Valid() bool {
 	case AutomationTriggerTypeTaskFieldChanged:
 		return true
 	case AutomationTriggerTypeTaskTimer:
+		return true
+	case AutomationTriggerTypeTaskUncompleted:
 		return true
 	case AutomationTriggerTypeTaskUpdated:
 		return true
@@ -120,12 +141,14 @@ func (e ColumnStatusCategory) Valid() bool {
 
 // Defines values for ConditionField.
 const (
-	DueDate           ConditionField = "due_date"
-	DueDateStatus     ConditionField = "due_date_status"
-	IsCompleted       ConditionField = "is_completed"
-	Priority          ConditionField = "priority"
-	Tags              ConditionField = "tags"
-	TimeInColumnHours ConditionField = "time_in_column_hours"
+	DueDate              ConditionField = "due_date"
+	DueDateStatus        ConditionField = "due_date_status"
+	IsCompleted          ConditionField = "is_completed"
+	Priority             ConditionField = "priority"
+	SubtasksAllCompleted ConditionField = "subtasks_all_completed"
+	SubtasksCount        ConditionField = "subtasks_count"
+	Tags                 ConditionField = "tags"
+	TimeInColumnHours    ConditionField = "time_in_column_hours"
 )
 
 // Valid indicates whether the value is a known member of the ConditionField enum.
@@ -138,6 +161,10 @@ func (e ConditionField) Valid() bool {
 	case IsCompleted:
 		return true
 	case Priority:
+		return true
+	case SubtasksAllCompleted:
+		return true
+	case SubtasksCount:
 		return true
 	case Tags:
 		return true
@@ -336,20 +363,30 @@ func (e TaskPriority) Valid() bool {
 
 // Defines values for TriggerType.
 const (
+	TriggerTypeAllSubtasksCompleted  TriggerType = "all_subtasks_completed"
+	TriggerTypeAnySubtaskCompleted   TriggerType = "any_subtask_completed"
 	TriggerTypeColumnSlaTimer        TriggerType = "column_sla_timer"
 	TriggerTypeScheduledSweep        TriggerType = "scheduled_sweep"
+	TriggerTypeSubtaskCreated        TriggerType = "subtask_created"
 	TriggerTypeTaskCompletedInColumn TriggerType = "task_completed_in_column"
 	TriggerTypeTaskEnteredColumn     TriggerType = "task_entered_column"
 	TriggerTypeTaskFieldChanged      TriggerType = "task_field_changed"
 	TriggerTypeTaskTimer             TriggerType = "task_timer"
+	TriggerTypeTaskUncompleted       TriggerType = "task_uncompleted"
 )
 
 // Valid indicates whether the value is a known member of the TriggerType enum.
 func (e TriggerType) Valid() bool {
 	switch e {
+	case TriggerTypeAllSubtasksCompleted:
+		return true
+	case TriggerTypeAnySubtaskCompleted:
+		return true
 	case TriggerTypeColumnSlaTimer:
 		return true
 	case TriggerTypeScheduledSweep:
+		return true
+	case TriggerTypeSubtaskCreated:
 		return true
 	case TriggerTypeTaskCompletedInColumn:
 		return true
@@ -358,6 +395,8 @@ func (e TriggerType) Valid() bool {
 	case TriggerTypeTaskFieldChanged:
 		return true
 	case TriggerTypeTaskTimer:
+		return true
+	case TriggerTypeTaskUncompleted:
 		return true
 	default:
 		return false
@@ -1109,6 +1148,12 @@ type UpdateTaskRequest struct {
 // UpdateTaskRequestPriority Example: high
 type UpdateTaskRequestPriority string
 
+// UpdateUserProfileRequest defines model for UpdateUserProfileRequest.
+type UpdateUserProfileRequest struct {
+	// DisplayName Example: Pavel Durov
+	DisplayName *string `json:"displayName,omitempty"`
+}
+
 // UpdateWorkspaceRequest defines model for UpdateWorkspaceRequest.
 type UpdateWorkspaceRequest struct {
 	// Name Example: Основной воркспейс
@@ -1117,11 +1162,14 @@ type UpdateWorkspaceRequest struct {
 
 // User defines model for User.
 type User struct {
+	// AvatarUrl Example: /api/v1/users/me/avatar
+	AvatarUrl *string `json:"avatarUrl,omitempty"`
+
 	// CreatedAt Example: 2026-10-14T12:00:00Z
 	CreatedAt time.Time `json:"createdAt"`
 
 	// DisplayName Example: Pavel
-	DisplayName string `json:"displayName"`
+	DisplayName *string `json:"displayName"`
 
 	// Email Example: user@takt.dev
 	Email openapi_types.Email `json:"email"`
@@ -1244,6 +1292,11 @@ type HealthDatabaseStatus string
 // HealthStatus Example: ok
 type HealthStatus string
 
+// UploadUserAvatarMultipartBody defines parameters for UploadUserAvatar.
+type UploadUserAvatarMultipartBody struct {
+	Avatar openapi_types.File `json:"avatar"`
+}
+
 // GetAttachmentContentParams defines parameters for GetAttachmentContent.
 type GetAttachmentContentParams struct {
 	Download *bool `form:"download,omitempty" json:"download,omitempty"`
@@ -1292,6 +1345,12 @@ type RegisterJSONRequestBody = RegisterRequest
 
 // CreateInboxTaskJSONRequestBody defines body for CreateInboxTask for application/json ContentType.
 type CreateInboxTaskJSONRequestBody = CreateInboxTaskRequest
+
+// UpdateUserProfileJSONRequestBody defines body for UpdateUserProfile for application/json ContentType.
+type UpdateUserProfileJSONRequestBody = UpdateUserProfileRequest
+
+// UploadUserAvatarMultipartRequestBody defines body for UploadUserAvatar for multipart/form-data ContentType.
+type UploadUserAvatarMultipartRequestBody UploadUserAvatarMultipartBody
 
 // CreateWorkspaceJSONRequestBody defines body for CreateWorkspace for application/json ContentType.
 type CreateWorkspaceJSONRequestBody = CreateWorkspaceRequest
@@ -1382,6 +1441,12 @@ type ServerInterface interface {
 	// ToggleTaskCompletion Toggle task completion status
 	// (PATCH /tasks/{id}/toggle)
 	ToggleTaskCompletion(ctx echo.Context, id openapi_types.UUID) error
+	// UpdateUserProfile Update current user profile
+	// (PATCH /users/me)
+	UpdateUserProfile(ctx echo.Context) error
+	// UploadUserAvatar Upload user profile avatar
+	// (POST /users/me/avatar)
+	UploadUserAvatar(ctx echo.Context) error
 	// ListWorkspaces List current user workspaces
 	// (GET /workspaces)
 	ListWorkspaces(ctx echo.Context) error
@@ -1660,6 +1725,24 @@ func (w *ServerInterfaceWrapper) ToggleTaskCompletion(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.ToggleTaskCompletion(ctx, id)
+	return err
+}
+
+// UpdateUserProfile converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateUserProfile(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateUserProfile(ctx)
+	return err
+}
+
+// UploadUserAvatar converts echo context to params.
+func (w *ServerInterfaceWrapper) UploadUserAvatar(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UploadUserAvatar(ctx)
 	return err
 }
 
@@ -2831,6 +2914,8 @@ func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options 
 	router.POST(options.BaseURL+"/tasks/inbox", wrapper.CreateInboxTask, options.OperationMiddlewares["createInboxTask"]...)
 	router.DELETE(options.BaseURL+"/tasks/:id", wrapper.DeleteTask, options.OperationMiddlewares["deleteTask"]...)
 	router.PATCH(options.BaseURL+"/tasks/:id/toggle", wrapper.ToggleTaskCompletion, options.OperationMiddlewares["toggleTaskCompletion"]...)
+	router.PATCH(options.BaseURL+"/users/me", wrapper.UpdateUserProfile, options.OperationMiddlewares["updateUserProfile"]...)
+	router.POST(options.BaseURL+"/users/me/avatar", wrapper.UploadUserAvatar, options.OperationMiddlewares["uploadUserAvatar"]...)
 	router.GET(options.BaseURL+"/workspaces", wrapper.ListWorkspaces, options.OperationMiddlewares["listWorkspaces"]...)
 	router.POST(options.BaseURL+"/workspaces", wrapper.CreateWorkspace, options.OperationMiddlewares["createWorkspace"]...)
 	router.PATCH(options.BaseURL+"/workspaces/:workspace_id", wrapper.UpdateWorkspace, options.OperationMiddlewares["updateWorkspace"]...)

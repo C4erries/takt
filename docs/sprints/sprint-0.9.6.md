@@ -35,3 +35,4 @@
 - `make test`: **100% PASS** (`-race`).
 - `npm run lint && npm run build`: **0 ошибок, 0 ворнингов**.
 - `docker compose up -d --build && pytest tests/`: **39 passed** (100% E2E PASS).
+

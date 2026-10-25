@@ -40,13 +40,16 @@ func NewEventListener(
 		projectReader: projectReader,
 		taskReader:    tr,
 		evaluator:     evaluator,
-		dslEvaluator:  NewEvaluator(taskModifier, projectReader),
+		dslEvaluator:  NewEvaluator(taskModifier, projectReader, tr),
 	}
 }
 
 // SetTaskReader assigns the task reader used for subtasks and task inspection.
 func (l *EventListener) SetTaskReader(tr TaskReader) {
 	l.taskReader = tr
+	if l.dslEvaluator != nil {
+		l.dslEvaluator.SetTaskReader(tr)
+	}
 }
 
 // Register subscribes the listener to domain events on the provided EventBus.
@@ -117,7 +120,7 @@ func (l *EventListener) HandleTaskCompleted(ctx context.Context, event events.Ev
 		}
 	}
 
-	// 3. Subtask auto-completion of parent task
+	// 3. Subtask auto-completion of parent task and subtask triggers
 	parentID := taskEvt.ParentID
 	if parentID == nil && l.taskReader != nil {
 		if ti, err := l.taskReader.GetTaskByID(autoCtx, taskEvt.TaskID, event.WorkspaceID()); err == nil && ti != nil {
@@ -126,6 +129,49 @@ func (l *EventListener) HandleTaskCompleted(ctx context.Context, event events.Ev
 	}
 	if parentID != nil {
 		l.handleParentAutoComplete(autoCtx, event.WorkspaceID(), *parentID)
+
+		if l.taskReader != nil {
+			anyRules, errAny := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerAnySubtaskCompleted)
+			allRules, errAll := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerAllSubtasksCompleted)
+
+			if (len(anyRules) > 0 || len(allRules) > 0) && errAny == nil && errAll == nil {
+				parentTask, err := l.taskReader.GetTaskByID(autoCtx, *parentID, event.WorkspaceID())
+				if err == nil && parentTask != nil {
+					parentCtx := domainAutomation.TaskContext{
+						IsCompleted: parentTask.IsCompleted,
+						HasDueDate:  parentTask.DueDate != nil,
+						DueDate:     parentTask.DueDate,
+						ProjectID:   parentTask.ProjectID,
+						ColumnID:    parentTask.ColumnID,
+					}
+
+					for _, rule := range anyRules {
+						l.evaluateAndExecute(autoCtx, rule, parentCtx, parentTask)
+					}
+
+					if len(allRules) > 0 {
+						subtasks, err := l.taskReader.ListSubtasks(autoCtx, *parentID)
+						if err == nil && len(subtasks) > 0 {
+							allCompleted := true
+							for _, st := range subtasks {
+								if st.ID == taskEvt.TaskID {
+									continue
+								}
+								if !st.IsCompleted {
+									allCompleted = false
+									break
+								}
+							}
+							if allCompleted {
+								for _, rule := range allRules {
+									l.evaluateAndExecute(autoCtx, rule, parentCtx, parentTask)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return nil
@@ -178,6 +224,16 @@ func (l *EventListener) HandleTaskUpdated(ctx context.Context, event events.Even
 				if rule.ColumnID != nil && *rule.ColumnID != *taskEvt.ColumnID {
 					continue
 				}
+				l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
+			}
+		}
+	}
+
+	// Check if task completion status changed to uncompleted
+	if !taskEvt.IsCompleted {
+		uncompletedRules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerTaskUncompleted)
+		if err == nil {
+			for _, rule := range uncompletedRules {
 				l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
 			}
 		}
@@ -241,6 +297,32 @@ func (l *EventListener) HandleTaskCreated(ctx context.Context, event events.Even
 					continue
 				}
 				l.evaluateAndExecute(autoCtx, rule, taskCtx, taskInfo)
+			}
+		}
+	}
+
+	// Trigger rules for parent task when a subtask is created
+	parentID := taskEvt.ParentID
+	if parentID == nil && l.taskReader != nil {
+		if ti, err := l.taskReader.GetTaskByID(autoCtx, taskEvt.TaskID, event.WorkspaceID()); err == nil && ti != nil {
+			parentID = ti.ParentID
+		}
+	}
+	if parentID != nil && l.taskReader != nil {
+		subCreatedRules, err := l.repo.ListEnabledAutomationsByTrigger(autoCtx, event.WorkspaceID(), domainAutomation.TriggerSubtaskCreated)
+		if err == nil && len(subCreatedRules) > 0 {
+			parentTask, err := l.taskReader.GetTaskByID(autoCtx, *parentID, event.WorkspaceID())
+			if err == nil && parentTask != nil {
+				parentCtx := domainAutomation.TaskContext{
+					IsCompleted: parentTask.IsCompleted,
+					HasDueDate:  parentTask.DueDate != nil,
+					DueDate:     parentTask.DueDate,
+					ProjectID:   parentTask.ProjectID,
+					ColumnID:    parentTask.ColumnID,
+				}
+				for _, rule := range subCreatedRules {
+					l.evaluateAndExecute(autoCtx, rule, parentCtx, parentTask)
+				}
 			}
 		}
 	}

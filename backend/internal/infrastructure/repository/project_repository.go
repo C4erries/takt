@@ -95,6 +95,35 @@ func (r *ProjectRepository) Delete(ctx context.Context, id, workspaceID uuid.UUI
 	return getQuerier(ctx, r.queries).DeleteProject(ctx, sqlc.DeleteProjectParams{ID: uuidToPg(id), WorkspaceID: uuidToPg(workspaceID)})
 }
 
+func (r *ProjectRepository) ColumnExists(ctx context.Context, columnID uuid.UUID) (bool, error) {
+	_, err := getQuerier(ctx, r.queries).GetColumnByID(ctx, uuidToPg(columnID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (r *ProjectRepository) GetInboxColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error) {
+	boards, err := getQuerier(ctx, r.queries).ListBoardsByProject(ctx, uuidToPg(projectID))
+	if err != nil || len(boards) == 0 {
+		return nil, err
+	}
+	cols, err := getQuerier(ctx, r.queries).ListColumnsByBoard(ctx, boards[0].ID)
+	if err != nil || len(cols) == 0 {
+		return nil, err
+	}
+	for _, c := range cols {
+		if c.IsInbox {
+			id := pgToUUID(c.ID)
+			return &id, nil
+		}
+	}
+	return nil, nil
+}
+
 // BoardRepository handles board persistence.
 type BoardRepository struct {
 	queries *sqlc.Queries
@@ -200,6 +229,17 @@ func (r *ColumnRepository) GetByID(ctx context.Context, id uuid.UUID) (*domainPr
 	}
 
 	return mapColumnRowToDomain(row), nil
+}
+
+func (r *ColumnRepository) ColumnExists(ctx context.Context, columnID uuid.UUID) (bool, error) {
+	_, err := getQuerier(ctx, r.queries).GetColumnByID(ctx, uuidToPg(columnID))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (r *ColumnRepository) ListByBoard(ctx context.Context, boardID uuid.UUID) ([]*domainProject.Column, error) {

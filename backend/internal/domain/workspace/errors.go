@@ -17,4 +17,6 @@ var (
 	ErrAlreadyMember        = errors.New("user is already a member of this workspace")
 	ErrCannotRemoveOwner    = errors.New("cannot remove workspace owner")
 	ErrInvalidInviteToken   = errors.New("invalid invite token")
+	ErrInvalidAvatarFormat  = errors.New("invalid avatar format: only jpeg, png and webp are allowed")
+	ErrAvatarTooLarge       = errors.New("avatar file exceeds maximum size of 5MB")
 )

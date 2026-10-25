@@ -16,11 +16,25 @@ User:
       example: "user@takt.dev"
     displayName:
       type: string
+      nullable: true
       example: "Pavel"
+    avatarUrl:
+      type: string
+      nullable: true
+      example: "/api/v1/users/me/avatar"
     createdAt:
       type: string
       format: date-time
       example: "2026-10-14T12:00:00Z"
+
+UpdateUserProfileRequest:
+  type: object
+  properties:
+    displayName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      example: "Pavel Durov"
 
 RegisterRequest:
   type: object

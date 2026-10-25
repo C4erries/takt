@@ -26,6 +26,7 @@ type User struct {
 	Email        string
 	PasswordHash string
 	DisplayName  string
+	AvatarURL    *string
 	CreatedAt    time.Time
 }
 
@@ -46,6 +47,31 @@ func NewUser(email, passwordHash, displayName string) (*User, error) {
 		DisplayName:  trimmedName,
 		CreatedAt:    time.Now().UTC(),
 	}, nil
+}
+
+// UpdateProfile updates the display name of the user enforcing domain invariants.
+func (u *User) UpdateProfile(displayName *string) error {
+	if displayName != nil {
+		trimmed := strings.TrimSpace(*displayName)
+		if trimmed == "" {
+			return ErrInvalidDisplayName
+		}
+		if len([]rune(trimmed)) > 100 {
+			return ErrInvalidDisplayName
+		}
+		u.DisplayName = trimmed
+	}
+	return nil
+}
+
+// SetAvatar updates the avatar URL of the user.
+func (u *User) SetAvatar(avatarURL string) {
+	trimmed := strings.TrimSpace(avatarURL)
+	if trimmed == "" {
+		u.AvatarURL = nil
+	} else {
+		u.AvatarURL = &trimmed
+	}
 }
 
 type Workspace struct {

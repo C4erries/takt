@@ -34,6 +34,11 @@ export interface UseRuleBuilderParams {
 export const TRIGGER_OPTIONS: { type: AutomationTriggerType; label: string; desc: string }[] = [
   { type: 'task_entered_column', label: 'Попадание в колонку', desc: 'Задача создана или перемещена в колонку' },
   { type: 'task_completed_in_column', label: 'Завершение в колонке', desc: 'Задача выполнена в колонке' },
+  { type: 'task_completed', label: 'Задача выполнена', desc: 'Отметка выполнения задачи установлена' },
+  { type: 'task_uncompleted', label: 'Отметка выполнения снята', desc: 'Снята отметка выполнения с задачи' },
+  { type: 'all_subtasks_completed', label: 'Все подзадачи выполнены', desc: 'Все подзадачи текущей задачи завершены' },
+  { type: 'any_subtask_completed', label: 'Любая подзадача выполнена', desc: 'Хотя бы одна подзадача завершена' },
+  { type: 'subtask_created', label: 'Создана подзадача', desc: 'К задаче добавлена подзадача' },
   { type: 'task_field_changed', label: 'Изменение поля', desc: 'Смена приоритета, дедлайна или статуса' },
   { type: 'column_sla_timer', label: 'Задержка в колонке', desc: 'Задача в колонке дольше N часов' },
   { type: 'task_timer', label: 'Таймер задачи', desc: 'Через N часов выполнить действие' },
@@ -42,7 +47,9 @@ export const TRIGGER_OPTIONS: { type: AutomationTriggerType; label: string; desc
 
 export const CONDITION_FIELDS: { field: AutomationConditionField; label: string }[] = [
   { field: 'priority', label: 'Приоритет' }, { field: 'due_date', label: 'Дедлайн' }, { field: 'tags', label: 'Теги' },
-  { field: 'time_in_column_hours', label: 'Время в колонке (ч)' }, { field: 'is_completed', label: 'Завершена' }, { field: 'due_date_status', label: 'Статус дедлайна' },
+  { field: 'time_in_column_hours', label: 'Время в колонке (ч)' }, { field: 'is_completed', label: 'Завершена' },
+  { field: 'due_date_status', label: 'Статус дедлайна' }, { field: 'subtasks_all_completed', label: 'Все подзадачи выполнены' },
+  { field: 'subtasks_count', label: 'Количество подзадач' },
 ];
 
 export const CONDITION_OPERATORS: { operator: AutomationConditionOperator; label: string }[] = [
@@ -58,10 +65,12 @@ export const FIELD_OPERATORS_MAP: Record<AutomationConditionField, AutomationCon
   priority: ['equals', 'not_equals', 'in', 'not_in'], due_date_status: ['equals', 'not_equals', 'in'],
   due_date: ['equals', 'greater_than', 'less_than', 'is_not_empty', 'is_empty'],
   tags: ['contains', 'not_contains', 'in', 'is_not_empty', 'is_empty'],
+  subtasks_all_completed: ['equals', 'not_equals'], subtasks_count: ['equals', 'greater_than', 'less_than'],
 };
 
 export const ACTION_TYPES: { type: AutomationActionType; label: string; desc: string }[] = [
   { type: 'move_to_column', label: 'Переместить в колонку', desc: 'Перенос в целевую колонку' },
+  { type: 'return_to_previous_column', label: 'Вернуть в предыдущую колонку', desc: 'Возврат по истории перемещений' },
   { type: 'set_priority', label: 'Установить приоритет', desc: 'Изменить приоритет задачи' },
   { type: 'add_tag', label: 'Добавить тег', desc: 'Прикрепить метку' },
   { type: 'remove_tag', label: 'Удалить тег', desc: 'Снять метку' },
@@ -69,6 +78,8 @@ export const ACTION_TYPES: { type: AutomationActionType; label: string; desc: st
   { type: 'archive_task', label: 'Архивировать задачу', desc: 'Убрать в архив' },
   { type: 'mark_completed', label: 'Отметить выполненной', desc: 'Установить галочку выполнения' },
   { type: 'mark_uncompleted', label: 'Снять выполнение', desc: 'Снять галочку выполнения' },
+  { type: 'complete_all_subtasks', label: 'Завершить все подзадачи', desc: 'Отметить все подзадачи выполненными' },
+  { type: 'reopen_all_subtasks', label: 'Снять выполнение со всех подзадач', desc: 'Снять отметку со всех подзадач' },
   { type: 'clear_due_date', label: 'Очистить дедлайн', desc: 'Сбросить дату дедлайна' },
 ];
 
@@ -104,9 +115,13 @@ export function formatTriggerLabel(
     task_timer: `Таймер задачи (> ${sla} ч)`,
     scheduled_sweep: 'Ежедневная проверка по расписанию',
     task_completed: 'При завершении задачи',
+    task_uncompleted: 'При снятии выполнения с задачи',
     task_updated: 'При обновлении задачи',
     task_created: 'При создании задачи',
     due_date_reached: 'При наступлении дедлайна',
+    all_subtasks_completed: 'Когда все подзадачи выполнены',
+    any_subtask_completed: 'Когда любая подзадача выполнена',
+    subtask_created: 'При создании подзадачи',
   };
   return labels[triggerType] || triggerType;
 }
@@ -118,9 +133,10 @@ export function formatConditionLabel(condition: AutomationCondition): string {
   const opName = opObj?.label || String(condition.operator);
   if (condition.operator === 'is_empty' || condition.operator === 'is_not_empty') return `${fieldName} ${opName}`;
   let val = condition.value;
-  if (condition.field === 'is_completed') {
+  if (condition.field === 'is_completed' || condition.field === 'subtasks_all_completed') {
     const isTrue = val === true || val === 'true';
-    return condition.operator === 'equals' ? `Завершена: ${isTrue ? 'Да' : 'Нет'}` : `Завершена ${opName} ${isTrue ? 'Да' : 'Нет'}`;
+    const prefix = condition.field === 'is_completed' ? 'Завершена' : 'Все подзадачи выполнены';
+    return condition.operator === 'equals' ? `${prefix}: ${isTrue ? 'Да' : 'Нет'}` : `${prefix} ${opName} ${isTrue ? 'Да' : 'Нет'}`;
   }
   if (condition.field === 'due_date_status' && typeof val === 'string') {
     val = DUE_DATE_STATUS_OPTIONS.find((s) => s.value === val)?.label || val;
@@ -158,6 +174,9 @@ export function formatActionLabel(
   if (action.type === 'mark_completed') return 'Отметить задачу выполненной';
   if (action.type === 'mark_uncompleted') return 'Снять отметку выполнения';
   if (action.type === 'clear_due_date') return 'Очистить дедлайн';
+  if (action.type === 'return_to_previous_column') return 'Вернуть в предыдущую колонку';
+  if (action.type === 'complete_all_subtasks') return 'Завершить все подзадачи';
+  if (action.type === 'reopen_all_subtasks') return 'Снять выполнение со всех подзадач';
   return ACTION_TYPES.find((a) => a.type === action.type)?.label || String(action.type);
 }
 

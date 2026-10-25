@@ -13,6 +13,7 @@ import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
 import { useTodayTasksQuery, useInboxTasks, useWorkspaceTagsQuery } from '@/entities/task';
 import { useAutomationsQuery } from '@/entities/automation';
 import { useArchivedTasksQuery } from '@/features/archive';
+import { UserProfileModal } from '@/features/user-profile';
 
 export interface SidebarProps {
   user: User | null;
@@ -30,13 +31,15 @@ export interface SidebarProps {
   onToggleUiCatalog: () => void;
   onOpenAutomations?: () => void;
   onWorkspaceChange?: (workspace: Workspace) => void;
+  onUserUpdated?: (user: User) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   user, workspace, inboxCount, activeNav, onNavChange, onOpenQuickCapture,
   onOpenCommandPalette, isCollapsed = false, onToggleCollapse, onOpenAuth, onLogout,
-  showUiCatalog, onToggleUiCatalog, onWorkspaceChange,
+  showUiCatalog, onToggleUiCatalog, onWorkspaceChange, onUserUpdated,
 }) => {
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const {
     setQuickCaptureOpen, activeNav: storeActiveNav, setActiveNav: storeSetActiveNav,
     setSelectedProjectId, setActiveBoardId,
@@ -305,17 +308,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {user ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-full bg-accent-surface text-primary flex items-center justify-center text-xs font-medium font-serif shrink-0 border border-subtle">
-                  {user.displayName.charAt(0).toUpperCase()}
-                </div>
+              <button
+                type="button"
+                onClick={() => setIsProfileModalOpen(true)}
+                className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-85 transition-opacity group"
+                title="Редактировать профиль"
+              >
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.displayName || user.email}
+                    className="w-7 h-7 rounded-full object-cover shrink-0 border border-subtle"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-accent-surface text-primary flex items-center justify-center text-xs font-medium font-serif shrink-0 border border-subtle group-hover:border-accent-solid/50 transition-colors">
+                    {(user.displayName || user.email).charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-medium text-primary truncate leading-tight">
-                    {user.displayName}
+                  <span className="text-xs font-medium text-primary truncate leading-tight group-hover:text-accent-solid transition-colors">
+                    {user.displayName || user.email.split('@')[0]}
                   </span>
                   <span className="text-[10px] text-muted truncate">{user.email}</span>
                 </div>
-              </div>
+              </button>
               <button
                 type="button"
                 onClick={onLogout}
@@ -325,6 +341,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
+
+            <UserProfileModal
+              isOpen={isProfileModalOpen}
+              onClose={() => setIsProfileModalOpen(false)}
+              user={user}
+              onUserUpdated={onUserUpdated}
+            />
           </div>
         ) : (
           <Button

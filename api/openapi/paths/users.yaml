@@ -1,0 +1,75 @@
+updateProfile:
+  patch:
+    tags:
+      - Users
+    summary: Update current user profile
+    operationId: updateUserProfile
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user.yaml#/UpdateUserProfileRequest'
+    responses:
+      '200':
+        description: Profile updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/user.yaml#/User'
+      '400':
+        description: Invalid request data
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+
+uploadAvatar:
+  post:
+    tags:
+      - Users
+    summary: Upload user profile avatar
+    operationId: uploadUserAvatar
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - avatar
+            properties:
+              avatar:
+                type: string
+                format: binary
+    responses:
+      '200':
+        description: Avatar uploaded successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/user.yaml#/User'
+      '400':
+        description: Invalid file or missing avatar field
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/error.yaml'

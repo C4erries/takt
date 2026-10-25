@@ -3,8 +3,13 @@ export type Priority = 'none' | 'low' | 'medium' | 'high' | 'pending' | 'urgent'
 export interface User {
   id: string;
   email: string;
-  displayName: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
   createdAt: string;
+}
+
+export interface UpdateUserProfileRequest {
+  displayName?: string;
 }
 
 export interface Workspace {

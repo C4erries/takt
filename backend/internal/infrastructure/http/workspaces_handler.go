@@ -256,3 +256,79 @@ func (h *Handler) AcceptInvite(c echo.Context, token string) error {
 		Workspace: mapUserWorkspaceToGenerated(res.Workspace),
 	})
 }
+
+// UpdateUserProfile updates current authenticated user's profile.
+func (h *Handler) UpdateUserProfile(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, generated.Error{Code: "UNAUTHORIZED", Message: "Unauthorized"})
+	}
+
+	var req generated.UpdateUserProfileRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid request payload"})
+	}
+
+	user, err := h.workspaceService.UpdateUserProfile(c.Request().Context(), userID, req.DisplayName)
+	if err != nil {
+		if errors.Is(err, domainWorkspace.ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, generated.Error{Code: "NOT_FOUND", Message: "User not found"})
+		}
+		if errors.Is(err, domainWorkspace.ErrInvalidDisplayName) {
+			return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: err.Error()})
+		}
+		return c.JSON(http.StatusInternalServerError, generated.Error{Code: "INTERNAL_ERROR", Message: "Failed to update profile"})
+	}
+
+	return c.JSON(http.StatusOK, mapUserToGenerated(user))
+}
+
+// UploadUserAvatar uploads avatar image for current authenticated user.
+func (h *Handler) UploadUserAvatar(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, generated.Error{Code: "UNAUTHORIZED", Message: "Unauthorized"})
+	}
+
+	fileHeader, err := c.FormFile("avatar")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "A multipart 'avatar' file field is required",
+		})
+	}
+
+	src, err := fileHeader.Open()
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, generated.Error{
+			Code:    "BAD_REQUEST",
+			Message: "Failed to open uploaded file",
+		})
+	}
+	defer src.Close()
+
+	contentType := fileHeader.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	user, err := h.workspaceService.UploadUserAvatar(
+		c.Request().Context(),
+		userID,
+		fileHeader.Filename,
+		contentType,
+		src,
+		fileHeader.Size,
+	)
+	if err != nil {
+		if errors.Is(err, domainWorkspace.ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, generated.Error{Code: "NOT_FOUND", Message: "User not found"})
+		}
+		if errors.Is(err, domainWorkspace.ErrInvalidAvatarFormat) || errors.Is(err, domainWorkspace.ErrAvatarTooLarge) {
+			return c.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: err.Error()})
+		}
+		return c.JSON(http.StatusInternalServerError, generated.Error{Code: "INTERNAL_ERROR", Message: "Failed to upload avatar"})
+	}
+
+	return c.JSON(http.StatusOK, mapUserToGenerated(user))
+}

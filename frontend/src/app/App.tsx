@@ -31,7 +31,7 @@ export const App: React.FC = () => {
   const queryClient = useQueryClient();
   const { theme, ambientIntensity, ambientInteractive } = useThemeStore();
   const {
-    user, workspace, setWorkspace, login, register, logout, refresh,
+    user, setUser, workspace, setWorkspace, login, register, logout, refresh,
     isLoading: isAuthLoading,
   } = useAuth();
 
@@ -260,6 +260,7 @@ export const App: React.FC = () => {
         onToggleUiCatalog={() => setShowUiCatalog((prev) => !prev)}
         onOpenAutomations={() => setIsAutomationsModalOpen(true)}
         onWorkspaceChange={setWorkspace}
+        onUserUpdated={(updated) => setUser(updated)}
       />
 
       {/* Floating button when sidebar is collapsed */}

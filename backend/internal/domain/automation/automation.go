@@ -24,6 +24,10 @@ const (
 	TriggerColumnSLATimer        = "column_sla_timer"
 	TriggerScheduledSweep        = "scheduled_sweep"
 	TriggerTaskTimer             = "task_timer"
+	TriggerTaskUncompleted       = "task_uncompleted"
+	TriggerAllSubtasksCompleted  = "all_subtasks_completed"
+	TriggerAnySubtaskCompleted   = "any_subtask_completed"
+	TriggerSubtaskCreated        = "subtask_created"
 )
 
 var validTriggers = map[string]bool{
@@ -37,6 +41,10 @@ var validTriggers = map[string]bool{
 	TriggerColumnSLATimer:        true,
 	TriggerScheduledSweep:        true,
 	TriggerTaskTimer:             true,
+	TriggerTaskUncompleted:       true,
+	TriggerAllSubtasksCompleted:  true,
+	TriggerAnySubtaskCompleted:   true,
+	TriggerSubtaskCreated:        true,
 }
 
 // IsValidTriggerType validates if the given trigger string is recognized.

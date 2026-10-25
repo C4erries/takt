@@ -40,6 +40,14 @@ func (m *mockTaskReaderForSubtasks) ListSubtasks(ctx context.Context, parentID u
 	return nil, args.Error(1)
 }
 
+func (m *mockTaskReaderForSubtasks) ListTaskActivities(ctx context.Context, taskID uuid.UUID) ([]*appAutomation.TaskActivityInfo, error) {
+	args := m.Called(ctx, taskID)
+	if acts := args.Get(0); acts != nil {
+		return acts.([]*appAutomation.TaskActivityInfo), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func TestEventListener_HandleTaskCompleted_AutoCompleteParent(t *testing.T) {
 	wsID := uuid.New()
 	parentID := uuid.New()
@@ -64,6 +72,8 @@ func TestEventListener_HandleTaskCompleted_AutoCompleteParent(t *testing.T) {
 
 		repo.EXPECT().ListEnabledAutomationsByTrigger(mock.Anything, wsID, domainAutomation.TriggerTaskCompleted).
 			Return([]*domainAutomation.Automation{}, nil).Once()
+		repo.EXPECT().ListEnabledAutomationsByTrigger(mock.Anything, wsID, mock.Anything).
+			Return([]*domainAutomation.Automation{}, nil).Maybe()
 		repo.EXPECT().ListWorkspaceAutomations(mock.Anything, wsID).
 			Return([]*domainAutomation.Automation{rule}, nil).Once()
 
@@ -106,6 +116,8 @@ func TestEventListener_HandleTaskCompleted_AutoCompleteParent(t *testing.T) {
 
 		repo.EXPECT().ListEnabledAutomationsByTrigger(mock.Anything, wsID, domainAutomation.TriggerTaskCompleted).
 			Return([]*domainAutomation.Automation{}, nil).Once()
+		repo.EXPECT().ListEnabledAutomationsByTrigger(mock.Anything, wsID, mock.Anything).
+			Return([]*domainAutomation.Automation{}, nil).Maybe()
 		repo.EXPECT().ListWorkspaceAutomations(mock.Anything, wsID).
 			Return([]*domainAutomation.Automation{rule}, nil).Once()
 
@@ -146,6 +158,8 @@ func TestEventListener_HandleTaskCompleted_AutoCompleteParent(t *testing.T) {
 
 		repo.EXPECT().ListEnabledAutomationsByTrigger(mock.Anything, wsID, domainAutomation.TriggerTaskCompleted).
 			Return([]*domainAutomation.Automation{}, nil).Once()
+		repo.EXPECT().ListEnabledAutomationsByTrigger(mock.Anything, wsID, mock.Anything).
+			Return([]*domainAutomation.Automation{}, nil).Maybe()
 		repo.EXPECT().ListWorkspaceAutomations(mock.Anything, wsID).
 			Return([]*domainAutomation.Automation{rule}, nil).Once()
 

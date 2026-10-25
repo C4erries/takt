@@ -52,6 +52,10 @@ Automation:
         - column_sla_timer
         - scheduled_sweep
         - task_timer
+        - task_uncompleted
+        - all_subtasks_completed
+        - any_subtask_completed
+        - subtask_created
       example: "task_completed"
     conditionsJson:
       type: object
@@ -90,6 +94,10 @@ Trigger:
         - column_sla_timer
         - scheduled_sweep
         - task_timer
+        - task_uncompleted
+        - all_subtasks_completed
+        - any_subtask_completed
+        - subtask_created
       example: "task_entered_column"
     params:
       type: object
@@ -112,6 +120,8 @@ Condition:
         - time_in_column_hours
         - tags
         - due_date_status
+        - subtasks_all_completed
+        - subtasks_count
       example: "priority"
     operator:
       type: string
@@ -148,6 +158,9 @@ Action:
         - mark_completed
         - mark_uncompleted
         - clear_due_date
+        - return_to_previous_column
+        - complete_all_subtasks
+        - reopen_all_subtasks
       example: "move_to_column"
     params:
       type: object

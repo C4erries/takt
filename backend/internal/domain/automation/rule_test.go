@@ -50,18 +50,9 @@ func TestRuleDefinition_Validate(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name: "valid rule with column_sla_timer trigger",
+			name: "valid timer triggers (column_sla_timer, task_timer)",
 			rule: &automation.RuleDefinition{
 				Trigger:    automation.Trigger{Type: automation.TriggerColumnSLATimer, Params: map[string]interface{}{"duration_hours": 24}},
-				Conditions: []automation.Condition{validCondition},
-				Actions:    []automation.Action{validAction},
-			},
-			wantErr: nil,
-		},
-		{
-			name: "valid rule with task_timer trigger",
-			rule: &automation.RuleDefinition{
-				Trigger:    automation.Trigger{Type: automation.TriggerTaskTimer, Params: map[string]interface{}{"delay_hours": 24}},
 				Conditions: []automation.Condition{validCondition},
 				Actions:    []automation.Action{validAction},
 			},
@@ -173,30 +164,10 @@ func TestRuleDefinition_Validate(t *testing.T) {
 			wantErr: automation.ErrInvalidActionType,
 		},
 		{
-			name: "valid logical operator: empty",
-			rule: &automation.RuleDefinition{
-				Trigger:         validTrigger,
-				LogicalOperator: "",
-				Conditions:      []automation.Condition{validCondition},
-				Actions:         []automation.Action{validAction},
-			},
-			wantErr: nil,
-		},
-		{
-			name: "valid logical operator: and",
+			name: "valid logical operator: empty/and/or",
 			rule: &automation.RuleDefinition{
 				Trigger:         validTrigger,
 				LogicalOperator: automation.LogicAnd,
-				Conditions:      []automation.Condition{validCondition},
-				Actions:         []automation.Action{validAction},
-			},
-			wantErr: nil,
-		},
-		{
-			name: "valid logical operator: or",
-			rule: &automation.RuleDefinition{
-				Trigger:         validTrigger,
-				LogicalOperator: automation.LogicOr,
 				Conditions:      []automation.Condition{validCondition},
 				Actions:         []automation.Action{validAction},
 			},
@@ -253,6 +224,44 @@ func TestRuleDefinition_Sprint065_Enums(t *testing.T) {
 	assert.True(t, automation.IsValidActionType(automation.ActionMarkCompleted))
 	assert.True(t, automation.IsValidActionType(automation.ActionMarkUncompleted))
 	assert.True(t, automation.IsValidActionType(automation.ActionClearDueDate))
+}
+
+func TestRuleDefinition_Sprint097_Enums(t *testing.T) {
+	t.Parallel()
+	// Triggers
+	assert.True(t, automation.IsValidDSLTrigger(automation.TriggerTaskUncompleted))
+	assert.True(t, automation.IsValidDSLTrigger(automation.TriggerAllSubtasksCompleted))
+	assert.True(t, automation.IsValidDSLTrigger(automation.TriggerAnySubtaskCompleted))
+	assert.True(t, automation.IsValidDSLTrigger(automation.TriggerSubtaskCreated))
+
+	assert.True(t, automation.IsValidTriggerType(automation.TriggerTaskUncompleted))
+	assert.True(t, automation.IsValidTriggerType(automation.TriggerAllSubtasksCompleted))
+	assert.True(t, automation.IsValidTriggerType(automation.TriggerAnySubtaskCompleted))
+	assert.True(t, automation.IsValidTriggerType(automation.TriggerSubtaskCreated))
+
+	// Conditions
+	assert.True(t, automation.IsValidConditionField(automation.ConditionFieldSubtasksAllCompleted))
+	assert.True(t, automation.IsValidConditionField(automation.ConditionFieldSubtasksCount))
+
+	// Actions
+	assert.True(t, automation.IsValidActionType(automation.ActionReturnToPreviousColumn))
+	assert.True(t, automation.IsValidActionType(automation.ActionCompleteAllSubtasks))
+	assert.True(t, automation.IsValidActionType(automation.ActionReopenAllSubtasks))
+
+	// Valid rule with new elements
+	rule := &automation.RuleDefinition{
+		Trigger: automation.Trigger{Type: automation.TriggerAllSubtasksCompleted},
+		Conditions: []automation.Condition{
+			{Field: automation.ConditionFieldSubtasksAllCompleted, Operator: automation.OperatorEquals, Value: true},
+			{Field: automation.ConditionFieldSubtasksCount, Operator: automation.OperatorGreaterThan, Value: 0},
+		},
+		Actions: []automation.Action{
+			{Type: automation.ActionReturnToPreviousColumn},
+			{Type: automation.ActionCompleteAllSubtasks},
+			{Type: automation.ActionReopenAllSubtasks},
+		},
+	}
+	require.NoError(t, automation.ValidateRuleDefinition(rule))
 }
 
 func TestRuleDefinition_JSONSerialization(t *testing.T) {

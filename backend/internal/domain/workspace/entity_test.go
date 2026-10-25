@@ -15,8 +15,55 @@ func TestNewUser_Valid(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "test@example.com", u.Email)
 	assert.Equal(t, "Pavel", u.DisplayName)
+	assert.Nil(t, u.AvatarURL)
 	assert.NotEqual(t, uuid.Nil, u.ID)
 	assert.False(t, u.CreatedAt.IsZero())
+}
+
+func TestUser_UpdateProfile(t *testing.T) {
+	u, err := NewUser("user@example.com", "hash", "Initial")
+	require.NoError(t, err)
+
+	t.Run("valid display name update", func(t *testing.T) {
+		newName := "Updated Name"
+		err := u.UpdateProfile(&newName)
+		require.NoError(t, err)
+		assert.Equal(t, "Updated Name", u.DisplayName)
+	})
+
+	t.Run("nil display name does nothing", func(t *testing.T) {
+		err := u.UpdateProfile(nil)
+		require.NoError(t, err)
+		assert.Equal(t, "Updated Name", u.DisplayName)
+	})
+
+	t.Run("empty display name returns error", func(t *testing.T) {
+		empty := "   "
+		err := u.UpdateProfile(&empty)
+		require.ErrorIs(t, err, ErrInvalidDisplayName)
+	})
+
+	t.Run("display name exceeding 100 chars returns error", func(t *testing.T) {
+		tooLong := strings.Repeat("a", 101)
+		err := u.UpdateProfile(&tooLong)
+		require.ErrorIs(t, err, ErrInvalidDisplayName)
+	})
+}
+
+func TestUser_SetAvatar(t *testing.T) {
+	u, err := NewUser("user@example.com", "hash", "Initial")
+	require.NoError(t, err)
+
+	t.Run("set valid avatar url", func(t *testing.T) {
+		u.SetAvatar("https://cdn.example.com/avatar.png")
+		require.NotNil(t, u.AvatarURL)
+		assert.Equal(t, "https://cdn.example.com/avatar.png", *u.AvatarURL)
+	})
+
+	t.Run("empty avatar url clears avatar", func(t *testing.T) {
+		u.SetAvatar("   ")
+		assert.Nil(t, u.AvatarURL)
+	})
 }
 
 func TestNewUser_InvalidEmail(t *testing.T) {

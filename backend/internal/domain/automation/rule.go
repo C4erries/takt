@@ -18,6 +18,10 @@ var validDSLTriggers = map[string]bool{
 	TriggerColumnSLATimer:        true,
 	TriggerScheduledSweep:        true,
 	TriggerTaskTimer:             true,
+	TriggerTaskUncompleted:       true,
+	TriggerAllSubtasksCompleted:  true,
+	TriggerAnySubtaskCompleted:   true,
+	TriggerSubtaskCreated:        true,
 }
 
 // IsValidDSLTrigger validates if the trigger type is recognized in Low-Code DSL.
@@ -27,21 +31,25 @@ func IsValidDSLTrigger(trigger string) bool {
 
 // Valid Condition fields
 const (
-	ConditionFieldPriority          = "priority"
-	ConditionFieldIsCompleted       = "is_completed"
-	ConditionFieldDueDate           = "due_date"
-	ConditionFieldDueDateStatus     = "due_date_status"
-	ConditionFieldTimeInColumnHours = "time_in_column_hours"
-	ConditionFieldTags              = "tags"
+	ConditionFieldPriority             = "priority"
+	ConditionFieldIsCompleted          = "is_completed"
+	ConditionFieldDueDate              = "due_date"
+	ConditionFieldDueDateStatus        = "due_date_status"
+	ConditionFieldTimeInColumnHours    = "time_in_column_hours"
+	ConditionFieldTags                 = "tags"
+	ConditionFieldSubtasksAllCompleted = "subtasks_all_completed"
+	ConditionFieldSubtasksCount        = "subtasks_count"
 )
 
 var validConditionFields = map[string]bool{
-	ConditionFieldPriority:          true,
-	ConditionFieldIsCompleted:       true,
-	ConditionFieldDueDate:           true,
-	ConditionFieldDueDateStatus:     true,
-	ConditionFieldTimeInColumnHours: true,
-	ConditionFieldTags:              true,
+	ConditionFieldPriority:             true,
+	ConditionFieldIsCompleted:          true,
+	ConditionFieldDueDate:              true,
+	ConditionFieldDueDateStatus:        true,
+	ConditionFieldTimeInColumnHours:    true,
+	ConditionFieldTags:                 true,
+	ConditionFieldSubtasksAllCompleted: true,
+	ConditionFieldSubtasksCount:        true,
 }
 
 // IsValidConditionField validates if the condition field is recognized.
@@ -83,27 +91,33 @@ func IsValidConditionOperator(op string) bool {
 
 // Valid Action types
 const (
-	ActionMoveToColumn    = "move_to_column"
-	ActionSetPriority     = "set_priority"
-	ActionAddTag          = "add_tag"
-	ActionRemoveTag       = "remove_tag"
-	ActionSetDueDate      = "set_due_date"
-	ActionArchiveTask     = "archive_task"
-	ActionMarkCompleted   = "mark_completed"
-	ActionMarkUncompleted = "mark_uncompleted"
-	ActionClearDueDate    = "clear_due_date"
+	ActionMoveToColumn            = "move_to_column"
+	ActionSetPriority             = "set_priority"
+	ActionAddTag                  = "add_tag"
+	ActionRemoveTag               = "remove_tag"
+	ActionSetDueDate              = "set_due_date"
+	ActionArchiveTask             = "archive_task"
+	ActionMarkCompleted           = "mark_completed"
+	ActionMarkUncompleted         = "mark_uncompleted"
+	ActionClearDueDate            = "clear_due_date"
+	ActionReturnToPreviousColumn  = "return_to_previous_column"
+	ActionCompleteAllSubtasks     = "complete_all_subtasks"
+	ActionReopenAllSubtasks       = "reopen_all_subtasks"
 )
 
 var validActions = map[string]bool{
-	ActionMoveToColumn:    true,
-	ActionSetPriority:     true,
-	ActionAddTag:          true,
-	ActionRemoveTag:       true,
-	ActionSetDueDate:      true,
-	ActionArchiveTask:     true,
-	ActionMarkCompleted:   true,
-	ActionMarkUncompleted: true,
-	ActionClearDueDate:    true,
+	ActionMoveToColumn:           true,
+	ActionSetPriority:            true,
+	ActionAddTag:                 true,
+	ActionRemoveTag:              true,
+	ActionSetDueDate:             true,
+	ActionArchiveTask:            true,
+	ActionMarkCompleted:          true,
+	ActionMarkUncompleted:        true,
+	ActionClearDueDate:           true,
+	ActionReturnToPreviousColumn: true,
+	ActionCompleteAllSubtasks:    true,
+	ActionReopenAllSubtasks:      true,
 }
 
 // IsValidActionType validates if the action type is recognized.

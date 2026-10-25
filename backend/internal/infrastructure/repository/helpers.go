@@ -9,6 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	domainProject "takt/internal/domain/project"
 	domainTask "takt/internal/domain/task"
+	domainAutomation "takt/internal/domain/automation"
+	appAutomation "takt/internal/application/automation"
 	"takt/internal/infrastructure/db"
 	"takt/internal/infrastructure/db/sqlc"
 )
@@ -46,6 +48,15 @@ func pgToUUIDPtr(id pgtype.UUID) *uuid.UUID {
 	return &res
 }
 
+func getRuleBytes(r *domainAutomation.RuleDefinition) []byte {
+	if r != nil {
+		if b, err := r.ToJSON(); err == nil {
+			return b
+		}
+	}
+	return []byte("{}")
+}
+
 
 func timeToPg(t time.Time) pgtype.Timestamptz {
 	if t.IsZero() {
@@ -73,6 +84,21 @@ func pgToTimePtr(t pgtype.Timestamptz) *time.Time {
 		return nil
 	}
 	res := t.Time
+	return &res
+}
+
+func textPtrToPg(s *string) pgtype.Text {
+	if s == nil {
+		return pgtype.Text{Valid: false}
+	}
+	return pgtype.Text{String: *s, Valid: true}
+}
+
+func pgToTextPtr(t pgtype.Text) *string {
+	if !t.Valid {
+		return nil
+	}
+	res := t.String
 	return &res
 }
 
@@ -264,14 +290,26 @@ func mapTagMetricsRowsToDomain(rows []sqlc.ListWorkspaceTagsWithMetricsRow) []*d
 	return tags
 }
 
-func mapActivityRowToDomain(row sqlc.ListTaskActivitiesByTaskIDRow) *domainTask.TaskActivity {
+func mapTaskActivityInfo(row sqlc.ListTaskActivitiesByTaskIDRow) *appAutomation.TaskActivityInfo {
+	return &appAutomation.TaskActivityInfo{
+		ActivityType: row.ActivityType,
+		Payload:      parsePayload(row.Payload),
+		CreatedAt:    pgToTime(row.CreatedAt),
+	}
+}
+
+func parsePayload(b []byte) map[string]interface{} {
 	var payload map[string]interface{}
-	if len(row.Payload) > 0 {
-		_ = json.Unmarshal(row.Payload, &payload)
+	if len(b) > 0 {
+		_ = json.Unmarshal(b, &payload)
 	}
 	if payload == nil {
 		payload = make(map[string]interface{})
 	}
+	return payload
+}
+
+func mapActivityRowToDomain(row sqlc.ListTaskActivitiesByTaskIDRow) *domainTask.TaskActivity {
 	var userName *string
 	if row.UserName.Valid && row.UserName.String != "" {
 		userName = &row.UserName.String
@@ -284,10 +322,12 @@ func mapActivityRowToDomain(row sqlc.ListTaskActivitiesByTaskIDRow) *domainTask.
 		UserID:       pgToUUIDPtr(row.UserID),
 		UserName:     userName,
 		ActivityType: row.ActivityType,
-		Payload:      payload,
+		Payload:      parsePayload(row.Payload),
 		CreatedAt:    pgToTime(row.CreatedAt),
 	}
 }
+
+
 
 
 

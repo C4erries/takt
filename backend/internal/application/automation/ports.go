@@ -24,6 +24,8 @@ type TaskInfo struct {
 	DueDate           *time.Time
 	Tags              []string
 	TimeInColumnHours float64
+	SubtasksCount     int
+	SubtasksDoneCount int
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
@@ -55,17 +57,27 @@ type TaskModifier interface {
 	ArchiveTask(ctx context.Context, taskID, workspaceID uuid.UUID) error
 }
 
+// TaskActivityInfo represents an audit log entry for task movements and changes.
+type TaskActivityInfo struct {
+	ActivityType string
+	Payload      map[string]interface{}
+	CreatedAt    time.Time
+}
+
 // TaskReader reads tasks for timer and schedule evaluation.
 type TaskReader interface {
 	ListTasksByColumn(ctx context.Context, workspaceID, columnID uuid.UUID) ([]*TaskInfo, error)
 	GetTaskByID(ctx context.Context, taskID, workspaceID uuid.UUID) (*TaskInfo, error)
 	ListSubtasks(ctx context.Context, parentID uuid.UUID) ([]*TaskInfo, error)
+	ListTaskActivities(ctx context.Context, taskID uuid.UUID) ([]*TaskActivityInfo, error)
 }
 
 // ProjectReader inspects board and column structure to determine target columns.
 type ProjectReader interface {
 	GetFirstTodoColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
 	GetDoneColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
+	GetInboxColumn(ctx context.Context, projectID, workspaceID uuid.UUID) (*uuid.UUID, error)
+	ColumnExists(ctx context.Context, columnID uuid.UUID) (bool, error)
 	ListColumnIDsByBoard(ctx context.Context, boardID uuid.UUID) ([]uuid.UUID, error)
 }
 

@@ -3,8 +3,6 @@ package automation
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,14 +14,27 @@ import (
 type Evaluator struct {
 	taskModifier  TaskModifier
 	projectReader ProjectReader
+	taskReader    TaskReader
 }
 
 // NewEvaluator creates a new Evaluator.
-func NewEvaluator(taskModifier TaskModifier, projectReader ProjectReader) *Evaluator {
+func NewEvaluator(taskModifier TaskModifier, projectReader ProjectReader, taskReader ...TaskReader) *Evaluator {
+	var tr TaskReader
+	if len(taskReader) > 0 {
+		tr = taskReader[0]
+	} else if r, ok := taskModifier.(TaskReader); ok {
+		tr = r
+	}
 	return &Evaluator{
 		taskModifier:  taskModifier,
 		projectReader: projectReader,
+		taskReader:    tr,
 	}
+}
+
+// SetTaskReader assigns the task reader used for subtasks and activity history.
+func (e *Evaluator) SetTaskReader(tr TaskReader) {
+	e.taskReader = tr
 }
 
 // EvaluateConditions evaluates conditions using the specified logical operator ("and" or "or").
@@ -64,192 +75,17 @@ func (e *Evaluator) evaluateCondition(c domainAutomation.Condition, task *TaskIn
 		return evaluateNumericCondition(task.TimeInColumnHours, c.Operator, c.Value)
 	case domainAutomation.ConditionFieldTags:
 		return evaluateTagsCondition(task.Tags, c.Operator, c.Value)
-	default:
-		return false
-	}
-}
-
-func evaluateDueDateStatus(dueDate *time.Time, op string, expectedVal interface{}) bool {
-	if dueDate == nil {
-		return evaluateStringCondition("no_due_date", op, expectedVal)
-	}
-	today := time.Now().UTC().Truncate(24 * time.Hour)
-	due := dueDate.UTC().Truncate(24 * time.Hour)
-	status := "on_track"
-	if due.Before(today) {
-		status = "overdue"
-	} else if !due.After(today.AddDate(0, 0, 2)) {
-		status = "due_soon"
-	}
-	return evaluateStringCondition(status, op, expectedVal)
-}
-
-func evaluateStringCondition(actual string, op string, expectedVal interface{}) bool {
-	expected := fmt.Sprint(expectedVal)
-	switch op {
-	case domainAutomation.OperatorEquals:
-		return strings.EqualFold(actual, expected)
-	case domainAutomation.OperatorNotEquals:
-		return !strings.EqualFold(actual, expected)
-	case domainAutomation.OperatorContains:
-		return strings.Contains(strings.ToLower(actual), strings.ToLower(expected))
-	case domainAutomation.OperatorNotContains:
-		return !strings.Contains(strings.ToLower(actual), strings.ToLower(expected))
-	case domainAutomation.OperatorIsEmpty:
-		return actual == ""
-	case domainAutomation.OperatorIsNotEmpty:
-		return actual != ""
-	case domainAutomation.OperatorIn, domainAutomation.OperatorNotIn:
-		in := false
-		for _, item := range toStringSlice(expectedVal) {
-			if strings.EqualFold(actual, item) {
-				in = true
-				break
-			}
+	case domainAutomation.ConditionFieldSubtasksAllCompleted:
+		allDone := task.SubtasksCount > 0 && task.SubtasksCount == task.SubtasksDoneCount
+		if c.Operator == "" {
+			return allDone
 		}
-		if op == domainAutomation.OperatorIn {
-			return in
-		}
-		return !in
+		return evaluateBoolCondition(allDone, c.Operator, c.Value)
+	case domainAutomation.ConditionFieldSubtasksCount:
+		return evaluateNumericCondition(float64(task.SubtasksCount), c.Operator, c.Value)
 	default:
 		return false
 	}
-}
-
-func evaluateBoolCondition(actual bool, op string, expectedVal interface{}) bool {
-	var expected bool
-	switch v := expectedVal.(type) {
-	case bool:
-		expected = v
-	case string:
-		expected = strings.EqualFold(v, "true") || v == "1"
-	default:
-		expected = false
-	}
-
-	switch op {
-	case domainAutomation.OperatorEquals:
-		return actual == expected
-	case domainAutomation.OperatorNotEquals:
-		return actual != expected
-	case domainAutomation.OperatorIsEmpty:
-		return !actual
-	case domainAutomation.OperatorIsNotEmpty:
-		return actual
-	default:
-		return false
-	}
-}
-
-func evaluateDateCondition(actual *time.Time, op string, expectedVal interface{}) bool {
-	switch op {
-	case domainAutomation.OperatorIsEmpty:
-		return actual == nil
-	case domainAutomation.OperatorIsNotEmpty:
-		return actual != nil
-	}
-
-	if actual == nil {
-		return false
-	}
-
-	expStr := strings.ToLower(strings.TrimSpace(fmt.Sprint(expectedVal)))
-	today := time.Now().UTC().Truncate(24 * time.Hour)
-	var expDate time.Time
-	var err error
-
-	if expStr == "today" {
-		expDate = today
-	} else if expStr == "tomorrow" {
-		expDate = today.AddDate(0, 0, 1)
-	} else {
-		parsedExp, parseErr := time.Parse("2006-01-02", expStr)
-		if parseErr != nil {
-			parsedExp, parseErr = time.Parse(time.RFC3339, expStr)
-		}
-		err = parseErr
-		expDate = parsedExp.UTC().Truncate(24 * time.Hour)
-	}
-
-	actDate := actual.UTC().Truncate(24 * time.Hour)
-
-	switch op {
-	case domainAutomation.OperatorEquals:
-		return err == nil && actDate.Equal(expDate)
-	case domainAutomation.OperatorNotEquals:
-		return err == nil && !actDate.Equal(expDate)
-	case domainAutomation.OperatorGreaterThan:
-		return err == nil && actDate.After(expDate)
-	case domainAutomation.OperatorLessThan:
-		return err == nil && actDate.Before(expDate)
-	default:
-		return false
-	}
-}
-
-func evaluateNumericCondition(actual float64, op string, expectedVal interface{}) bool {
-	expected := toFloat(expectedVal)
-	switch op {
-	case domainAutomation.OperatorEquals:
-		return actual == expected
-	case domainAutomation.OperatorNotEquals:
-		return actual != expected
-	case domainAutomation.OperatorGreaterThan:
-		return actual > expected
-	case domainAutomation.OperatorLessThan:
-		return actual < expected
-	case domainAutomation.OperatorIsEmpty:
-		return actual == 0
-	case domainAutomation.OperatorIsNotEmpty:
-		return actual > 0
-	default:
-		return false
-	}
-}
-
-func evaluateTagsCondition(tags []string, op string, expectedVal interface{}) bool {
-	switch op {
-	case domainAutomation.OperatorIsEmpty:
-		return len(tags) == 0
-	case domainAutomation.OperatorIsNotEmpty:
-		return len(tags) > 0
-	}
-
-	expItems := toStringSlice(expectedVal)
-	hasIntersection := false
-	for _, t := range tags {
-		for _, exp := range expItems {
-			if strings.EqualFold(strings.TrimSpace(t), exp) {
-				hasIntersection = true
-				break
-			}
-		}
-		if hasIntersection {
-			break
-		}
-	}
-
-	switch op {
-	case domainAutomation.OperatorEquals, domainAutomation.OperatorContains, domainAutomation.OperatorIn:
-		return hasIntersection
-	case domainAutomation.OperatorNotEquals, domainAutomation.OperatorNotContains, domainAutomation.OperatorNotIn:
-		return !hasIntersection
-	default:
-		return false
-	}
-}
-
-func toFloat(val interface{}) float64 {
-	switch v := val.(type) {
-	case float64:
-		return v
-	case int:
-		return float64(v)
-	case string:
-		f, _ := strconv.ParseFloat(v, 64)
-		return f
-	}
-	return 0
 }
 
 // ExecuteRule checks Cycle Guard, evaluates conditions, and runs actions sequentially.
@@ -286,6 +122,39 @@ func (e *Evaluator) executeAction(ctx context.Context, action domainAutomation.A
 				return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, &targetColUUID, task.ProjectID, 1000.0)
 			}
 		}
+
+	case domainAutomation.ActionReturnToPreviousColumn:
+		return e.executeReturnToPreviousColumn(ctx, task)
+
+	case domainAutomation.ActionCompleteAllSubtasks:
+		if e.taskReader == nil {
+			return nil
+		}
+		subtasks, err := e.taskReader.ListSubtasks(ctx, task.ID)
+		if err != nil {
+			return err
+		}
+		for _, st := range subtasks {
+			if !st.IsCompleted {
+				_ = e.taskModifier.SetTaskCompleted(ctx, st.ID, task.WorkspaceID, true)
+			}
+		}
+		return nil
+
+	case domainAutomation.ActionReopenAllSubtasks:
+		if e.taskReader == nil {
+			return nil
+		}
+		subtasks, err := e.taskReader.ListSubtasks(ctx, task.ID)
+		if err != nil {
+			return err
+		}
+		for _, st := range subtasks {
+			if st.IsCompleted {
+				_ = e.taskModifier.SetTaskCompleted(ctx, st.ID, task.WorkspaceID, false)
+			}
+		}
+		return nil
 
 	case domainAutomation.ActionSetPriority:
 		if priority := extractStringParam(action.Params, "priority"); priority != "" {
@@ -337,55 +206,49 @@ func (e *Evaluator) executeAction(ctx context.Context, action domainAutomation.A
 	return nil
 }
 
-func extractTagParams(params map[string]interface{}) (*uuid.UUID, string) {
-	tagIDStr := extractStringParam(params, "tag_id", "tagId")
-	tagName := extractStringParam(params, "name", "tag_name")
-	if tagIDStr != "" {
-		if parsed, err := uuid.Parse(tagIDStr); err == nil && parsed != uuid.Nil {
-			return &parsed, tagName
-		}
-	}
-	return nil, tagName
-}
+func (e *Evaluator) executeReturnToPreviousColumn(ctx context.Context, task *TaskInfo) error {
+	var targetColID *uuid.UUID
 
-func toStringSlice(val interface{}) []string {
-	if val == nil {
-		return nil
-	}
-	switch v := val.(type) {
-	case []string:
-		return v
-	case []interface{}:
-		res := make([]string, 0, len(v))
-		for _, item := range v {
-			res = append(res, strings.TrimSpace(fmt.Sprint(item)))
-		}
-		return res
-	case string:
-		parts := strings.Split(v, ",")
-		res := make([]string, 0, len(parts))
-		for _, p := range parts {
-			if s := strings.TrimSpace(p); s != "" {
-				res = append(res, s)
+	if e.taskReader != nil {
+		activities, err := e.taskReader.ListTaskActivities(ctx, task.ID)
+		if err == nil && len(activities) > 0 {
+			var latestMoved *TaskActivityInfo
+			for _, act := range activities {
+				if act.ActivityType == "column_moved" {
+					if latestMoved == nil || act.CreatedAt.After(latestMoved.CreatedAt) {
+						latestMoved = act
+					}
+				}
 			}
-		}
-		return res
-	default:
-		return []string{strings.TrimSpace(fmt.Sprint(val))}
-	}
-}
 
-func extractStringParam(params map[string]interface{}, keys ...string) string {
-	if params == nil {
-		return ""
-	}
-	for _, k := range keys {
-		if val, ok := params[k]; ok && val != nil {
-			s := strings.TrimSpace(fmt.Sprint(val))
-			if s != "" {
-				return s
+			if latestMoved != nil && latestMoved.Payload != nil {
+				if fromColRaw, ok := latestMoved.Payload["from_column_id"]; ok && fromColRaw != nil {
+					fromColStr := fmt.Sprint(fromColRaw)
+					if parsed, err := uuid.Parse(fromColStr); err == nil && parsed != uuid.Nil {
+						if e.projectReader != nil {
+							exists, err := e.projectReader.ColumnExists(ctx, parsed)
+							if err == nil && exists {
+								targetColID = &parsed
+							}
+						}
+					}
+				}
 			}
 		}
 	}
-	return ""
+
+	if targetColID != nil {
+		return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, targetColID, task.ProjectID, 1000.0)
+	}
+
+	// Fallback 1: Inbox column of project
+	if task.ProjectID != nil && e.projectReader != nil {
+		inboxCol, err := e.projectReader.GetInboxColumn(ctx, *task.ProjectID, task.WorkspaceID)
+		if err == nil && inboxCol != nil {
+			return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, inboxCol, task.ProjectID, 1000.0)
+		}
+	}
+
+	// Fallback 2: Inbox of workspace (columnID = nil)
+	return e.taskModifier.MoveTaskToColumn(ctx, task.ID, task.WorkspaceID, nil, task.ProjectID, 1000.0)
 }

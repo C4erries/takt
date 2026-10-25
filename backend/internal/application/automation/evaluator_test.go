@@ -160,6 +160,42 @@ func TestEvaluator_EvaluateConditions(t *testing.T) {
 			task:      baseTask,
 			wantMatch: false,
 		},
+		{
+			name:       "subtasks_all_completed true when all done",
+			conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldSubtasksAllCompleted, Operator: domainAutomation.OperatorEquals, Value: true}},
+			task:       &appAutomation.TaskInfo{SubtasksCount: 3, SubtasksDoneCount: 3},
+			wantMatch:  true,
+		},
+		{
+			name:       "subtasks_all_completed false when some not done",
+			conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldSubtasksAllCompleted, Operator: domainAutomation.OperatorEquals, Value: true}},
+			task:       &appAutomation.TaskInfo{SubtasksCount: 3, SubtasksDoneCount: 2},
+			wantMatch:  false,
+		},
+		{
+			name:       "subtasks_all_completed false when 0 subtasks",
+			conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldSubtasksAllCompleted, Operator: domainAutomation.OperatorEquals, Value: true}},
+			task:       &appAutomation.TaskInfo{SubtasksCount: 0, SubtasksDoneCount: 0},
+			wantMatch:  false,
+		},
+		{
+			name:       "subtasks_count equals match",
+			conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldSubtasksCount, Operator: domainAutomation.OperatorEquals, Value: 5}},
+			task:       &appAutomation.TaskInfo{SubtasksCount: 5},
+			wantMatch:  true,
+		},
+		{
+			name:       "subtasks_count greater_than match",
+			conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldSubtasksCount, Operator: domainAutomation.OperatorGreaterThan, Value: 2}},
+			task:       &appAutomation.TaskInfo{SubtasksCount: 3},
+			wantMatch:  true,
+		},
+		{
+			name:       "subtasks_count less_than match",
+			conditions: []domainAutomation.Condition{{Field: domainAutomation.ConditionFieldSubtasksCount, Operator: domainAutomation.OperatorLessThan, Value: 5}},
+			task:       &appAutomation.TaskInfo{SubtasksCount: 3},
+			wantMatch:  true,
+		},
 	}
 
 	for _, tt := range tests {

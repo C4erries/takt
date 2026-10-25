@@ -120,6 +120,7 @@ type User struct {
 	PasswordHash string             `json:"password_hash"`
 	DisplayName  string             `json:"display_name"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	AvatarUrl    pgtype.Text        `json:"avatar_url"`
 }
 
 type Workspace struct {

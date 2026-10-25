@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	appAutomation "takt/internal/application/automation"
 	domainTask "takt/internal/domain/task"
 	"takt/internal/infrastructure/db/sqlc"
 )
@@ -375,5 +376,18 @@ func (r *TaskRepository) ListActivitiesByTaskID(ctx context.Context, taskID uuid
 		activities[i] = mapActivityRowToDomain(row)
 	}
 	return activities, nil
+}
+
+func (r *TaskRepository) ListTaskActivities(ctx context.Context, taskID uuid.UUID) ([]*appAutomation.TaskActivityInfo, error) {
+	q := getQuerier(ctx, r.queries)
+	rows, err := q.ListTaskActivitiesByTaskID(ctx, uuidToPg(taskID))
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*appAutomation.TaskActivityInfo, len(rows))
+	for i, row := range rows {
+		res[i] = mapTaskActivityInfo(row)
+	}
+	return res, nil
 }
 

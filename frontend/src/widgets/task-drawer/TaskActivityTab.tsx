@@ -239,8 +239,11 @@ export const TaskActivityTab: React.FC<TaskActivityTabProps> = ({
       <div className="absolute left-6 top-3 bottom-3 w-px bg-subtle" />
 
       {activities.map((act) => {
-        const isSystem = !act.userId;
-        const author = act.userName || (isSystem ? 'Система' : 'Пользователь');
+        const isAutomation = Boolean(act.payload?.automation_id || act.payload?.automation_name);
+        const autoCode = act.payload?.automation_id
+          ? `#A-${String(act.payload.automation_id).slice(0, 4).toUpperCase()}`
+          : '';
+        const ruleName = String(act.payload?.automation_name || 'Правило');
 
         return (
           <div key={act.id} className="relative flex items-start gap-3 group">
@@ -255,22 +258,39 @@ export const TaskActivityTab: React.FC<TaskActivityTabProps> = ({
                 {renderActivityDescription(act)}
               </div>
 
-              {Boolean(act.payload?.automation_name || act.payload?.automation_id) && (
+              {isAutomation && (
                 <div className="pt-0.5">
                   <span
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-accent-surface/50 border border-subtle text-accent-solid"
                     title={act.payload?.automation_id ? `ID: ${String(act.payload.automation_id)}` : undefined}
                   >
                     <Zap className="w-2.5 h-2.5 shrink-0" />
-                    <span>Автоматизация: {String(act.payload?.automation_name || 'Правило')}</span>
+                    <span>
+                      {ruleName}
+                      {autoCode ? ` (${autoCode})` : ''}
+                    </span>
                   </span>
                 </div>
               )}
 
               <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted">
                 <span className="inline-flex items-center gap-1">
-                  {act.payload?.automation_id || isSystem ? <Bot className="w-3 h-3 text-muted/80" /> : <User className="w-3 h-3 text-muted/80" />}
-                  <span>{act.payload?.automation_name ? 'Автоматизация' : author}</span>
+                  {isAutomation ? (
+                    <>
+                      <Zap className="w-3 h-3 text-accent-solid" />
+                      <span>Автоматизация</span>
+                    </>
+                  ) : act.userName ? (
+                    <>
+                      <User className="w-3 h-3 text-muted/80" />
+                      <span>{act.userName}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="w-3 h-3 text-muted/80" />
+                      <span>Система</span>
+                    </>
+                  )}
                 </span>
                 <span>•</span>
                 <span>{formatRelativeTime(act.createdAt)}</span>

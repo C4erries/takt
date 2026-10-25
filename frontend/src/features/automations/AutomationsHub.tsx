@@ -31,7 +31,7 @@ export interface AutomationsHubProps {
   workspaceId?: string;
 }
 
-type FilterCategory = 'all' | 'board' | 'column';
+type FilterCategory = 'all' | 'global' | 'board' | 'column';
 
 export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) => {
   const { data: automations = [], isLoading, isError, error, refetch } = useAutomationsQuery(workspaceId);
@@ -107,6 +107,7 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
   }, [boardGroups, allBoards, allColumns, projects]);
 
   const filteredAutomations = automations.filter((auto) => {
+    if (filter === 'global') return !auto.boardId && !auto.columnId;
     if (filter === 'board') return Boolean(auto.boardId) && !auto.columnId;
     if (filter === 'column') return Boolean(auto.columnId);
     return true;
@@ -185,12 +186,13 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2">
-        {(['all', 'board', 'column'] as FilterCategory[]).map((cat) => {
+      <div className="flex items-center gap-2 flex-wrap">
+        {(['all', 'global', 'board', 'column'] as FilterCategory[]).map((cat) => {
           const labels: Record<FilterCategory, string> = {
             all: `Все (${automations.length})`,
-            board: `На доску (${automations.filter((a) => a.boardId && !a.columnId).length})`,
-            column: `На колонку (${automations.filter((a) => a.columnId).length})`,
+            global: `Глобальные (${automations.filter((a) => !a.boardId && !a.columnId).length})`,
+            board: `Доски (${automations.filter((a) => a.boardId && !a.columnId).length})`,
+            column: `Колонки (${automations.filter((a) => a.columnId).length})`,
           };
           const isSelected = filter === cat;
           return (

@@ -1,4 +1,5 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { motion, AnimatePresence, modalVariants, backdropVariants } from '@/shared/lib/motion';
@@ -22,6 +23,12 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   className,
 }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -45,7 +52,9 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, handleKeyDown]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -110,7 +119,8 @@ export const Modal: React.FC<ModalProps> = ({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

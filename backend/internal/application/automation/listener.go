@@ -383,8 +383,32 @@ func (l *EventListener) evaluateAndExecute(
 	taskCtx domainAutomation.TaskContext,
 	taskInfo *TaskInfo,
 ) {
-	if rule.BoardID != nil && (taskInfo.ProjectID == nil || *rule.BoardID != *taskInfo.ProjectID) {
-		return
+	if rule.BoardID != nil {
+		if taskInfo.ColumnID == nil {
+			return
+		}
+		if l.projectReader != nil {
+			boardCols, err := l.projectReader.ListColumnIDsByBoard(ctx, *rule.BoardID)
+			if err != nil {
+				return
+			}
+			found := false
+			for _, cid := range boardCols {
+				if cid == *taskInfo.ColumnID {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return
+			}
+		}
+	}
+
+	if rule.ColumnID != nil {
+		if taskInfo.ColumnID == nil || *rule.ColumnID != *taskInfo.ColumnID {
+			return
+		}
 	}
 
 	if rule.RuleDefinition != nil {
@@ -404,4 +428,3 @@ func (l *EventListener) evaluateAndExecute(
 	}
 	l.executeAction(ctx, rule.ActionsJSON, taskInfo.ID, taskInfo.WorkspaceID, taskInfo.ProjectID)
 }
-

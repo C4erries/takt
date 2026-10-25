@@ -143,6 +143,7 @@ func AuthMiddlewareWithSkipper(jwtManager *JWTManager, skipper Skipper) echo.Mid
 
 			// Also set in standard context.Context
 			reqCtx := context.WithValue(c.Request().Context(), UserIDContextKey, claims.UserID)
+			reqCtx = context.WithValue(reqCtx, "userID", claims.UserID)
 			reqCtx = context.WithValue(reqCtx, WorkspaceIDContextKey, claims.WorkspaceID)
 			c.SetRequest(c.Request().WithContext(reqCtx))
 

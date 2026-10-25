@@ -106,6 +106,7 @@ func (s *Service) CreateInboxTask(ctx context.Context, input CreateInboxTaskInpu
 	t.Tags = []*domainTask.Tag{}
 
 	if s.eventBus != nil {
+		actorID := getActorIDFromContext(ctx)
 		_ = s.eventBus.Publish(ctx, events.TaskCreatedEvent{
 			TaskID:         t.ID,
 			WorkspaceIDVal: t.WorkspaceID,
@@ -116,6 +117,7 @@ func (s *Service) CreateInboxTask(ctx context.Context, input CreateInboxTaskInpu
 			DueDate:        t.DueDate,
 			OccurredAtVal:  time.Now().UTC(),
 			FromAutomation: events.IsAutomationTriggered(ctx),
+			ActorID:        actorID,
 		})
 	}
 
@@ -130,6 +132,7 @@ func (s *Service) ToggleTask(ctx context.Context, id, workspaceID uuid.UUID) (*d
 	s.loadSingleTaskTags(ctx, t)
 
 	if s.eventBus != nil {
+		actorID := getActorIDFromContext(ctx)
 		if t.IsCompleted {
 			completedAt := time.Now().UTC()
 			if t.CompletedAt != nil {
@@ -144,6 +147,7 @@ func (s *Service) ToggleTask(ctx context.Context, id, workspaceID uuid.UUID) (*d
 				CompletedAt:    completedAt,
 				OccurredAtVal:  time.Now().UTC(),
 				FromAutomation: events.IsAutomationTriggered(ctx),
+				ActorID:        actorID,
 			})
 		} else {
 			_ = s.eventBus.Publish(ctx, events.TaskUpdatedEvent{
@@ -157,6 +161,7 @@ func (s *Service) ToggleTask(ctx context.Context, id, workspaceID uuid.UUID) (*d
 				IsCompleted:    false,
 				OccurredAtVal:  time.Now().UTC(),
 				FromAutomation: events.IsAutomationTriggered(ctx),
+				ActorID:        actorID,
 			})
 		}
 	}
@@ -281,6 +286,7 @@ func (s *Service) UpdateTask(ctx context.Context, input UpdateTaskInput) (*domai
 	s.loadSingleTaskTags(ctx, t)
 
 	if s.eventBus != nil {
+		actorID := getActorIDFromContext(ctx)
 		_ = s.eventBus.Publish(ctx, events.TaskUpdatedEvent{
 			TaskID:            t.ID,
 			WorkspaceIDVal:    t.WorkspaceID,
@@ -294,6 +300,7 @@ func (s *Service) UpdateTask(ctx context.Context, input UpdateTaskInput) (*domai
 			PreviousColumnID:  prevCol,
 			OccurredAtVal:     time.Now().UTC(),
 			FromAutomation:    events.IsAutomationTriggered(ctx),
+			ActorID:           actorID,
 		})
 	}
 

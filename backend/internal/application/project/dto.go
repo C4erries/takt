@@ -52,5 +52,6 @@ type MoveTaskInput struct {
 	ColumnID    uuid.UUID
 	Position    float64
 	ProjectID   *uuid.UUID
+	ActorID     *uuid.UUID
 }
 

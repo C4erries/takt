@@ -173,3 +173,164 @@ func TestEventListener_SubtaskTriggers(t *testing.T) {
 		modifier.AssertExpectations(t)
 	})
 }
+
+func TestEventListener_BoardScopeFilter(t *testing.T) {
+	wsID := uuid.New()
+	taskID := uuid.New()
+	ruleBoardID := uuid.New()
+	boardColID := uuid.New()
+	otherColID := uuid.New()
+
+	repo := mocks.NewMockAutomationRepository(t)
+	modifier := mocks.NewMockTaskModifier(t)
+	reader := mocks.NewMockProjectReader(t)
+
+	rule, err := domainAutomation.NewAutomation(
+		wsID,
+		&ruleBoardID,
+		"Board-Scoped Rule",
+		domainAutomation.TriggerTaskCompleted,
+		json.RawMessage(`{}`),
+		json.RawMessage(`{"action": "set_priority", "priority": "high"}`),
+		true,
+	)
+	require.NoError(t, err)
+
+	listener := appAutomation.NewEventListener(repo, modifier, reader, nil)
+
+	// Scenario 1: task belongs to a column not on the rule's board -> skipped
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompleted,
+	).Return([]*domainAutomation.Automation{rule}, nil).Once()
+
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompletedInColumn,
+	).Return([]*domainAutomation.Automation{}, nil).Once()
+
+	reader.EXPECT().ListColumnIDsByBoard(
+		mock.Anything,
+		ruleBoardID,
+	).Return([]uuid.UUID{boardColID}, nil).Once()
+
+	evtOtherBoard := events.TaskCompletedEvent{
+		TaskID:         taskID,
+		WorkspaceIDVal: wsID,
+		ColumnID:       &otherColID,
+	}
+
+	err = listener.HandleTaskCompleted(context.Background(), evtOtherBoard)
+	require.NoError(t, err)
+
+	// Scenario 2: task belongs to a column on the matching board -> action executes
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompleted,
+	).Return([]*domainAutomation.Automation{rule}, nil).Once()
+
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompletedInColumn,
+	).Return([]*domainAutomation.Automation{}, nil).Once()
+
+	reader.EXPECT().ListColumnIDsByBoard(
+		mock.Anything,
+		ruleBoardID,
+	).Return([]uuid.UUID{boardColID}, nil).Once()
+
+	modifier.EXPECT().SetTaskPriority(
+		mock.Anything,
+		taskID,
+		wsID,
+		"high",
+	).Return(nil).Once()
+
+	evtMatchingBoard := events.TaskCompletedEvent{
+		TaskID:         taskID,
+		WorkspaceIDVal: wsID,
+		ColumnID:       &boardColID,
+	}
+
+	err = listener.HandleTaskCompleted(context.Background(), evtMatchingBoard)
+	require.NoError(t, err)
+}
+
+func TestEventListener_ColumnScopeFilter(t *testing.T) {
+	wsID := uuid.New()
+	taskID := uuid.New()
+	ruleColID := uuid.New()
+	otherColID := uuid.New()
+
+	repo := mocks.NewMockAutomationRepository(t)
+	modifier := mocks.NewMockTaskModifier(t)
+	reader := mocks.NewMockProjectReader(t)
+
+	rule, err := domainAutomation.NewAutomation(
+		wsID,
+		nil,
+		"Column-Scoped Rule",
+		domainAutomation.TriggerTaskCompleted,
+		json.RawMessage(`{}`),
+		json.RawMessage(`{"action": "set_priority", "priority": "urgent"}`),
+		true,
+	)
+	require.NoError(t, err)
+	rule.SetColumnID(&ruleColID)
+
+	listener := appAutomation.NewEventListener(repo, modifier, reader, nil)
+
+	// Scenario 1: task in different column -> skipped
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompleted,
+	).Return([]*domainAutomation.Automation{rule}, nil).Once()
+
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompletedInColumn,
+	).Return([]*domainAutomation.Automation{}, nil).Once()
+
+	evtOther := events.TaskCompletedEvent{
+		TaskID:         taskID,
+		WorkspaceIDVal: wsID,
+		ColumnID:       &otherColID,
+	}
+	err = listener.HandleTaskCompleted(context.Background(), evtOther)
+	require.NoError(t, err)
+
+	// Scenario 2: task in matching column -> executed
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompleted,
+	).Return([]*domainAutomation.Automation{rule}, nil).Once()
+
+	repo.EXPECT().ListEnabledAutomationsByTrigger(
+		mock.Anything,
+		wsID,
+		domainAutomation.TriggerTaskCompletedInColumn,
+	).Return([]*domainAutomation.Automation{}, nil).Once()
+
+	modifier.EXPECT().SetTaskPriority(
+		mock.Anything,
+		taskID,
+		wsID,
+		"urgent",
+	).Return(nil).Once()
+
+	evtMatch := events.TaskCompletedEvent{
+		TaskID:         taskID,
+		WorkspaceIDVal: wsID,
+		ColumnID:       &ruleColID,
+	}
+	err = listener.HandleTaskCompleted(context.Background(), evtMatch)
+	require.NoError(t, err)
+}
+

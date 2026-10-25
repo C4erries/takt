@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	domainAutomation "takt/internal/domain/automation"
 	"takt/internal/domain/events"
+
+	"github.com/google/uuid"
 )
 
 // Evaluator evaluates conditions and executes actions for Low-Code rules.
@@ -261,6 +262,12 @@ func (e *Evaluator) executeReturnToPreviousColumn(
 		inboxCol, err := e.projectReader.GetInboxColumn(ctx, *task.ProjectID, task.WorkspaceID)
 		if err == nil && inboxCol != nil {
 			return e.moveTaskWithEvent(ctx, task, inboxCol, rule)
+		}
+
+		// Fallback 1.5: First todo column of project
+		firstTodoCol, err := e.projectReader.GetFirstTodoColumn(ctx, *task.ProjectID, task.WorkspaceID)
+		if err == nil && firstTodoCol != nil {
+			return e.moveTaskWithEvent(ctx, task, firstTodoCol, rule)
 		}
 	}
 

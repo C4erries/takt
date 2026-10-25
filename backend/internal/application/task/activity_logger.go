@@ -3,9 +3,10 @@ package task
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"takt/internal/domain/events"
 	domainTask "takt/internal/domain/task"
+
+	"github.com/google/uuid"
 )
 
 // ActivityLogger listens to domain events and creates immutable task activity records.
@@ -64,7 +65,10 @@ func (l *ActivityLogger) HandleTaskMoved(ctx context.Context, event events.Event
 		}
 	}
 
-	actorID := getActorIDFromContext(ctx)
+	actorID := e.ActorID
+	if actorID == nil {
+		actorID = getActorIDFromContext(ctx)
+	}
 	activity, err := domainTask.NewTaskActivity(e.TaskID, actorID, domainTask.ActivityColumnMoved, payload)
 	if err != nil {
 		return err
@@ -80,7 +84,10 @@ func (l *ActivityLogger) HandleTaskCompleted(ctx context.Context, event events.E
 		return nil
 	}
 
-	actorID := getActorIDFromContext(ctx)
+	actorID := e.ActorID
+	if actorID == nil {
+		actorID = getActorIDFromContext(ctx)
+	}
 	activity, err := domainTask.NewTaskActivity(e.TaskID, actorID, domainTask.ActivityStatusChanged, map[string]interface{}{
 		"is_completed": true,
 	})
@@ -91,11 +98,25 @@ func (l *ActivityLogger) HandleTaskCompleted(ctx context.Context, event events.E
 	return l.taskRepo.CreateActivity(ctx, activity)
 }
 
-// HandleTaskUpdated logs column moves emitted via TaskUpdatedEvent.
+// HandleTaskUpdated logs column moves and status changes emitted via TaskUpdatedEvent.
 func (l *ActivityLogger) HandleTaskUpdated(ctx context.Context, event events.Event) error {
 	e, ok := event.(events.TaskUpdatedEvent)
 	if !ok {
 		return nil
+	}
+
+	actorID := e.ActorID
+	if actorID == nil {
+		actorID = getActorIDFromContext(ctx)
+	}
+
+	if !e.IsCompleted {
+		act, err := domainTask.NewTaskActivity(e.TaskID, actorID, domainTask.ActivityStatusChanged, map[string]interface{}{
+			"is_completed": false,
+		})
+		if err == nil {
+			_ = l.taskRepo.CreateActivity(ctx, act)
+		}
 	}
 
 	if e.PreviousColumnID != nil && e.ColumnID != nil && *e.PreviousColumnID != *e.ColumnID {
@@ -103,7 +124,6 @@ func (l *ActivityLogger) HandleTaskUpdated(ctx context.Context, event events.Eve
 			"from_column_id": e.PreviousColumnID.String(),
 			"to_column_id":   e.ColumnID.String(),
 		}
-		actorID := getActorIDFromContext(ctx)
 		act, err := domainTask.NewTaskActivity(e.TaskID, actorID, domainTask.ActivityColumnMoved, payload)
 		if err == nil {
 			_ = l.taskRepo.CreateActivity(ctx, act)

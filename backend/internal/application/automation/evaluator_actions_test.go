@@ -56,8 +56,8 @@ func TestEvaluator_ReturnToPreviousColumn(t *testing.T) {
 
 		ruleID := uuid.New()
 		rule := &domainAutomation.RuleDefinition{
-			ID:   &ruleID,
-			Name: "Возврат в предыдущую",
+			ID:      &ruleID,
+			Name:    "Возврат в предыдущую",
 			Trigger: domainAutomation.Trigger{Type: domainAutomation.TriggerTaskEnteredColumn},
 			Actions: []domainAutomation.Action{
 				{Type: domainAutomation.ActionReturnToPreviousColumn},
@@ -127,7 +127,38 @@ func TestEvaluator_ReturnToPreviousColumn(t *testing.T) {
 		mockMod.AssertExpectations(t)
 	})
 
-	t.Run("fallback 2: no activities and no project inbox -> moves to workspace inbox (col nil)", func(t *testing.T) {
+	t.Run("fallback 1.5: no inbox column -> moves to first todo column", func(t *testing.T) {
+		task := &appAutomation.TaskInfo{
+			ID:          taskID,
+			WorkspaceID: wsID,
+			ProjectID:   &projectID,
+		}
+		mockMod := new(mockTaskModifier)
+		mockProj := mocks.NewMockProjectReader(t)
+		mockReader := new(mockTaskReader)
+
+		firstTodoColID := uuid.New()
+		mockReader.On("ListTaskActivities", mock.Anything, taskID).Return([]*appAutomation.TaskActivityInfo{}, nil).Once()
+		mockProj.EXPECT().GetInboxColumn(mock.Anything, projectID, wsID).Return(nil, nil).Once()
+		mockProj.EXPECT().GetFirstTodoColumn(mock.Anything, projectID, wsID).Return(&firstTodoColID, nil).Once()
+		mockProj.EXPECT().GetColumnName(mock.Anything, mock.Anything).Return("To Do", nil).Maybe()
+		mockMod.On("MoveTaskToColumn", mock.Anything, taskID, wsID, &firstTodoColID, &projectID, 1000.0).Return(nil).Once()
+
+		eval := appAutomation.NewEvaluator(mockMod, mockProj, mockReader)
+
+		rule := &domainAutomation.RuleDefinition{
+			Trigger: domainAutomation.Trigger{Type: domainAutomation.TriggerTaskEnteredColumn},
+			Actions: []domainAutomation.Action{
+				{Type: domainAutomation.ActionReturnToPreviousColumn},
+			},
+		}
+
+		err := eval.ExecuteRule(context.Background(), rule, task)
+		require.NoError(t, err)
+		mockMod.AssertExpectations(t)
+	})
+
+	t.Run("fallback 2: no activities, no inbox and no todo -> moves to workspace inbox (col nil)", func(t *testing.T) {
 		task := &appAutomation.TaskInfo{
 			ID:          taskID,
 			WorkspaceID: wsID,
@@ -139,6 +170,7 @@ func TestEvaluator_ReturnToPreviousColumn(t *testing.T) {
 
 		mockReader.On("ListTaskActivities", mock.Anything, taskID).Return([]*appAutomation.TaskActivityInfo{}, nil).Once()
 		mockProj.EXPECT().GetInboxColumn(mock.Anything, projectID, wsID).Return(nil, nil).Once()
+		mockProj.EXPECT().GetFirstTodoColumn(mock.Anything, projectID, wsID).Return(nil, nil).Once()
 		mockProj.EXPECT().GetColumnName(mock.Anything, mock.Anything).Return("", nil).Maybe()
 		mockMod.On("MoveTaskToColumn", mock.Anything, taskID, wsID, (*uuid.UUID)(nil), &projectID, 1000.0).Return(nil).Once()
 
@@ -199,8 +231,8 @@ func TestEvaluator_MoveToColumn_TaskMovedEvent(t *testing.T) {
 	eval.SetEventPublisher(mockPub)
 
 	rule := &domainAutomation.RuleDefinition{
-		ID:   &ruleID,
-		Name: "Автоперенос в Готово",
+		ID:      &ruleID,
+		Name:    "Автоперенос в Готово",
 		Trigger: domainAutomation.Trigger{Type: domainAutomation.TriggerTaskEnteredColumn},
 		Actions: []domainAutomation.Action{
 			{

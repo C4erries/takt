@@ -5,9 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	domainAutomation "takt/internal/domain/automation"
 	"takt/internal/domain/events"
+
+	"github.com/google/uuid"
 )
 
 // Worker runs background checks for SLA timers and scheduled sweeps.

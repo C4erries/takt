@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
@@ -295,12 +296,17 @@ func (h *Handler) MoveTaskToColumn(ctx echo.Context, workspaceId openapi_types.U
 	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, generated.Error{Code: "BAD_REQUEST", Message: "Invalid payload"})
 	}
+	var actorID *uuid.UUID
+	if userID, err := GetUserIDFromContext(ctx); err == nil && userID != uuid.Nil {
+		actorID = &userID
+	}
 	t, err := h.projectService.MoveTask(ctx.Request().Context(), projectApp.MoveTaskInput{
 		WorkspaceID: workspaceId,
 		TaskID:      taskId,
 		ColumnID:    req.ColumnId,
 		Position:    req.Position,
 		ProjectID:   req.ProjectId,
+		ActorID:     actorID,
 	})
 	if err != nil {
 		return h.respondDomainError(ctx, err)

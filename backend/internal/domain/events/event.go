@@ -34,6 +34,7 @@ type TaskCreatedEvent struct {
 	DueDate        *time.Time
 	OccurredAtVal  time.Time
 	FromAutomation bool
+	ActorID        *uuid.UUID
 }
 
 func (e TaskCreatedEvent) EventName() string       { return EventTaskCreated }
@@ -55,6 +56,7 @@ type TaskUpdatedEvent struct {
 	PreviousColumnID  *uuid.UUID
 	OccurredAtVal     time.Time
 	FromAutomation    bool
+	ActorID           *uuid.UUID
 }
 
 func (e TaskUpdatedEvent) EventName() string       { return EventTaskUpdated }
@@ -72,6 +74,7 @@ type TaskCompletedEvent struct {
 	CompletedAt    time.Time
 	OccurredAtVal  time.Time
 	FromAutomation bool
+	ActorID        *uuid.UUID
 }
 
 func (e TaskCompletedEvent) EventName() string       { return EventTaskCompleted }
@@ -93,6 +96,7 @@ type TaskMovedEvent struct {
 	Position         float64
 	OccurredAtVal    time.Time
 	FromAutomation   bool
+	ActorID          *uuid.UUID
 }
 
 func (e TaskMovedEvent) EventName() string       { return EventTaskMoved }

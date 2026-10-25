@@ -318,6 +318,7 @@ func TestService_MoveTask(t *testing.T) {
 			1500.0,
 		).Return(movedTask, nil).Once()
 
+		actorID := uuid.New()
 		mockPub.EXPECT().Publish(mock.Anything, mock.MatchedBy(func(evt events.Event) bool {
 			e, ok := evt.(events.TaskMovedEvent)
 			if !ok {
@@ -327,7 +328,8 @@ func TestService_MoveTask(t *testing.T) {
 				e.FromColumnName == "Входящие" &&
 				e.ToColumnName == "В работе" &&
 				e.PreviousColumnID != nil && *e.PreviousColumnID == fromColID &&
-				e.ColumnID != nil && *e.ColumnID == colID
+				e.ColumnID != nil && *e.ColumnID == colID &&
+				e.ActorID != nil && *e.ActorID == actorID
 		})).Return(nil).Once()
 
 		svc := deps.newService()
@@ -337,6 +339,7 @@ func TestService_MoveTask(t *testing.T) {
 			TaskID:      taskID,
 			ColumnID:    colID,
 			Position:    1500.0,
+			ActorID:     &actorID,
 		})
 		require.NoError(t, err)
 		assert.Equal(t, movedTask.Position, res.Position)
@@ -476,4 +479,3 @@ func TestService_UpdateColumn_Inbox(t *testing.T) {
 		assert.False(t, col.IsInbox)
 	})
 }
-

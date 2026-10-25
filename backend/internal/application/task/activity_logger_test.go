@@ -43,11 +43,11 @@ func TestActivityLogger_HandleTaskMoved(t *testing.T) {
 	autoID := uuid.New()
 
 	testCases := []struct {
-		name       string
-		event      events.Event
-		ctx        context.Context
-		setupRepo  func(m *mocks.MockTaskRepository)
-		wantErr    bool
+		name      string
+		event     events.Event
+		ctx       context.Context
+		setupRepo func(m *mocks.MockTaskRepository)
+		wantErr   bool
 	}{
 		{
 			name: "successful column moved with actor and column names",
@@ -100,6 +100,26 @@ func TestActivityLogger_HandleTaskMoved(t *testing.T) {
 						act.Payload["to_column"] == "Спринт" &&
 						act.Payload["automation_id"] == autoID.String() &&
 						act.Payload["automation_name"] == "Авто-сортировка"
+				})).Return(nil).Once()
+			},
+			wantErr: false,
+		},
+		{
+			name: "successful column moved with ActorID from event",
+			event: events.TaskMovedEvent{
+				TaskID:           taskID,
+				WorkspaceIDVal:   wsID,
+				ColumnID:         &toCol,
+				PreviousColumnID: &prevCol,
+				ActorID:          &userID,
+				OccurredAtVal:    time.Now().UTC(),
+			},
+			ctx: context.Background(),
+			setupRepo: func(m *mocks.MockTaskRepository) {
+				m.EXPECT().CreateActivity(mock.Anything, mock.MatchedBy(func(act *domainTask.TaskActivity) bool {
+					return act.TaskID == taskID &&
+						act.UserID != nil && *act.UserID == userID &&
+						act.ActivityType == domainTask.ActivityColumnMoved
 				})).Return(nil).Once()
 			},
 			wantErr: false,
@@ -174,12 +194,32 @@ func TestActivityLogger_HandleTaskCompleted(t *testing.T) {
 	userID := uuid.New()
 
 	testCases := []struct {
-		name       string
-		event      events.Event
-		ctx        context.Context
-		setupRepo  func(m *mocks.MockTaskRepository)
-		wantErr    bool
+		name      string
+		event     events.Event
+		ctx       context.Context
+		setupRepo func(m *mocks.MockTaskRepository)
+		wantErr   bool
 	}{
+		{
+			name: "successful task completed with ActorID from event",
+			event: events.TaskCompletedEvent{
+				TaskID:         taskID,
+				WorkspaceIDVal: wsID,
+				ActorID:        &userID,
+				CompletedAt:    time.Now().UTC(),
+				OccurredAtVal:  time.Now().UTC(),
+			},
+			ctx: context.Background(),
+			setupRepo: func(m *mocks.MockTaskRepository) {
+				m.EXPECT().CreateActivity(mock.Anything, mock.MatchedBy(func(act *domainTask.TaskActivity) bool {
+					return act.TaskID == taskID &&
+						act.UserID != nil && *act.UserID == userID &&
+						act.ActivityType == domainTask.ActivityStatusChanged &&
+						act.Payload["is_completed"] == true
+				})).Return(nil).Once()
+			},
+			wantErr: false,
+		},
 		{
 			name: "successful task completed logging",
 			event: events.TaskCompletedEvent{
@@ -248,6 +288,7 @@ func TestActivityLogger_HandleTaskUpdated(t *testing.T) {
 	wsID := uuid.New()
 	prevCol := uuid.New()
 	toCol := uuid.New()
+	userID := uuid.New()
 
 	testCases := []struct {
 		name      string
@@ -258,11 +299,12 @@ func TestActivityLogger_HandleTaskUpdated(t *testing.T) {
 		{
 			name: "column changed logs column_moved",
 			event: events.TaskUpdatedEvent{
-				TaskID:            taskID,
-				WorkspaceIDVal:    wsID,
-				ColumnID:          &toCol,
-				PreviousColumnID:  &prevCol,
-				OccurredAtVal:     time.Now().UTC(),
+				TaskID:           taskID,
+				WorkspaceIDVal:   wsID,
+				ColumnID:         &toCol,
+				PreviousColumnID: &prevCol,
+				IsCompleted:      true,
+				OccurredAtVal:    time.Now().UTC(),
 			},
 			ctx: context.Background(),
 			setupRepo: func(m *mocks.MockTaskRepository) {
@@ -275,13 +317,33 @@ func TestActivityLogger_HandleTaskUpdated(t *testing.T) {
 			},
 		},
 		{
-			name: "column unchanged does not log activity",
+			name: "task uncompleted logs status_changed with actor",
 			event: events.TaskUpdatedEvent{
-				TaskID:            taskID,
-				WorkspaceIDVal:    wsID,
-				ColumnID:          &toCol,
-				PreviousColumnID:  &toCol,
-				OccurredAtVal:     time.Now().UTC(),
+				TaskID:         taskID,
+				WorkspaceIDVal: wsID,
+				IsCompleted:    false,
+				ActorID:        &userID,
+				OccurredAtVal:  time.Now().UTC(),
+			},
+			ctx: context.Background(),
+			setupRepo: func(m *mocks.MockTaskRepository) {
+				m.EXPECT().CreateActivity(mock.Anything, mock.MatchedBy(func(act *domainTask.TaskActivity) bool {
+					return act.TaskID == taskID &&
+						act.UserID != nil && *act.UserID == userID &&
+						act.ActivityType == domainTask.ActivityStatusChanged &&
+						act.Payload["is_completed"] == false
+				})).Return(nil).Once()
+			},
+		},
+		{
+			name: "column unchanged and completed does not log activity",
+			event: events.TaskUpdatedEvent{
+				TaskID:           taskID,
+				WorkspaceIDVal:   wsID,
+				ColumnID:         &toCol,
+				PreviousColumnID: &toCol,
+				IsCompleted:      true,
+				OccurredAtVal:    time.Now().UTC(),
 			},
 			ctx:       context.Background(),
 			setupRepo: func(m *mocks.MockTaskRepository) {},

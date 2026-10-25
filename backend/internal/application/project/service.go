@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/google/uuid"
 	"takt/internal/domain/events"
 	domainProject "takt/internal/domain/project"
 	domainTask "takt/internal/domain/task"
+
+	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -325,6 +326,7 @@ func (s *Service) MoveTask(ctx context.Context, input MoveTaskInput) (*domainTas
 			Position:         float64(moved.Position),
 			OccurredAtVal:    time.Now().UTC(),
 			FromAutomation:   events.IsAutomationTriggered(ctx),
+			ActorID:          input.ActorID,
 		})
 	}
 

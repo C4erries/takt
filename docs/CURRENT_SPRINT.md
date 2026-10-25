@@ -4,67 +4,76 @@
 > Работа над каждым спринтом строго делится на **Фазу А (Штаб: Принятие решений)** и **Фазу Б (Конвейер: Реализация и Верификация)**.
 > Завершенные спринты архивируются в каталог `docs/sprints/sprint-X.Y.Z.md` с записью в реестр `docs/sprints/README.md`.
 
-## Текущий спринт: Спринт 0.9.8 — «Automations UX, Column Scopes & Activity Audit» ✅ ЗАВЕРШЕН
+## Текущий спринт: Спринт 0.9.9 — «Activity Audit, Event Actors & Automations Reliability» ✅ ЗАВЕРШЕН
 
 ---
 
 ## 🧠 1. Аналитика и Зафиксированные микро-решения спринта (Штаб)
 
-* **Бизнес-цель**: Устранение UX-проблем автоматизаций (структурированные селекторы колонок с вложенностью по проектам и доскам, устранение бага сброса инпутов в модалке колонки), фикс отображения названий колонок и авторства автоматизаций в истории задачи, безопасное клонирование колоночных правил из каталога и визуальное отображение скоупа (Проект → Доска → Колонка) на карточках правил.
+* **Бизнес-цель**: Устранение критических дефектов аудита активности задач и движка автоматизаций:
+  1. Корректное отображение реального автора изменений (имя пользователя «Pavel» вместо «Система» для ручных действий, бейдж автоматизации для сработавших правил, «Система» только для фоновых системных кронов).
+  2. Восстановление работы действия «Возврат в предыдущую колонку» и триггера «Отметка выполнения снята» (устранение бага сравнения BoardID с ProjectID в event listener).
+  3. Фиксация в истории событий снятия выполнения задачи («Снята отметка о выполнении»).
+  4. Отображение читаемого идентификатора и названия сработавшей автоматизации в истории (`⚡ Название правила (#A-01)`).
+  5. В хабе автоматизаций выделение отдельной вкладки для глобальных правил (`[Все | Глобальные | Доски | Колонки]`).
+  6. Устранение ограничения размеров модального окна профиля пользователя в сайдбаре (перенос модалки через React Portal `document.body` для изоляции от `translate-x-0` контекста).
 
-* **Связь с бэклогом**: [`docs/BACKLOG.md`](BACKLOG.md) (TASK-B24, TASK-B25, TASK-B26, TASK-B27, TASK-B28).
+* **Связь с бэклогом**: TASK-B29, TASK-B30, TASK-B31, TASK-B32, TASK-B33, TASK-B34.
 
-* **Принятые микро-решения**:
+* **Принятые микро-решения (Согласовано с пользователем в Блиц-опросе)**:
 
-  1. **TASK-B24 (Иерархические селекторы колонок Проект → Доска → Колонка)**:
-     - В `RuleBuilderSections.tsx` (`TriggerSection`) и `RuleBuilderModal.tsx` (выбор целевой колонки при скоупе «Конкретная колонка») проброшен `boardColumnGroups`.
-     - Колонки сгруппированы по `<optgroup label="Проект → Доска">`.
+  1. **TASK-B29 (Проброс ActorID / UserID через Domain Events в Activity Logger)**:
+     - Проблема: `InMemoryEventBus` диспетчеризует события на воркерах с фоновым `b.ctx` (без HTTP-контекста), а в `activity_logger.go` искался строковый ключ `"userID"` вместо `contextKey("userID")`. Из-за этого `user_id` всегда оставался `NULL` в БД, и UI отображал «Система».
+     - Решение: Добавлено поле `ActorID *uuid.UUID` непосредственно в доменные события (`TaskMovedEvent`, `TaskCreatedEvent`, `TaskUpdatedEvent`, `TaskCompletedEvent`). Хендлеры и Use Cases извлекают `UserID` из HTTP-контекста и передают его в структуру события. `ActivityLogger` берёт `e.ActorID` напрямую из события и сохраняет в `task_activities.user_id`.
 
-  2. **TASK-B25 (Фикс сброса инпутов при создании правила из колонки)**:
-     - В `useRuleBuilder.ts`: устранен цикл сброса формы из-за нестабильных ссылок на массивы в зависимостях `useEffect`.
-     - Инициализация дефолтных значений производится строго один раз при маунте / изменении ID правила (`initializedRef`).
+  2. **TASK-B30 (Фикс скоупа доски/колонки в Event Listener и возврат в колонку)**:
+     - Проблема 1: В `listener.go` в методе `evaluateAndExecute` стояло ошибочное условие `if rule.BoardID != nil && (taskInfo.ProjectID == nil || *rule.BoardID != *taskInfo.ProjectID)`. Поскольку `rule.BoardID` — это ID доски, а `taskInfo.ProjectID` — ID проекта, они никогда не совпадали, и ВСЕ правила для конкретных досок и колонок молча дропались!
+     - Решение: Для правил со скоупом доски (`rule.BoardID != nil`) проверяется принадлежность колонки доске через `projectReader.ListColumnIDsByBoard(ctx, *rule.BoardID)`. Для колоночных правил (`rule.ColumnID != nil`) проверяется `taskInfo.ColumnID != nil && *rule.ColumnID == *taskInfo.ColumnID`.
+     - Проблема 2: В `ActivityLogger.HandleTaskUpdated` не логировался статус задачи при снятии выполнения (`IsCompleted: false`). Добавлена обработка `status_changed` с `is_completed: false`.
+     - Решение для возврата: в `executeReturnToPreviousColumn` проверяется история задачи, если предыдущей колонки нет — fallback в колонку `is_inbox` текущей доски, а если её нет — в первую to-do колонку доски / inbox воркспейса.
 
-  3. **TASK-B26 (Аудит истории задачи: названия колонок и авторство автоматизаций)**:
-     - Бэкенд:
-       - В `events.TaskMovedEvent`: добавлены поля `FromColumnName string`, `ToColumnName string`, `AutomationID *uuid.UUID`, `AutomationName string`.
-       - В `ActivityLogger`: в `payload` записываются `from_column`, `to_column`, а при перемещении автоматизацией — `automation_id`, `automation_name`.
-       - В `automation.Evaluator`: при перемещении задачи публикуется `TaskMovedEvent` с метаданными сработавшего правила.
-     - Фронтенд (`TaskActivityTab.tsx`):
-       - Отображение названий колонок: `Перенесена из колонки «...» в «...»`.
-       - Если перемещение совершено автоматизацией — бейдж с иконкой `Zap`: `Автоматизация: «Название правила»`.
+  3. **TASK-B31 (Форматирование идентификатора автоматизации `#A-01`)**:
+     - В истории задачи и тултипах отображается бейдж `⚡ Название правила (#A-01)` с порядковым номером или читаемым коротким кодом правила.
 
-  4. **TASK-B27 (Контекст правила на карточках и в «Подробнее»)**:
-     - В `AutomationCard.tsx` и `RuleDetailModal.tsx`:
-       - Для правил на колонку: `Проект → Доска → Колонка`.
-       - Для правил на всю доску: `Проект → Доска`.
-       - Для глобальных: нейтральный бейдж `Глобально`.
+  4. **TASK-B32 (React Portal для Modal.tsx — фикс сжатия профиля в сайдбаре)**:
+     - Проблема: `Sidebar.tsx` содержит CSS-класс `translate-x-0`. По стандарту CSS `transform` создает новый containing block для потомков с `position: fixed`, поэтому модалка профиля сжималась до ширины сайдбара (240px).
+     - Решение: В `Modal.tsx` рендеринг обернут в `createPortal(..., document.body)` с SSR-защитой `typeof document !== 'undefined'`. Модалка монтируется в корень страницы и раскрывается во весь экран.
 
-  5. **TASK-B28 (Каталог правил колонки: клонирование и группировка)**:
-     - В `ColumnAutomationsModal.tsx`:
-       - При привязке существующего колоночного правила создается копия (`createMutation` с `columnId = currentColumn.id`), не отбирая правило у другой колонки.
-       - Фильтр каталога: чипсы `[Все | Глобальные | На этой доске | Из других колонок]` и группировка по доскам/проектам.
+  5. **TASK-B33 (Вкладка «Глобальные» в Automations Hub)**:
+     - В `AutomationsHub.tsx` расширен `FilterCategory = 'all' | 'global' | 'board' | 'column'`.
+     - Добавлена кнопка чипса «Глобальные» (фильтрует правила, где `!a.boardId && !a.columnId`).
+
+  6. **TASK-B34 (Полировка таймлайна активности задачи)**:
+     - Если `act.userName` присутствует — выводится имя автора (`Pavel • только что`).
+     - Если действие совершено автоматизацией — показывается бейдж `⚡ Название правила (#A-01)`.
+     - «Система» отображается исключительно если нет ни пользователя, ни автоматизации (фоновые sweep).
+     - При `status_changed` с `is_completed: false` выводится «Снята отметка о выполнении».
 
 ---
 
-## 📋 2. Таблица задач спринта 0.9.8
+## 📋 2. Таблица задач спринта 0.9.9
 
 | # | Задача | Статус | Приоритет | Ответственный | Файлы |
 |---|--------|--------|-----------|---------------|-------|
-| 1 | **[TASK-B26 Backend] Activity Audit & Automation Metadata**: обогащение `TaskMovedEvent` именами колонок и метаданными автоматизации, фикс события в Evaluator | ✅ Завершено | Высокий | `backend_developer` | `backend/internal/application/task/`, `backend/internal/application/automation/`, `backend/internal/domain/events/` |
-| 2 | **[TASK-B24, B25 Frontend] Form Stability & Hierarchical Column Pickers**: фикс сброса формы в `useRuleBuilder.ts`, иерархия `optgroup` в `RuleBuilderSections.tsx` и `RuleBuilderModal.tsx` | ✅ Завершено | Высокий | `frontend_developer` | `frontend/src/features/automations/` |
-| 3 | **[TASK-B26, B27, B28 Frontend] Activity UI, Scope Badges & Column Catalog**: тултипы автоматизаций и имена колонок в `TaskActivityTab.tsx`, бейджи скоупов в `AutomationCard.tsx`/`RuleDetailModal.tsx`, клонирование в `ColumnAutomationsModal.tsx` | ✅ Завершено | Высокий | `frontend_developer` | `TaskActivityTab.tsx`, `AutomationCard.tsx`, `ColumnAutomationsModal.tsx` |
-| 4 | **[Verification]**: `make check-arch`, `make test`, `npm run build`, `docker compose up -d --build`, `pytest tests/`, коммит | ✅ Завершено | Критический | Lead Orchestrator | — |
+| 1 | **[TASK-B29 Backend] Event Actor Propagation**: добавить `ActorID` в события `events.Task*`, заполнение в HTTP-хендлерах/UseCases, фикс `ActivityLogger` | ✅ Завершено | Высокий | `backend_developer` | `domain/events/`, `application/task/`, `application/project/`, `infrastructure/http/` |
+| 2 | **[TASK-B30 Backend] Listener Scope & Return-To-Column Fix**: устранение бага `BoardID == ProjectID`, проверка колонок доски, фикс триггера `task_uncompleted`, fallback возврата в inbox | ✅ Завершено | Высокий | `backend_developer` | `application/automation/listener.go`, `application/automation/evaluator.go` |
+| 3 | **[TASK-B32 Frontend] Modal Portal**: `createPortal(..., document.body)` в `Modal.tsx` для изоляции от transform-контекста сайдбара | ✅ Завершено | Высокий | `frontend_developer` | `frontend/src/shared/components/ui/Modal.tsx` |
+| 4 | **[TASK-B31, B33, B34 Frontend] Activity Timeline & Automations Hub**: вкладка «Глобальные» в хабе, отображение реального имени автора, бейдж `⚡ Правило (#A-01)`, текст снятия выполнения | ✅ Завершено | Высокий | `frontend_developer` | `AutomationsHub.tsx`, `TaskActivityTab.tsx` |
+| 5 | **[Verification]**: `make check-arch`, `make test`, `npm run build`, `docker compose up -d --build`, `pytest tests/` | ✅ Завершено | Критический | Lead Orchestrator | — |
 
 ---
 
 ## 🎯 3. Definition of Done (DoD)
 
-- [x] В селекторах колонок (триггер «В колонке», целевая колонка правила) есть группировка `<optgroup>` по проекту и доске.
-- [x] При создании правила из модалки колонки инпуты стабильны, не моргают и не сбрасываются на дефолт.
-- [x] В истории задачи отображаются имена колонок (`Перемещена в колонку «...»`), а для перемещений автоматизацией указано название сработавшего правила.
-- [x] На карточках автоматизаций и в окне «Подробнее» отображаются хлебные крошки `Проект → Доска → Колонка` (или `Проект → Доска`).
-- [x] При выборе колоночного правила из каталога в `ColumnAutomationsModal` создается его копия, не отбирая правило у другой колонки.
-- [x] `make check-arch` — 0 ошибок (файлы < 500 строк, папки <= 7 файлов, семантические токены дизайна).
-- [x] `npm run build && npm run lint` — 0 ошибок.
+- [x] В `task_activities` записывается реальный `user_id`, если действие совершено пользователем (ручное перемещение, смена статуса, чекбокс).
+- [x] В истории задачи отображается имя пользователя (`Pavel • только что`) вместо «Система».
+- [x] При снятии выполнения чекбокса в истории появляется запись «Снята отметка о выполнении».
+- [x] Триггер «Отметка выполнения снята» корректно срабатывает на досках и в колонках.
+- [x] Действие «Возврат в предыдущую колонку» корректно возвращает задачу в её предыдущую колонку, либо в inbox доски при отсутствии истории.
+- [x] Для действий автоматизаций в истории отображается бейдж `⚡ Название правила (#A-01)`.
+- [x] В `AutomationsHub` есть вкладка «Глобальные» с корректной фильтрацией.
+- [x] Модалка профиля пользователя открывается по центру экрана и не зажата в ширину сайдбара (240px).
+- [x] `make check-arch` — 0 ошибок (файлы < 500 строк, папки <= 7 файлов).
 - [x] `make test` — все тесты зелёные.
+- [x] `npm run build && npm run lint` — 0 ошибок.
 - [x] `uv run pytest tests/` — 100% PASS.

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Pencil, Check } from 'lucide-react';
 
 export interface MarkdownNotesProps {
   initialValue: string;
@@ -236,19 +236,44 @@ export const MarkdownNotes: React.FC<MarkdownNotesProps> = ({
     }
   };
 
+  const handleSaveAndExit = () => {
+    setIsEditing(false);
+    onSave(value);
+  };
+
   return (
     <div className="space-y-1.5 pt-2 border-t border-subtle/50">
       <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-muted">
         <span>Заметки (Markdown)</span>
-        <span className="text-[9px] lowercase text-muted flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {isUploading && (
-            <span className="text-accent-solid flex items-center gap-1 normal-case font-sans">
+            <span className="text-accent-solid flex items-center gap-1 normal-case font-sans text-[9px]">
               <Loader2 className="w-3 h-3 animate-spin" />
               Загрузка изображения...
             </span>
           )}
-          <span>{isEditing ? 'esc для выхода' : 'клик для правок'}</span>
-        </span>
+          {isEditing ? (
+            <button
+              type="button"
+              onClick={handleSaveAndExit}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-sans font-medium text-accent-solid hover:bg-accent-surface transition-colors"
+              title="Готово (Esc / сохранение)"
+            >
+              <Check className="w-3 h-3 stroke-[2.5]" />
+              <span>Готово</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-sans text-muted hover:text-primary hover:bg-canvas/60 transition-colors"
+              title="Редактировать описание"
+            >
+              <Pencil className="w-3 h-3" />
+              <span>Редактировать</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {isEditing ? (
@@ -259,18 +284,21 @@ export const MarkdownNotes: React.FC<MarkdownNotesProps> = ({
           value={value}
           onChange={handleChange}
           onPaste={handlePaste}
-          onBlur={() => {
-            setIsEditing(false);
-            onSave(value);
-          }}
+          onBlur={handleSaveAndExit}
           onKeyDown={handleKeyDown}
           placeholder="Подробное описание задачи в Markdown... (Ctrl+V для вставки скриншота)"
           className="w-full text-xs font-sans bg-surface border border-subtle rounded-lg p-2.5 text-primary focus:outline-none focus:border-accent-solid resize-y leading-relaxed"
         />
       ) : (
         <div
-          onClick={() => setIsEditing(true)}
-          className="min-h-[60px] text-xs text-primary leading-relaxed bg-canvas/30 hover:bg-canvas/50 p-2.5 rounded-lg border border-subtle/50 cursor-text transition-colors break-words"
+          onClick={() => {
+            if (!value) {
+              setIsEditing(true);
+            }
+          }}
+          className={`min-h-[60px] text-xs text-primary leading-relaxed bg-canvas/30 hover:bg-canvas/50 p-2.5 rounded-lg border border-subtle/50 select-text transition-colors break-words ${
+            !value ? 'cursor-pointer' : ''
+          }`}
         >
           {renderMarkdownPreview(value)}
         </div>

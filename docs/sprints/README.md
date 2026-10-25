@@ -79,6 +79,7 @@
 | **Sprint 0.9.3** | [sprint-0.9.3.md](sprint-0.9.3.md) | 2026-10-24 | `✅ Done` | Архив задач: ADR-0008 batch SQL fast path, сброс завершенных в колонке, экран архива и разархивация |
 | **Sprint 0.9.4** | [sprint-0.9.4.md](sprint-0.9.4.md) | 2026-10-24 | `✅ Done` | История изменений задачи (Activity Log): миграция audit trail, EventBus listener, вкладка истории в шторке |
 | **Sprint 0.9.5** | [sprint-0.9.5.md](sprint-0.9.5.md) | 2026-10-24 | `✅ Done` | UX Polish: расписание sweep для доски, иерархические селекторы Проект→Доска→Колонка, полноэкранный менеджер тегов |
+| **Sprint 0.9.6** | [sprint-0.9.6.md](sprint-0.9.6.md) | 2026-10-25 | `✅ Done` | UI Polish: карандаш заметок, Columns3/Activity метрики досок, навигация тегов, полнота досок в правилах, Tag Scopes (БД + API + UI) |
 
 ---
 

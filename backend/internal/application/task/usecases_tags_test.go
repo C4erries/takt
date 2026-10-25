@@ -16,6 +16,7 @@ import (
 
 func TestService_CreateTag(t *testing.T) {
 	wsID := uuid.New()
+	pID := uuid.New()
 	color := "#3B82F6"
 	invalidColor := "123456789012345678901234567890123" // 33 chars > MaxTagColorLen
 
@@ -42,6 +43,26 @@ func TestService_CreateTag(t *testing.T) {
 				assert.Equal(t, wsID, tag.WorkspaceID)
 				assert.Equal(t, "Urgent Bug", tag.Name)
 				assert.Equal(t, "#3B82F6", tag.ColorHex)
+			},
+		},
+		{
+			name: "успешное создание тега с проектом",
+			input: taskapp.CreateTagInput{
+				WorkspaceID: wsID,
+				ProjectID:   &pID,
+				Name:        "Project Tag",
+				ColorHex:    color,
+			},
+			setupTagRepo: func(m *mocks.MockTagRepository) {
+				m.EXPECT().CreateTag(mock.Anything, mock.MatchedBy(func(tag *domainTask.Tag) bool {
+					return tag.WorkspaceID == wsID && tag.ProjectID != nil && *tag.ProjectID == pID && tag.Name == "Project Tag"
+				})).Return(nil).Once()
+			},
+			checkOut: func(t *testing.T, tag *domainTask.Tag) {
+				assert.Equal(t, wsID, tag.WorkspaceID)
+				require.NotNil(t, tag.ProjectID)
+				assert.Equal(t, pID, *tag.ProjectID)
+				assert.Equal(t, "Project Tag", tag.Name)
 			},
 		},
 		{
@@ -104,21 +125,24 @@ func TestService_CreateTag(t *testing.T) {
 
 func TestService_ListWorkspaceTags(t *testing.T) {
 	wsID := uuid.New()
+	pID := uuid.New()
 	tag1, _ := domainTask.NewTag(wsID, "Tag 1", "#3B82F6")
-	tag2, _ := domainTask.NewTag(wsID, "Tag 2", "#10B981")
+	tag2, _ := domainTask.NewScopedTag(wsID, &pID, "Tag 2", "#10B981")
 
 	testCases := []struct {
 		name         string
 		workspaceID  uuid.UUID
+		projectID    *uuid.UUID
 		setupTagRepo func(m *mocks.MockTagRepository)
 		checkOut     func(t *testing.T, tags []*domainTask.Tag)
 		wantErr      error
 	}{
 		{
-			name:        "успешный список тегов воркспейса",
+			name:        "успешный список тегов воркспейса и проекта",
 			workspaceID: wsID,
+			projectID:   &pID,
 			setupTagRepo: func(m *mocks.MockTagRepository) {
-				m.EXPECT().ListWorkspaceTags(mock.Anything, wsID).Return([]*domainTask.Tag{tag1, tag2}, nil).Once()
+				m.EXPECT().ListWorkspaceTags(mock.Anything, wsID, &pID).Return([]*domainTask.Tag{tag1, tag2}, nil).Once()
 			},
 			checkOut: func(t *testing.T, tags []*domainTask.Tag) {
 				require.Len(t, tags, 2)
@@ -128,8 +152,9 @@ func TestService_ListWorkspaceTags(t *testing.T) {
 		{
 			name:        "ошибка репозитория при получении тегов",
 			workspaceID: wsID,
+			projectID:   nil,
 			setupTagRepo: func(m *mocks.MockTagRepository) {
-				m.EXPECT().ListWorkspaceTags(mock.Anything, wsID).Return(nil, errTestDB).Once()
+				m.EXPECT().ListWorkspaceTags(mock.Anything, wsID, (*uuid.UUID)(nil)).Return(nil, errTestDB).Once()
 			},
 			wantErr: errTestDB,
 		},
@@ -145,7 +170,7 @@ func TestService_ListWorkspaceTags(t *testing.T) {
 			}
 
 			svc := taskapp.NewService(nil, tagRepo, nil)
-			tags, err := svc.ListWorkspaceTags(context.Background(), tc.workspaceID)
+			tags, err := svc.ListWorkspaceTags(context.Background(), tc.workspaceID, tc.projectID)
 
 			if tc.wantErr != nil {
 				require.ErrorIs(t, err, tc.wantErr)

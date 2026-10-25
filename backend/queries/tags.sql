@@ -1,10 +1,11 @@
 -- name: CreateTag :one
 INSERT INTO tags (
     workspace_id,
+    project_id,
     name,
     color_hex
 ) VALUES (
-    $1, $2, $3
+    $1, $2, $3, $4
 )
 RETURNING *;
 
@@ -14,7 +15,7 @@ WHERE id = $1 AND workspace_id = $2;
 
 -- name: ListWorkspaceTags :many
 SELECT * FROM tags
-WHERE workspace_id = $1
+WHERE workspace_id = $1 AND (sqlc.narg('project_id')::uuid IS NULL OR project_id IS NULL OR project_id = sqlc.narg('project_id'))
 ORDER BY name ASC;
 
 -- name: UpdateTag :one

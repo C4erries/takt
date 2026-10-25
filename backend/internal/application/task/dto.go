@@ -45,6 +45,7 @@ type SetFocusInput struct {
 
 type CreateTagInput struct {
 	WorkspaceID uuid.UUID
+	ProjectID   *uuid.UUID
 	Name        string
 	ColorHex    string
 }

@@ -313,6 +313,7 @@ func mapDomainTagToGenerated(tag *domainTask.Tag) generated.Tag {
 	return generated.Tag{
 		Id:          tag.ID,
 		WorkspaceId: tag.WorkspaceID,
+		ProjectId:   tag.ProjectID,
 		Name:        tag.Name,
 		ColorHex:    tag.ColorHex,
 		CreatedAt:   tag.CreatedAt,

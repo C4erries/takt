@@ -245,3 +245,23 @@
 - `backend/internal/application/workspace/`
 - `frontend/src/widgets/sidebar/UserProfileButton.tsx`
 - `frontend/src/features/user-profile/UserProfileModal.tsx`
+
+---
+
+### TASK-B09: Профиль пользователя — имя и аватар {#task-b09}
+
+🔲 **Статус**: В бэклоге · **Сложность**: M · **Бэкенд (миграция) + фронтенд**
+
+**Продуктовая цель**: Персонализация — пользователь видит своё имя и аватар в интерфейсе.
+
+**Принятые решения**:
+- Миграция `000017_user_profile` (`display_name`, `avatar_url`).
+- Загрузка аватара через MinIO S3 хранилище.
+- Модальное окно профиля в нижнем блоке сайдбара.
+
+**Файлы**:
+- `backend/migrations/000017_user_profile.up.sql`
+- `backend/internal/application/workspace/`
+- `frontend/src/widgets/sidebar/UserProfileButton.tsx`
+- `frontend/src/features/user-profile/UserProfileModal.tsx`
+

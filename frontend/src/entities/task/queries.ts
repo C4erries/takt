@@ -230,13 +230,13 @@ export const useSetTaskFocusMutation = (workspaceId?: string) => {
   });
 };
 
-export const useWorkspaceTagsQuery = (workspaceId?: string) => {
+export const useWorkspaceTagsQuery = (workspaceId?: string, projectId?: string | null) => {
   return useQuery<Tag[], Error>({
-    queryKey: ['tags', workspaceId],
+    queryKey: ['tags', workspaceId, projectId ?? null],
     queryFn: async () => {
       if (!workspaceId || !getAuthToken()) return [];
       try {
-        const data = await taskDetailApi.listWorkspaceTags(workspaceId);
+        const data = await taskDetailApi.listWorkspaceTags(workspaceId, projectId);
         return data ?? [];
       } catch {
         return [];

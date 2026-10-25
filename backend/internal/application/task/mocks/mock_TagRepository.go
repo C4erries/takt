@@ -488,8 +488,8 @@ func (_c *MockTagRepository_GetTaskTags_Call) RunAndReturn(run func(ctx context.
 }
 
 // ListWorkspaceTags provides a mock function for the type MockTagRepository
-func (_mock *MockTagRepository) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*task.Tag, error) {
-	ret := _mock.Called(ctx, workspaceID)
+func (_mock *MockTagRepository) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*task.Tag, error) {
+	ret := _mock.Called(ctx, workspaceID, projectID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListWorkspaceTags")
@@ -497,18 +497,18 @@ func (_mock *MockTagRepository) ListWorkspaceTags(ctx context.Context, workspace
 
 	var r0 []*task.Tag
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) ([]*task.Tag, error)); ok {
-		return returnFunc(ctx, workspaceID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *uuid.UUID) ([]*task.Tag, error)); ok {
+		return returnFunc(ctx, workspaceID, projectID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) []*task.Tag); ok {
-		r0 = returnFunc(ctx, workspaceID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *uuid.UUID) []*task.Tag); ok {
+		r0 = returnFunc(ctx, workspaceID, projectID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*task.Tag)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
-		r1 = returnFunc(ctx, workspaceID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, uuid.UUID, *uuid.UUID) error); ok {
+		r1 = returnFunc(ctx, workspaceID, projectID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -523,11 +523,12 @@ type MockTagRepository_ListWorkspaceTags_Call struct {
 // ListWorkspaceTags is a helper method to define mock.On call
 //   - ctx context.Context
 //   - workspaceID uuid.UUID
-func (_e *MockTagRepository_Expecter) ListWorkspaceTags(ctx any, workspaceID any) *MockTagRepository_ListWorkspaceTags_Call {
-	return &MockTagRepository_ListWorkspaceTags_Call{Call: _e.mock.On("ListWorkspaceTags", ctx, workspaceID)}
+//   - projectID *uuid.UUID
+func (_e *MockTagRepository_Expecter) ListWorkspaceTags(ctx any, workspaceID any, projectID any) *MockTagRepository_ListWorkspaceTags_Call {
+	return &MockTagRepository_ListWorkspaceTags_Call{Call: _e.mock.On("ListWorkspaceTags", ctx, workspaceID, projectID)}
 }
 
-func (_c *MockTagRepository_ListWorkspaceTags_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID)) *MockTagRepository_ListWorkspaceTags_Call {
+func (_c *MockTagRepository_ListWorkspaceTags_Call) Run(run func(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID)) *MockTagRepository_ListWorkspaceTags_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -537,9 +538,14 @@ func (_c *MockTagRepository_ListWorkspaceTags_Call) Run(run func(ctx context.Con
 		if args[1] != nil {
 			arg1 = args[1].(uuid.UUID)
 		}
+		var arg2 *uuid.UUID
+		if args[2] != nil {
+			arg2 = args[2].(*uuid.UUID)
+		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -550,7 +556,7 @@ func (_c *MockTagRepository_ListWorkspaceTags_Call) Return(tags []*task.Tag, err
 	return _c
 }
 
-func (_c *MockTagRepository_ListWorkspaceTags_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID) ([]*task.Tag, error)) *MockTagRepository_ListWorkspaceTags_Call {
+func (_c *MockTagRepository_ListWorkspaceTags_Call) RunAndReturn(run func(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*task.Tag, error)) *MockTagRepository_ListWorkspaceTags_Call {
 	_c.Call.Return(run)
 	return _c
 }

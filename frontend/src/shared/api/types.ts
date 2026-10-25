@@ -21,6 +21,7 @@ export interface Workspace {
 export interface Tag {
   id: string;
   workspaceId: string;
+  projectId?: string | null;
   name: string;
   colorHex: string;
   createdAt: string;
@@ -33,6 +34,7 @@ export interface TagWithMetrics extends Tag {
 export interface CreateTagRequest {
   name: string;
   colorHex?: string;
+  projectId?: string | null;
 }
 
 export interface UpdateTagRequest {

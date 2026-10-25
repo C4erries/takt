@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Check, Folder, Globe } from 'lucide-react';
 import { Input, Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Tag } from '@/shared/api';
@@ -12,11 +12,13 @@ import {
   useAddTagToTaskMutation,
   useRemoveTagFromTaskMutation,
 } from '@/entities/task';
+import { TagCapsule } from './TagCapsule';
 
 export interface TaskTagSectionProps {
   taskId: string;
   tags?: Tag[];
   workspaceId?: string;
+  projectId?: string | null;
   isAddingTag?: boolean;
   onToggleAddingTag?: () => void;
   className?: string;
@@ -26,6 +28,7 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
   taskId,
   tags = [],
   workspaceId,
+  projectId,
   isAddingTag: controlledIsAdding,
   onToggleAddingTag,
   className,
@@ -39,14 +42,15 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
 
   const [query, setQuery] = useState('');
   const [selectedColor, setSelectedColor] = useState(DEFAULT_TAG_COLOR);
+  const [createScope, setCreateScope] = useState<'project' | 'global'>(projectId ? 'project' : 'global');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [activeColorPopoverTagId, setActiveColorPopoverTagId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const colorPopoverRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const { data: allTags = [] } = useWorkspaceTagsQuery(workspaceId);
+  // Fetch tags: will return global tags and tags of this project (if projectId is given)
+  const { data: allTags = [] } = useWorkspaceTagsQuery(workspaceId, projectId);
   const createTagMutation = useCreateTagMutation(workspaceId);
   const updateTagMutation = useUpdateTagMutation(workspaceId);
   const addTagMutation = useAddTagToTaskMutation(workspaceId);
@@ -55,16 +59,30 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
   const cleanQuery = query.trim().replace(/^@/, '');
   const assignedTagIds = new Set(tags.map((t) => t.id));
 
-  // Autocomplete suggestions: workspace tags not yet attached to this task
-  const matchingTags = allTags.filter(
-    (t) =>
-      !assignedTagIds.has(t.id) &&
-      t.name.toLowerCase().includes(cleanQuery.toLowerCase())
-  );
+  // Filter out tags not relevant to this task:
+  // Show global tags + tags belonging to this task's project
+  const relevantTags = useMemo(() => {
+    return allTags.filter((t) => {
+      if (!t.projectId) return true; // Global
+      if (projectId && t.projectId === projectId) return true; // Matches task's project
+      return false; // Other project's tag
+    });
+  }, [allTags, projectId]);
 
-  const exactMatch = allTags.some(
-    (t) => t.name.toLowerCase() === cleanQuery.toLowerCase()
-  );
+  // Autocomplete suggestions: tags not yet attached to this task
+  const matchingTags = useMemo(() => {
+    return relevantTags.filter(
+      (t) =>
+        !assignedTagIds.has(t.id) &&
+        t.name.toLowerCase().includes(cleanQuery.toLowerCase())
+    );
+  }, [relevantTags, assignedTagIds, cleanQuery]);
+
+  const exactMatch = useMemo(() => {
+    return relevantTags.some(
+      (t) => t.name.toLowerCase() === cleanQuery.toLowerCase()
+    );
+  }, [relevantTags, cleanQuery]);
 
   const resetInput = () => {
     setQuery('');
@@ -82,16 +100,18 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
     if (e) e.preventDefault();
     if (!cleanQuery) return;
 
-    const existing = allTags.find(
+    const existing = relevantTags.find(
       (t) => t.name.toLowerCase() === cleanQuery.toLowerCase()
     );
 
     if (existing) {
       await addTagMutation.mutateAsync({ taskId, tag: existing });
     } else {
+      const targetProjectId = createScope === 'project' && projectId ? projectId : null;
       const created = await createTagMutation.mutateAsync({
         name: cleanQuery,
         colorHex: selectedColor,
+        projectId: targetProjectId,
       });
       await addTagMutation.mutateAsync({ taskId, tag: created });
     }
@@ -128,16 +148,13 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
     }
   };
 
-  // Close dropdown and color popovers on outside click
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
       if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsDropdownOpen(false);
         setFocusedIndex(-1);
-      }
-      if (colorPopoverRef.current && !colorPopoverRef.current.contains(target)) {
-        setActiveColorPopoverTagId(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -146,94 +163,32 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
 
   return (
     <div className={cn('space-y-2', className)}>
-      {/* Existing Tags Capsules (NO # symbol) */}
+      {/* Existing Tags Capsules */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {tags && tags.length > 0 ? (
-          tags.map((tag) => {
-            const isPopoverOpen = activeColorPopoverTagId === tag.id;
-            return (
-              <div key={tag.id} className="relative inline-block">
-                <span className="inline-flex items-center gap-1.5 bg-accent-surface/80 text-primary text-[11px] font-medium px-2.5 py-0.5 rounded-full border border-subtle transition-colors shadow-washi-sm">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveColorPopoverTagId(isPopoverOpen ? null : tag.id);
-                    }}
-                    className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs cursor-pointer hover:scale-125 transition-transform"
-                    style={{ backgroundColor: tag.colorHex || DEFAULT_TAG_COLOR }}
-                    title="Изменить цвет метки"
-                    aria-label={`Изменить цвет метки ${tag.name}`}
-                  />
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveColorPopoverTagId(isPopoverOpen ? null : tag.id);
-                    }}
-                    className="cursor-pointer hover:text-accent-solid transition-colors"
-                    title="Изменить цвет метки"
-                  >
-                    {tag.name}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeTagMutation.mutate({ taskId, tag });
-                    }}
-                    className="text-muted hover:text-primary transition-colors ml-0.5 rounded-full p-0.5 hover:bg-canvas/50"
-                    title="Удалить тег"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                </span>
-
-                {/* Color Palette Popover (12 Colors) */}
-                {isPopoverOpen && (
-                  <div
-                    ref={colorPopoverRef}
-                    className="absolute left-0 top-full mt-1.5 z-50 bg-surface border border-subtle rounded-xl shadow-washi-modal p-2 w-48 text-xs space-y-1.5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="text-[10px] font-mono uppercase tracking-wider text-muted px-1">
-                      Цвет «{tag.name}»
-                    </div>
-                    <div className="grid grid-cols-6 gap-1.5 p-1">
-                      {TAG_PALETTE.map((c) => {
-                        const isSelected = (tag.colorHex || '').toLowerCase() === c.hex.toLowerCase();
-                        return (
-                          <button
-                            key={c.hex}
-                            type="button"
-                            title={c.name}
-                            onClick={() => {
-                              updateTagMutation.mutate({ tagId: tag.id, colorHex: c.hex });
-                              setActiveColorPopoverTagId(null);
-                            }}
-                            style={{ backgroundColor: c.hex }}
-                            className={cn(
-                              'w-5 h-5 rounded-full flex items-center justify-center transition-all hover:scale-115 cursor-pointer',
-                              isSelected
-                                ? 'ring-2 ring-primary ring-offset-2 ring-offset-surface scale-105'
-                                : 'opacity-85 hover:opacity-100'
-                            )}
-                          >
-                            {isSelected && <Check className="w-3 h-3 text-white drop-shadow-xs" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })
+          tags.map((tag) => (
+            <TagCapsule
+              key={tag.id}
+              tag={tag}
+              isOpen={activeColorPopoverTagId === tag.id}
+              onToggleOpen={() =>
+                setActiveColorPopoverTagId(
+                  activeColorPopoverTagId === tag.id ? null : tag.id
+                )
+              }
+              onClose={() => setActiveColorPopoverTagId(null)}
+              onUpdateColor={(hex) =>
+                updateTagMutation.mutate({ tagId: tag.id, colorHex: hex })
+              }
+              onRemove={() => removeTagMutation.mutate({ taskId, tag })}
+            />
+          ))
         ) : (
           !isAdding && <span className="text-[11px] text-muted italic">Нет тегов</span>
         )}
       </div>
 
-      {/* Add Tag Section with Live Autocomplete & Palette */}
+      {/* Add Tag Section with Live Autocomplete & Scope Choice */}
       {isAdding && (
         <div ref={dropdownRef} className="relative pt-1 space-y-2">
           <form onSubmit={handleCreateNewTag} className="flex items-center gap-1.5">
@@ -303,6 +258,17 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                               />
                             )}
                             <span className="font-medium">{tag.name}</span>
+                            {tag.projectId ? (
+                              <span className="text-[10px] font-mono text-muted/70 flex items-center gap-0.5">
+                                <Folder className="w-2.5 h-2.5 text-accent-solid" />
+                                проект
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono text-muted/70 flex items-center gap-0.5">
+                                <Globe className="w-2.5 h-2.5" />
+                                глобальный
+                              </span>
+                            )}
                           </div>
                           <span
                             className={cn(
@@ -319,13 +285,42 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                 </div>
               )}
 
-              {/* Create New Tag with 12 Shades Palette */}
+              {/* Create New Tag with Scope & 12 Shades Palette */}
               {cleanQuery && !exactMatch && (
                 <div className="pt-1 border-t border-subtle/60 space-y-2">
                   <div className="flex items-center justify-between px-1">
                     <span className="text-[11px] text-primary font-medium">
                       Новый тег: <span className="text-accent-solid">«{cleanQuery}»</span>
                     </span>
+                    {projectId && (
+                      <div className="flex items-center gap-1 text-[10px] font-mono">
+                        <button
+                          type="button"
+                          onClick={() => setCreateScope('project')}
+                          className={cn(
+                            'px-1.5 py-0.5 rounded transition-colors',
+                            createScope === 'project'
+                              ? 'bg-accent-surface text-primary font-semibold'
+                              : 'text-muted hover:text-primary'
+                          )}
+                        >
+                          Проект
+                        </button>
+                        <span className="text-muted/40">/</span>
+                        <button
+                          type="button"
+                          onClick={() => setCreateScope('global')}
+                          className={cn(
+                            'px-1.5 py-0.5 rounded transition-colors',
+                            createScope === 'global'
+                              ? 'bg-accent-surface text-primary font-semibold'
+                              : 'text-muted hover:text-primary'
+                          )}
+                        >
+                          Глобальный
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* 12 Color Palette */}
@@ -362,7 +357,7 @@ export const TaskTagSection: React.FC<TaskTagSectionProps> = ({
                     onClick={() => handleCreateNewTag()}
                     className="w-full mt-1.5 py-1.5 px-3 rounded-lg bg-accent-solid text-white text-xs font-medium hover:bg-accent-solid-hover transition-colors text-center"
                   >
-                    ✨ Создать тег «{cleanQuery}»
+                    ✨ Создать {createScope === 'project' && projectId ? 'проектный' : 'глобальный'} тег «{cleanQuery}»
                   </button>
                 </div>
               )}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo } from 'react';
+import { useQueries } from '@tanstack/react-query';
 import { Sparkles, Plus, ShieldCheck } from 'lucide-react';
 import {
   Button,
@@ -15,7 +15,15 @@ import {
   useCreateAutomationMutation,
   type Automation,
 } from '@/entities/automation';
-import { DEMO_COLUMNS, DEMO_BOARDS, type Column, type Board, useProjectsQuery } from '@/entities/project';
+import {
+  DEMO_COLUMNS,
+  DEMO_BOARDS,
+  type Board,
+  useProjectsQuery,
+  useProjectAllColumnsQuery,
+  projectApi,
+} from '@/entities/project';
+import { getAuthToken } from '@/shared/api';
 import { AutomationCard } from './AutomationCard';
 import { RuleBuilderModal, RuleDetailModal } from './RuleBuilderModal';
 
@@ -26,7 +34,6 @@ export interface AutomationsHubProps {
 type FilterCategory = 'all' | 'board' | 'column';
 
 export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) => {
-  const queryClient = useQueryClient();
   const { data: automations = [], isLoading, isError, error, refetch } = useAutomationsQuery(workspaceId);
   const { data: projects = [] } = useProjectsQuery(workspaceId);
   const toggleMutation = useToggleAutomationMutation(workspaceId);
@@ -38,28 +45,66 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
   const [detailRule, setDetailRule] = useState<Automation | null>(null);
   const [editingRule, setEditingRule] = useState<Automation | null>(null);
 
-  // Collect boards and columns from cache or fallback to default demo data
-  const cachedBoards = queryClient
-    .getQueriesData<Board[]>({ queryKey: ['boards'] })
-    .flatMap(([, b]) => b ?? []);
-  const rawBoards = cachedBoards.length > 0 ? cachedBoards : DEMO_BOARDS;
-  const allBoards = rawBoards.map((b) => {
-    const proj = projects.find((p) => p.id === (b as { projectId?: string }).projectId);
-    return { ...b, projectName: proj?.name };
+  // Fetch all boards for each project reliably via useQueries
+  const projectBoardsQueries = useQueries({
+    queries: projects.map((p) => ({
+      queryKey: ['boards', workspaceId, p.id],
+      queryFn: async (): Promise<Board[]> => {
+        if (!workspaceId || !getAuthToken()) {
+          return DEMO_BOARDS.filter((b) => b.projectId === p.id);
+        }
+        try {
+          const boards = await projectApi.listProjectBoards(workspaceId, p.id);
+          return boards ?? [];
+        } catch {
+          return [];
+        }
+      },
+      enabled: !!workspaceId && !!p.id,
+    })),
   });
 
-  const cachedCols = queryClient
-    .getQueriesData<Column[]>({ queryKey: ['columns'] })
-    .flatMap(([, cols]) => cols ?? []);
-  const allColumns = cachedCols.length > 0 ? cachedCols : DEMO_COLUMNS;
+  const rawBoards = useMemo(() => {
+    const fetchedBoards = projectBoardsQueries.flatMap((q) => q.data ?? []);
+    return fetchedBoards.length > 0 ? fetchedBoards : DEMO_BOARDS;
+  }, [projectBoardsQueries]);
 
-  const boardColumnGroups = React.useMemo(() => {
-    return allBoards.map((b) => ({
-      boardName: b.name,
-      projectName: b.projectName,
-      columns: allColumns.filter((c) => c.boardId === b.id),
-    })).filter((g) => g.columns.length > 0);
-  }, [allBoards, allColumns]);
+  const allBoards = useMemo(() => {
+    return rawBoards.map((b) => {
+      const proj = projects.find((p) => p.id === (b as { projectId?: string }).projectId);
+      return { ...b, projectName: proj?.name };
+    });
+  }, [rawBoards, projects]);
+
+  // Fetch all columns for all boards using the standard project columns query
+  const { data: boardGroups = [] } = useProjectAllColumnsQuery(workspaceId, rawBoards);
+
+  const allColumns = useMemo(() => {
+    const cols = boardGroups.flatMap((g) => g.columns);
+    return cols.length > 0 ? cols : DEMO_COLUMNS;
+  }, [boardGroups]);
+
+  const boardColumnGroups = useMemo(() => {
+    if (boardGroups.length > 0) {
+      return boardGroups
+        .map((bg) => {
+          const proj = projects.find((p) => p.id === (bg.board as { projectId?: string }).projectId);
+          return {
+            boardName: bg.boardName,
+            projectName: proj?.name,
+            columns: bg.columns,
+          };
+        })
+        .filter((g) => g.columns.length > 0);
+    }
+    return allBoards
+      .map((b) => ({
+        boardName: b.name,
+        projectName: b.projectName,
+        columns: allColumns.filter((c) => c.boardId === b.id),
+      }))
+      .filter((g) => g.columns.length > 0);
+  }, [boardGroups, allBoards, allColumns, projects]);
 
   const filteredAutomations = automations.filter((auto) => {
     if (filter === 'board') return Boolean(auto.boardId) && !auto.columnId;
@@ -112,7 +157,7 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
             </Badge>
           </div>
           <p className="text-xs text-muted mt-1">
-            Low-Code правила «КОГДА → ЕСЛИ → ТО», SLA таймеры старения и расписания
+            Low-Code правила «КОГДА → ЕСЛИ → ТО», таймеры неактивности и задержки, расписания
           </p>
         </div>
 
@@ -193,7 +238,7 @@ export const AutomationsHub: React.FC<AutomationsHubProps> = ({ workspaceId }) =
         <div className="flex-1 flex items-center justify-center py-12">
           <EmptyState
             title="Нет активных правил автоматизации"
-            description="Создайте первое Low-Code правило для автоматизации переноса задач, смены приоритетов или SLA таймеров"
+            description="Создайте первое Low-Code правило для автоматизации переноса задач, смены приоритетов или таймеров задержки"
             action={
               <Button
                 variant="solid"

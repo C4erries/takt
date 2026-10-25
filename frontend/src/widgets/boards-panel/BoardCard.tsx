@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MoreHorizontal, Pencil, Trash2, Check, X, GripVertical } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Check, X, GripVertical, Columns3, Activity } from 'lucide-react';
 import { Button } from '@/shared/components/ui';
 import { cn } from '@/shared/lib/cn';
 import type { Board } from '@/entities/project';
@@ -15,15 +15,6 @@ export interface BoardCardProps {
   onSelect: () => void;
   onRename?: (newName: string) => void;
   onDelete?: () => void;
-}
-
-function formatColumns(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 14) return `${n} колонок`;
-  if (mod10 === 1) return `${n} колонка`;
-  if (mod10 >= 2 && mod10 <= 4) return `${n} колонки`;
-  return `${n} колонок`;
 }
 
 export const BoardCard: React.FC<BoardCardProps> = ({
@@ -211,9 +202,15 @@ export const BoardCard: React.FC<BoardCardProps> = ({
 
       {/* Second row: board metrics */}
       <div className="flex items-center gap-1.5 text-[11px] text-muted font-mono mt-1 pl-4">
-        <span>{formatColumns(columnCount)}</span>
+        <span className="flex items-center gap-1" title="Количество колонок">
+          <Columns3 className="w-3 h-3 text-muted/70" />
+          <span>{columnCount}</span>
+        </span>
         <span className="text-muted/50">·</span>
-        <span>{taskCount > 0 ? `${taskCount} в работе` : 'нет задач'}</span>
+        <span className="flex items-center gap-1" title="Задачи в работе">
+          <Activity className="w-3 h-3 text-muted/70" />
+          <span>{taskCount}</span>
+        </span>
       </div>
     </div>
   );

@@ -172,6 +172,7 @@ func (r *TaskRepository) CreateTag(ctx context.Context, tag *domainTask.Tag) err
 	q := getQuerier(ctx, r.queries)
 	row, err := q.CreateTag(ctx, sqlc.CreateTagParams{
 		WorkspaceID: uuidToPg(tag.WorkspaceID),
+		ProjectID:   uuidPtrToPg(tag.ProjectID),
 		Name:        tag.Name,
 		ColorHex:    tag.ColorHex,
 	})
@@ -181,6 +182,7 @@ func (r *TaskRepository) CreateTag(ctx context.Context, tag *domainTask.Tag) err
 
 	tag.ID = pgToUUID(row.ID)
 	tag.CreatedAt = pgToTime(row.CreatedAt)
+	tag.ProjectID = pgToUUIDPtr(row.ProjectID)
 	return nil
 }
 
@@ -200,9 +202,12 @@ func (r *TaskRepository) GetTagByID(ctx context.Context, id, workspaceID uuid.UU
 	return mapTagRowToDomain(row), nil
 }
 
-func (r *TaskRepository) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error) {
+func (r *TaskRepository) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Tag, error) {
 	q := getQuerier(ctx, r.queries)
-	rows, err := q.ListWorkspaceTags(ctx, uuidToPg(workspaceID))
+	rows, err := q.ListWorkspaceTags(ctx, sqlc.ListWorkspaceTagsParams{
+		WorkspaceID: uuidToPg(workspaceID),
+		ProjectID:   uuidPtrToPg(projectID),
+	})
 	if err != nil {
 		return nil, err
 	}

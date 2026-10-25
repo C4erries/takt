@@ -90,8 +90,9 @@ export const MainSheet: React.FC<MainSheetProps> = ({
   const handleOpenQuickCapture =
     onOpenQuickCapture ?? (() => setQuickCaptureOpen(true));
 
-  // Determine if a project is active
-  const isProjectNav = activeNav.startsWith('project:') || Boolean(selectedProjectId);
+  // Determine if a project is active (never override standard horizon views)
+  const isHorizonNav = ['inbox', 'today', 'automations', 'archive', 'tags'].includes(activeNav);
+  const isProjectNav = !isHorizonNav && (activeNav.startsWith('project:') || Boolean(selectedProjectId));
   const activeProjectId =
     selectedProjectId ||
     (activeNav.startsWith('project:') ? activeNav.replace('project:', '') : null);

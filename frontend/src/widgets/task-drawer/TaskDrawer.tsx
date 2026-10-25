@@ -302,7 +302,14 @@ export const TaskDrawer: React.FC<TaskDrawerProps> = ({
                   )}
 
                   <TaskSubtasksSection workspaceId={workspaceId} parentTaskId={currentTask.id} onOpenTask={onSelectTask} onToggleTask={onToggleTask} />
-                  <TaskTagSection taskId={currentTask.id} tags={currentTask.tags} workspaceId={workspaceId} isAddingTag={isAddingTag} onToggleAddingTag={() => setIsAddingTag((prev) => !prev)} />
+                  <TaskTagSection
+                    taskId={currentTask.id}
+                    tags={currentTask.tags}
+                    workspaceId={workspaceId}
+                    projectId={currentTask.projectId}
+                    isAddingTag={isAddingTag}
+                    onToggleAddingTag={() => setIsAddingTag((prev) => !prev)}
+                  />
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-mono uppercase tracking-wider text-muted">Приоритет</label>

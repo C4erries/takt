@@ -21,7 +21,7 @@ type TaskRepository = domainTask.TaskRepository
 type TagRepository interface {
 	CreateTag(ctx context.Context, tag *domainTask.Tag) error
 	GetTagByID(ctx context.Context, id, workspaceID uuid.UUID) (*domainTask.Tag, error)
-	ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error)
+	ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Tag, error)
 	ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.TagWithMetrics, error)
 	UpdateTag(ctx context.Context, tag *domainTask.Tag) error
 	DeleteTag(ctx context.Context, id, workspaceID uuid.UUID) error
@@ -61,7 +61,7 @@ type UseCases interface {
 	ListSubtasks(ctx context.Context, workspaceID, parentID uuid.UUID) ([]*domainTask.Task, error)
 	DuplicateTask(ctx context.Context, workspaceID, taskID uuid.UUID) (*domainTask.Task, error)
 	CreateTag(ctx context.Context, input CreateTagInput) (*domainTask.Tag, error)
-	ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error)
+	ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Tag, error)
 	ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.TagWithMetrics, error)
 	UpdateTag(ctx context.Context, input UpdateTagInput) (*domainTask.Tag, error)
 	DeleteTag(ctx context.Context, tagID, workspaceID uuid.UUID) error

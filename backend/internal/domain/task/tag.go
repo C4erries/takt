@@ -17,10 +17,11 @@ const (
 	MaxTagColorLen  = 32
 )
 
-// Tag represents a context tag assigned to tasks within a workspace.
+// Tag represents a context tag assigned to tasks within a workspace or project.
 type Tag struct {
 	ID          uuid.UUID
 	WorkspaceID uuid.UUID
+	ProjectID   *uuid.UUID
 	Name        string
 	ColorHex    string
 	CreatedAt   time.Time
@@ -43,6 +44,11 @@ func ValidateTagName(name string) error {
 
 // NewTag creates a new Tag instance enforcing domain invariants.
 func NewTag(workspaceID uuid.UUID, name, colorHex string) (*Tag, error) {
+	return NewScopedTag(workspaceID, nil, name, colorHex)
+}
+
+// NewScopedTag creates a new Tag instance scoped optionally to a project, enforcing domain invariants.
+func NewScopedTag(workspaceID uuid.UUID, projectID *uuid.UUID, name, colorHex string) (*Tag, error) {
 	trimmedName := strings.TrimSpace(name)
 	if err := ValidateTagName(trimmedName); err != nil {
 		return nil, err
@@ -56,9 +62,16 @@ func NewTag(workspaceID uuid.UUID, name, colorHex string) (*Tag, error) {
 		return nil, ErrInvalidTagColor
 	}
 
+	var pID *uuid.UUID
+	if projectID != nil && *projectID != uuid.Nil {
+		copyID := *projectID
+		pID = &copyID
+	}
+
 	return &Tag{
 		ID:          uuid.New(),
 		WorkspaceID: workspaceID,
+		ProjectID:   pID,
 		Name:        trimmedName,
 		ColorHex:    trimmedColor,
 		CreatedAt:   time.Now().UTC(),

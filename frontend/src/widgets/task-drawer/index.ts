@@ -1,6 +1,7 @@
 export * from './types';
 export * from './TaskDrawer';
 export * from './TaskTagSection';
+export * from './TagCapsule';
 export * from './TaskSubtasksSection';
 export * from './AttachTaskPopover';
 export * from './TaskAutomationsSection';

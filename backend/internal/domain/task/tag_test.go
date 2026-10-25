@@ -28,6 +28,7 @@ func TestNewTag(t *testing.T) {
 				assert.Equal(t, "focus", tag.Name)
 				assert.Equal(t, "#6366f1", tag.ColorHex)
 				assert.Equal(t, wsID, tag.WorkspaceID)
+				assert.Nil(t, tag.ProjectID)
 				assert.NotEqual(t, uuid.Nil, tag.ID)
 			},
 		},
@@ -88,6 +89,53 @@ func TestNewTag(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewScopedTag(t *testing.T) {
+	wsID := uuid.New()
+	projectID := uuid.New()
+
+	t.Run("creates tag with valid project scope", func(t *testing.T) {
+		tag, err := NewScopedTag(wsID, &projectID, "backend-dev", "#3B82F6")
+		require.NoError(t, err)
+		require.NotNil(t, tag)
+		assert.Equal(t, wsID, tag.WorkspaceID)
+		require.NotNil(t, tag.ProjectID)
+		assert.Equal(t, projectID, *tag.ProjectID)
+		assert.Equal(t, "backend-dev", tag.Name)
+		assert.Equal(t, "#3B82F6", tag.ColorHex)
+	})
+
+	t.Run("creates global tag when projectID is nil", func(t *testing.T) {
+		tag, err := NewScopedTag(wsID, nil, "global-tag", "")
+		require.NoError(t, err)
+		require.NotNil(t, tag)
+		assert.Equal(t, wsID, tag.WorkspaceID)
+		assert.Nil(t, tag.ProjectID)
+		assert.Equal(t, "global-tag", tag.Name)
+		assert.Equal(t, DefaultTagColor, tag.ColorHex)
+	})
+
+	t.Run("creates global tag when projectID is uuid.Nil", func(t *testing.T) {
+		nilUUID := uuid.Nil
+		tag, err := NewScopedTag(wsID, &nilUUID, "global-nil-tag", "")
+		require.NoError(t, err)
+		require.NotNil(t, tag)
+		assert.Equal(t, wsID, tag.WorkspaceID)
+		assert.Nil(t, tag.ProjectID)
+	})
+
+	t.Run("returns error on invalid name", func(t *testing.T) {
+		tag, err := NewScopedTag(wsID, &projectID, "   ", "")
+		require.ErrorIs(t, err, ErrInvalidTagName)
+		assert.Nil(t, tag)
+	})
+
+	t.Run("returns error on invalid color length", func(t *testing.T) {
+		tag, err := NewScopedTag(wsID, &projectID, "tag", strings.Repeat("a", 33))
+		require.ErrorIs(t, err, ErrInvalidTagColor)
+		assert.Nil(t, tag)
+	})
 }
 
 func TestTask_TagOperations(t *testing.T) {

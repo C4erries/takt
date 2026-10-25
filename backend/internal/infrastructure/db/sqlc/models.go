@@ -77,6 +77,7 @@ type Tag struct {
 	Name        string             `json:"name"`
 	ColorHex    string             `json:"color_hex"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	ProjectID   pgtype.UUID        `json:"project_id"`
 }
 
 type Task struct {

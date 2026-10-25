@@ -214,7 +214,7 @@ func (r *AutomationRepository) resolveTagID(ctx context.Context, wsID uuid.UUID,
 	if !create {
 		return pgtype.UUID{}, err
 	}
-	newTag, err := q.CreateTag(ctx, sqlc.CreateTagParams{WorkspaceID: uuidToPg(wsID), Name: tagName, ColorHex: "#6366f1"})
+	newTag, err := q.CreateTag(ctx, sqlc.CreateTagParams{WorkspaceID: uuidToPg(wsID), ProjectID: pgtype.UUID{Valid: false}, Name: tagName, ColorHex: "#6366f1"})
 	if err != nil {
 		return pgtype.UUID{}, err
 	}

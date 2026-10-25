@@ -23,14 +23,17 @@ import (
 func TestHandler_ListWorkspaceTags_Success(t *testing.T) {
 	wsID := uuid.New()
 	tagID := uuid.New()
+	projectID := uuid.New()
 	now := time.Now().UTC()
 
 	mockSvc := &mockTaskService{
-		listTagsFn: func(ctx context.Context, wID uuid.UUID) ([]*domainTask.Tag, error) {
+		listTagsFn: func(ctx context.Context, wID uuid.UUID, pID *uuid.UUID) ([]*domainTask.Tag, error) {
+			assert.Equal(t, &projectID, pID)
 			return []*domainTask.Tag{
 				{
 					ID:          tagID,
 					WorkspaceID: wID,
+					ProjectID:   pID,
 					Name:        "Bug",
 					ColorHex:    "#EF4444",
 					CreatedAt:   now,
@@ -42,11 +45,11 @@ func TestHandler_ListWorkspaceTags_Success(t *testing.T) {
 	handler := NewHandler(nil, "0.2.1", false, nil, mockSvc, nil, nil)
 
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/"+wsID.String()+"/tags", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/workspaces/"+wsID.String()+"/tags?project_id="+projectID.String(), nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	require.NoError(t, handler.ListWorkspaceTags(c, wsID))
+	require.NoError(t, handler.ListWorkspaceTags(c, wsID, generated.ListWorkspaceTagsParams{ProjectId: &projectID}))
 	assert.Equal(t, http.StatusOK, rec.Code)
 
 	var tags []generated.Tag
@@ -54,6 +57,8 @@ func TestHandler_ListWorkspaceTags_Success(t *testing.T) {
 	require.Len(t, tags, 1)
 	assert.Equal(t, "Bug", tags[0].Name)
 	assert.Equal(t, "#EF4444", tags[0].ColorHex)
+	require.NotNil(t, tags[0].ProjectId)
+	assert.Equal(t, projectID, *tags[0].ProjectId)
 }
 
 func TestHandler_CreateWorkspaceTag_Success(t *testing.T) {

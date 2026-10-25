@@ -15,6 +15,11 @@ Tag:
       type: string
       format: uuid
       example: "123e4567-e89b-12d3-a456-426614174001"
+    projectId:
+      type: string
+      format: uuid
+      nullable: true
+      example: "a0000000-0000-0000-0000-000000000001"
     name:
       type: string
       minLength: 1
@@ -35,6 +40,11 @@ CreateTagRequest:
   required:
     - name
   properties:
+    projectId:
+      type: string
+      format: uuid
+      nullable: true
+      example: "a0000000-0000-0000-0000-000000000001"
     name:
       type: string
       minLength: 1

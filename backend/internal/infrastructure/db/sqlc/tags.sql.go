@@ -43,22 +43,29 @@ func (q *Queries) ClearTaskTags(ctx context.Context, taskID pgtype.UUID) error {
 const createTag = `-- name: CreateTag :one
 INSERT INTO tags (
     workspace_id,
+    project_id,
     name,
     color_hex
 ) VALUES (
-    $1, $2, $3
+    $1, $2, $3, $4
 )
-RETURNING id, workspace_id, name, color_hex, created_at
+RETURNING id, workspace_id, name, color_hex, created_at, project_id
 `
 
 type CreateTagParams struct {
 	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
 	Name        string      `json:"name"`
 	ColorHex    string      `json:"color_hex"`
 }
 
 func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, error) {
-	row := q.db.QueryRow(ctx, createTag, arg.WorkspaceID, arg.Name, arg.ColorHex)
+	row := q.db.QueryRow(ctx, createTag,
+		arg.WorkspaceID,
+		arg.ProjectID,
+		arg.Name,
+		arg.ColorHex,
+	)
 	var i Tag
 	err := row.Scan(
 		&i.ID,
@@ -66,6 +73,7 @@ func (q *Queries) CreateTag(ctx context.Context, arg CreateTagParams) (Tag, erro
 		&i.Name,
 		&i.ColorHex,
 		&i.CreatedAt,
+		&i.ProjectID,
 	)
 	return i, err
 }
@@ -97,7 +105,7 @@ func (q *Queries) DeleteUnusedTags(ctx context.Context, workspaceID pgtype.UUID)
 }
 
 const getTagByID = `-- name: GetTagByID :one
-SELECT id, workspace_id, name, color_hex, created_at FROM tags
+SELECT id, workspace_id, name, color_hex, created_at, project_id FROM tags
 WHERE id = $1 AND workspace_id = $2
 `
 
@@ -115,12 +123,13 @@ func (q *Queries) GetTagByID(ctx context.Context, arg GetTagByIDParams) (Tag, er
 		&i.Name,
 		&i.ColorHex,
 		&i.CreatedAt,
+		&i.ProjectID,
 	)
 	return i, err
 }
 
 const getTagByName = `-- name: GetTagByName :one
-SELECT id, workspace_id, name, color_hex, created_at FROM tags
+SELECT id, workspace_id, name, color_hex, created_at, project_id FROM tags
 WHERE workspace_id = $1 AND LOWER(name) = LOWER($2)
 LIMIT 1
 `
@@ -139,12 +148,13 @@ func (q *Queries) GetTagByName(ctx context.Context, arg GetTagByNameParams) (Tag
 		&i.Name,
 		&i.ColorHex,
 		&i.CreatedAt,
+		&i.ProjectID,
 	)
 	return i, err
 }
 
 const getTaskTags = `-- name: GetTaskTags :many
-SELECT t.id, t.workspace_id, t.name, t.color_hex, t.created_at FROM tags t
+SELECT t.id, t.workspace_id, t.name, t.color_hex, t.created_at, t.project_id FROM tags t
 JOIN task_tags tt ON t.id = tt.tag_id
 WHERE tt.task_id = $1
 ORDER BY t.name ASC
@@ -165,6 +175,7 @@ func (q *Queries) GetTaskTags(ctx context.Context, taskID pgtype.UUID) ([]Tag, e
 			&i.Name,
 			&i.ColorHex,
 			&i.CreatedAt,
+			&i.ProjectID,
 		); err != nil {
 			return nil, err
 		}
@@ -221,13 +232,18 @@ func (q *Queries) ListTagsForTasks(ctx context.Context, dollar_1 []pgtype.UUID) 
 }
 
 const listWorkspaceTags = `-- name: ListWorkspaceTags :many
-SELECT id, workspace_id, name, color_hex, created_at FROM tags
-WHERE workspace_id = $1
+SELECT id, workspace_id, name, color_hex, created_at, project_id FROM tags
+WHERE workspace_id = $1 AND ($2::uuid IS NULL OR project_id IS NULL OR project_id = $2)
 ORDER BY name ASC
 `
 
-func (q *Queries) ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID) ([]Tag, error) {
-	rows, err := q.db.Query(ctx, listWorkspaceTags, workspaceID)
+type ListWorkspaceTagsParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ProjectID   pgtype.UUID `json:"project_id"`
+}
+
+func (q *Queries) ListWorkspaceTags(ctx context.Context, arg ListWorkspaceTagsParams) ([]Tag, error) {
+	rows, err := q.db.Query(ctx, listWorkspaceTags, arg.WorkspaceID, arg.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -241,6 +257,7 @@ func (q *Queries) ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID
 			&i.Name,
 			&i.ColorHex,
 			&i.CreatedAt,
+			&i.ProjectID,
 		); err != nil {
 			return nil, err
 		}
@@ -253,7 +270,7 @@ func (q *Queries) ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID
 }
 
 const listWorkspaceTagsWithMetrics = `-- name: ListWorkspaceTagsWithMetrics :many
-SELECT t.id, t.workspace_id, t.name, t.color_hex, t.created_at, COUNT(tt.task_id)::BIGINT AS task_count
+SELECT t.id, t.workspace_id, t.name, t.color_hex, t.created_at, t.project_id, COUNT(tt.task_id)::BIGINT AS task_count
 FROM tags t
 LEFT JOIN task_tags tt ON t.id = tt.tag_id
 WHERE t.workspace_id = $1
@@ -267,6 +284,7 @@ type ListWorkspaceTagsWithMetricsRow struct {
 	Name        string             `json:"name"`
 	ColorHex    string             `json:"color_hex"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	ProjectID   pgtype.UUID        `json:"project_id"`
 	TaskCount   int64              `json:"task_count"`
 }
 
@@ -285,6 +303,7 @@ func (q *Queries) ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID 
 			&i.Name,
 			&i.ColorHex,
 			&i.CreatedAt,
+			&i.ProjectID,
 			&i.TaskCount,
 		); err != nil {
 			return nil, err
@@ -317,7 +336,7 @@ UPDATE tags
 SET name = COALESCE($3, name),
     color_hex = COALESCE($4, color_hex)
 WHERE id = $1 AND workspace_id = $2
-RETURNING id, workspace_id, name, color_hex, created_at
+RETURNING id, workspace_id, name, color_hex, created_at, project_id
 `
 
 type UpdateTagParams struct {
@@ -341,6 +360,7 @@ func (q *Queries) UpdateTag(ctx context.Context, arg UpdateTagParams) (Tag, erro
 		&i.Name,
 		&i.ColorHex,
 		&i.CreatedAt,
+		&i.ProjectID,
 	)
 	return i, err
 }

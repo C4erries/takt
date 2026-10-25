@@ -84,7 +84,7 @@ type Querier interface {
 	ListTasksByProject(ctx context.Context, arg ListTasksByProjectParams) ([]Task, error)
 	ListWorkspaceAutomations(ctx context.Context, workspaceID pgtype.UUID) ([]Automation, error)
 	ListWorkspaceMembers(ctx context.Context, workspaceID pgtype.UUID) ([]ListWorkspaceMembersRow, error)
-	ListWorkspaceTags(ctx context.Context, workspaceID pgtype.UUID) ([]Tag, error)
+	ListWorkspaceTags(ctx context.Context, arg ListWorkspaceTagsParams) ([]Tag, error)
 	ListWorkspaceTagsWithMetrics(ctx context.Context, workspaceID pgtype.UUID) ([]ListWorkspaceTagsWithMetricsRow, error)
 	MoveColumnToBoard(ctx context.Context, arg MoveColumnToBoardParams) (Column, error)
 	MoveTaskToColumnAndPosition(ctx context.Context, arg MoveTaskToColumnAndPositionParams) (Task, error)

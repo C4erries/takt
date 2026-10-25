@@ -180,8 +180,8 @@ func (h *Handler) SetTaskFocus(c echo.Context, workspaceId openapi_types.UUID, t
 	return c.JSON(http.StatusOK, mapDomainTaskToGenerated(t))
 }
 
-func (h *Handler) ListWorkspaceTags(c echo.Context, workspaceId openapi_types.UUID) error {
-	tags, err := h.taskService.ListWorkspaceTags(c.Request().Context(), workspaceId)
+func (h *Handler) ListWorkspaceTags(c echo.Context, workspaceId openapi_types.UUID, params generated.ListWorkspaceTagsParams) error {
+	tags, err := h.taskService.ListWorkspaceTags(c.Request().Context(), workspaceId, params.ProjectId)
 	if err != nil {
 		return respondTaskDomainError(c, err)
 	}
@@ -223,6 +223,7 @@ func (h *Handler) CreateWorkspaceTag(c echo.Context, workspaceId openapi_types.U
 	}
 	tag, err := h.taskService.CreateTag(c.Request().Context(), taskApp.CreateTagInput{
 		WorkspaceID: workspaceId,
+		ProjectID:   req.ProjectId,
 		Name:        req.Name,
 		ColorHex:    color,
 	})

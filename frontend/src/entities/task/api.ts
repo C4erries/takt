@@ -46,8 +46,11 @@ export const taskDetailApi = {
     });
   },
 
-  async listWorkspaceTags(workspaceId: string): Promise<Tag[]> {
-    return request<Tag[]>(`/workspaces/${workspaceId}/tags`, {
+  async listWorkspaceTags(workspaceId: string, projectId?: string | null): Promise<Tag[]> {
+    const url = projectId
+      ? `/workspaces/${workspaceId}/tags?project_id=${encodeURIComponent(projectId)}`
+      : `/workspaces/${workspaceId}/tags`;
+    return request<Tag[]>(url, {
       method: 'GET',
     });
   },

@@ -34,7 +34,7 @@ func (s *Service) loadSingleTaskTags(ctx context.Context, t *domainTask.Task) {
 }
 
 func (s *Service) CreateTag(ctx context.Context, input CreateTagInput) (*domainTask.Tag, error) {
-	tag, err := domainTask.NewTag(input.WorkspaceID, input.Name, input.ColorHex)
+	tag, err := domainTask.NewScopedTag(input.WorkspaceID, input.ProjectID, input.Name, input.ColorHex)
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +44,8 @@ func (s *Service) CreateTag(ctx context.Context, input CreateTagInput) (*domainT
 	return tag, nil
 }
 
-func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID) ([]*domainTask.Tag, error) {
-	return s.tagRepo.ListWorkspaceTags(ctx, workspaceID)
+func (s *Service) ListWorkspaceTags(ctx context.Context, workspaceID uuid.UUID, projectID *uuid.UUID) ([]*domainTask.Tag, error) {
+	return s.tagRepo.ListWorkspaceTags(ctx, workspaceID, projectID)
 }
 
 func (s *Service) UpdateTag(ctx context.Context, input UpdateTagInput) (*domainTask.Tag, error) {

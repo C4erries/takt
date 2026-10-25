@@ -167,6 +167,7 @@ func mapTagRowToDomain(row sqlc.Tag) *domainTask.Tag {
 	return &domainTask.Tag{
 		ID:          pgToUUID(row.ID),
 		WorkspaceID: pgToUUID(row.WorkspaceID),
+		ProjectID:   pgToUUIDPtr(row.ProjectID),
 		Name:        row.Name,
 		ColorHex:    row.ColorHex,
 		CreatedAt:   pgToTime(row.CreatedAt),
@@ -253,6 +254,7 @@ func mapTagMetricsRowsToDomain(rows []sqlc.ListWorkspaceTagsWithMetricsRow) []*d
 		item := domainTask.NewTagWithMetrics(domainTask.Tag{
 			ID:          pgToUUID(row.ID),
 			WorkspaceID: pgToUUID(row.WorkspaceID),
+			ProjectID:   pgToUUIDPtr(row.ProjectID),
 			Name:        row.Name,
 			ColorHex:    row.ColorHex,
 			CreatedAt:   pgToTime(row.CreatedAt),

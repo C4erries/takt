@@ -765,6 +765,9 @@ type CreateTagRequest struct {
 
 	// Name Example: focus
 	Name string `json:"name"`
+
+	// ProjectId Example: a0000000-0000-0000-0000-000000000001
+	ProjectId *openapi_types.UUID `json:"projectId,omitempty"`
 }
 
 // CreateWorkspaceRequest defines model for CreateWorkspaceRequest.
@@ -889,6 +892,9 @@ type Tag struct {
 
 	// Name Example: focus
 	Name string `json:"name"`
+
+	// ProjectId Example: a0000000-0000-0000-0000-000000000001
+	ProjectId *openapi_types.UUID `json:"projectId,omitempty"`
 
 	// WorkspaceId Example: 123e4567-e89b-12d3-a456-426614174001
 	WorkspaceId openapi_types.UUID `json:"workspaceId"`
@@ -1263,6 +1269,11 @@ type SearchWorkspaceParams struct {
 	Q string `form:"q" json:"q"`
 }
 
+// ListWorkspaceTagsParams defines parameters for ListWorkspaceTags.
+type ListWorkspaceTagsParams struct {
+	ProjectId *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
+
 // ListArchivedTasksParams defines parameters for ListArchivedTasks.
 type ListArchivedTasksParams struct {
 	ProjectId *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
@@ -1463,7 +1474,7 @@ type ServerInterface interface {
 	SwitchWorkspace(ctx echo.Context, workspaceId openapi_types.UUID) error
 	// ListWorkspaceTags List all tags in a workspace
 	// (GET /workspaces/{workspace_id}/tags)
-	ListWorkspaceTags(ctx echo.Context, workspaceId openapi_types.UUID) error
+	ListWorkspaceTags(ctx echo.Context, workspaceId openapi_types.UUID, params ListWorkspaceTagsParams) error
 	// CreateWorkspaceTag Create a new tag in a workspace
 	// (POST /workspaces/{workspace_id}/tags)
 	CreateWorkspaceTag(ctx echo.Context, workspaceId openapi_types.UUID) error
@@ -2331,8 +2342,17 @@ func (w *ServerInterfaceWrapper) ListWorkspaceTags(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter workspace_id: %s", err))
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWorkspaceTagsParams
+	// ------------- Optional query parameter "project_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project_id", ctx.QueryParams(), &params.ProjectId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter project_id: %s", err))
+	}
+
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.ListWorkspaceTags(ctx, workspaceId)
+	err = w.Handler.ListWorkspaceTags(ctx, workspaceId, params)
 	return err
 }
 

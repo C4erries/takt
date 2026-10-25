@@ -10,7 +10,7 @@ import { MiniCalendar } from '@/widgets/mini-calendar';
 import { useTaskStore } from '@/features/task-navigation';
 import { useThemeStore, getTheme } from '@/features/theme-switcher';
 import { useProjectsQuery, useCreateProjectMutation } from '@/entities/project';
-import { useTodayTasksQuery, useInboxTasks } from '@/entities/task';
+import { useTodayTasksQuery, useInboxTasks, useWorkspaceTagsQuery } from '@/entities/task';
 import { useAutomationsQuery } from '@/entities/automation';
 import { useArchivedTasksQuery } from '@/features/archive';
 
@@ -48,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const { data: projects = [] } = useProjectsQuery(workspace?.id);
   const { data: automations = [] } = useAutomationsQuery(workspace?.id);
   const { data: archivedTasks = [] } = useArchivedTasksQuery(workspace?.id);
+  const { data: workspaceTags = [] } = useWorkspaceTagsQuery(workspace?.id);
   const createProjectMutation = useCreateProjectMutation(workspace?.id);
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
@@ -151,6 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {[
             { id: 'inbox', label: 'Входящие', icon: Inbox, count: currentInboxCount, badgeVariant: 'subtle' as const },
             { id: 'today', label: 'Сегодня', icon: Zap, count: todayCount, badgeVariant: 'persimmon' as const },
+            { id: 'tags', label: 'Теги', icon: Tag, count: workspaceTags.length, badgeVariant: 'subtle' as const },
             { id: 'automations', label: 'Автоматизации', icon: Sparkles, count: activeAutomationsCount, badgeVariant: 'subtle' as const, iconColor: 'text-accent-solid' },
             { id: 'archive', label: 'Архив', icon: Archive, count: archivedTasks.length, badgeVariant: 'subtle' as const },
           ].map(({ id, label, icon: Icon, count, badgeVariant, iconColor }) => {
@@ -279,22 +281,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
             <span className="text-[10px] font-mono text-muted/70 group-hover:text-muted truncate max-w-[80px]">
               {themeInfo.name.split(' ')[0]}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleNavChange('tags')}
-            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all duration-150 ${
-              currentNav === 'tags' && !showUiCatalog
-                ? 'bg-accent-surface font-medium text-primary shadow-washi-sm'
-                : 'text-muted hover:text-primary hover:bg-surface/60'
-            }`}
-            title="Менеджер тегов"
-          >
-            <span className="flex items-center gap-2">
-              <Tag className="w-3.5 h-3.5 text-muted group-hover:text-primary transition-colors" />
-              <span>Теги</span>
             </span>
           </button>
 

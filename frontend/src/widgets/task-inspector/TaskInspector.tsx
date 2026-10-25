@@ -313,6 +313,7 @@ export const TaskInspector: React.FC<TaskInspectorProps> = ({
             taskId={task.id}
             tags={task.tags}
             workspaceId={workspaceId ?? ''}
+            projectId={task.projectId}
             isAddingTag={isAddingTag}
             onToggleAddingTag={() => setIsAddingTag((p) => !p)}
           />
